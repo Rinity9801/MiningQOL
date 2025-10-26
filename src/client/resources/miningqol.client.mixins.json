@@ -4,6 +4,10 @@
   "package": "forfun.miningqol.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "EntityRendererMixin",
+    "ChatHudMixin",
+    "PlayerListHudMixin",
+    "ItemStackMixin"
   ],
   "injectors": {
     "defaultRequire": 1
