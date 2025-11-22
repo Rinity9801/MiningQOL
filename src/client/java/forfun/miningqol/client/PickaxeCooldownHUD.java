@@ -26,13 +26,13 @@ public class PickaxeCooldownHUD {
     private static long lastCooldownUpdateTime = 0;
     private static boolean isOnCooldown = false;
 
-    // Position state
+    
     private static int hudX = 10;
     private static int hudY = 50;
 
-    // Title notification state for almost ready
+    
     private static boolean titleEnabled = true;
-    private static int titleThreshold = 5; // Show warning at 5 seconds
+    private static int titleThreshold = 5; 
     private static long lastTitleSetTime = 0;
     private static int lastTitleCooldown = -1;
 
@@ -113,21 +113,21 @@ public class PickaxeCooldownHUD {
             if (interpolatedCooldown > 0 && interpolatedCooldown <= lastKnownCooldownSeconds) {
                 displayCooldown = interpolatedCooldown + "s";
 
-                // Show "almost ready" title notification
+                
                 if (titleEnabled && interpolatedCooldown <= titleThreshold && interpolatedCooldown > 0) {
                     long currentTime = System.currentTimeMillis();
 
-                    // Only update title if cooldown changed OR if enough time has passed (500ms)
-                    // This prevents spamming and gives other titles priority
+                    
+                    
                     if (lastTitleCooldown != interpolatedCooldown || currentTime - lastTitleSetTime > 500) {
-                        client.inGameHud.setTitleTicks(0, 15, 3); // Shorter duration to be less intrusive
+                        client.inGameHud.setTitleTicks(0, 15, 3); 
                         client.inGameHud.setTitle(Text.literal(""));
                         client.inGameHud.setSubtitle(Text.literal("§6" + abilityName + ": §c§l" + interpolatedCooldown + "s"));
                         lastTitleSetTime = currentTime;
                         lastTitleCooldown = interpolatedCooldown;
                     }
                 } else if (interpolatedCooldown > titleThreshold || interpolatedCooldown <= 0) {
-                    // Reset tracking when not showing
+                    
                     lastTitleCooldown = -1;
                 }
             } else if (interpolatedCooldown <= 0) {
@@ -136,18 +136,13 @@ public class PickaxeCooldownHUD {
             }
         }
 
-        // Render HUD display
+        
         String displayText = displayCooldown.equals("Ready")
             ? "§a" + abilityName + ": §2✔ Ready"
             : "§6" + abilityName + ": §c" + displayCooldown;
 
-        int textWidth = textRenderer.getWidth(displayText);
 
-        // Draw background
-        context.fill(hudX - 2, hudY - 2, hudX + textWidth + 2, hudY + textRenderer.fontHeight + 2, 0x80000000);
-
-        // Draw text
-        context.drawTextWithShadow(textRenderer, displayText, hudX, hudY, 0xFFFFFF);
+        context.drawTextWithShadow(textRenderer, displayText, hudX, hudY, 0xFFFFFFFF);
     }
 
     public static double getCurrentCooldown() {
