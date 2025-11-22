@@ -2,9 +2,12 @@ package forfun.miningqol.client.config;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import forfun.miningqol.client.AutoClickerHUD;
+import forfun.miningqol.client.AutoClickerManager;
 import forfun.miningqol.client.BlockOutlineRenderer;
 import forfun.miningqol.client.CorpseESP;
 import forfun.miningqol.client.EfficientMinerOverlay;
+import forfun.miningqol.client.GlassSync;
 import forfun.miningqol.client.NameHider;
 import forfun.miningqol.client.PickaxeCooldownHUD;
 import forfun.miningqol.client.profit.BazaarPriceManager;
@@ -16,6 +19,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MiningConfig {
     private static final Logger LOGGER = LoggerFactory.getLogger("MiningConfig");
@@ -60,6 +65,23 @@ public class MiningConfig {
     public float nameColorRed2 = 1.0f;
     public float nameColorGreen2 = 1.0f;
     public float nameColorBlue2 = 1.0f;
+
+    public boolean autoClickerEnabled = false;
+    public int autoClickerMiningSlot = 0;
+    public int autoClickerCooldown = 102;
+    public boolean autoClickerRodSwap = true;
+    public boolean autoClickerSecondDrill = false;
+    public int autoClickerSecondDrillSlot = 3;
+    public boolean autoClickerHudEnabled = true;
+    public boolean autoClickerUseTab = true;
+
+    public Map<String, String> commandKeybinds = new HashMap<>();
+
+    public boolean autoSkipShoLoad = false;
+
+    public boolean glassSyncEnabled = false;
+
+    public java.util.List<String> lobbyFinderBlocks = new java.util.ArrayList<>();
 
     public static MiningConfig load() {
         if (!CONFIG_FILE.exists()) {
@@ -133,6 +155,40 @@ public class MiningConfig {
         NameHider.setUseGradient(useGradient);
         NameHider.setColor1(nameColorRed1, nameColorGreen1, nameColorBlue1);
         NameHider.setColor2(nameColorRed2, nameColorGreen2, nameColorBlue2);
+
+        AutoClickerManager.setEnabled(autoClickerEnabled);
+        AutoClickerManager.setMiningSlot(autoClickerMiningSlot);
+        AutoClickerManager.setManiacMinerCooldown(autoClickerCooldown);
+        AutoClickerManager.setEnableRodSwap(autoClickerRodSwap);
+        AutoClickerManager.setEnableSecondDrill(autoClickerSecondDrill);
+        AutoClickerManager.setSecondDrillSlot(autoClickerSecondDrillSlot);
+        AutoClickerHUD.setEnabled(autoClickerHudEnabled);
+        AutoClickerManager.setUseTabCooldown(autoClickerUseTab);
+
+        forfun.miningqol.client.CommandKeybindManager.clearAll();
+        for (Map.Entry<String, String> entry : commandKeybinds.entrySet()) {
+            try {
+                int keyCode = Integer.parseInt(entry.getKey());
+                forfun.miningqol.client.CommandKeybindManager.registerKeybind(keyCode, entry.getValue());
+            } catch (NumberFormatException ignored) {}
+        }
+
+        // Load lobby finder blocks
+        java.util.Set<net.minecraft.util.math.BlockPos> blocks = new java.util.HashSet<>();
+        for (String posStr : lobbyFinderBlocks) {
+            try {
+                String[] parts = posStr.split(",");
+                if (parts.length == 3) {
+                    int x = Integer.parseInt(parts[0]);
+                    int y = Integer.parseInt(parts[1]);
+                    int z = Integer.parseInt(parts[2]);
+                    blocks.add(new net.minecraft.util.math.BlockPos(x, y, z));
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        forfun.miningqol.client.LobbyFinder.setTrackedBlocks(blocks);
+
+        GlassSync.setEnabled(glassSyncEnabled);
     }
 
     public void loadFromGame() {
@@ -174,5 +230,27 @@ public class MiningConfig {
         nameColorRed2 = NameHider.getRed2();
         nameColorGreen2 = NameHider.getGreen2();
         nameColorBlue2 = NameHider.getBlue2();
+
+        autoClickerEnabled = AutoClickerManager.isEnabled();
+        autoClickerMiningSlot = AutoClickerManager.getMiningSlot();
+        autoClickerCooldown = AutoClickerManager.getManiacMinerCooldown();
+        autoClickerRodSwap = AutoClickerManager.isRodSwapEnabled();
+        autoClickerSecondDrill = AutoClickerManager.isSecondDrillEnabled();
+        autoClickerSecondDrillSlot = AutoClickerManager.getSecondDrillSlot();
+        autoClickerHudEnabled = AutoClickerHUD.isEnabled();
+        autoClickerUseTab = AutoClickerManager.isUsingTabCooldown();
+
+        commandKeybinds.clear();
+        for (Map.Entry<Integer, String> entry : forfun.miningqol.client.CommandKeybindManager.getAllKeybinds().entrySet()) {
+            commandKeybinds.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+
+        // Save lobby finder blocks
+        lobbyFinderBlocks.clear();
+        for (net.minecraft.util.math.BlockPos pos : forfun.miningqol.client.LobbyFinder.getTrackedBlocks()) {
+            lobbyFinderBlocks.add(pos.getX() + "," + pos.getY() + "," + pos.getZ());
+        }
+
+        glassSyncEnabled = GlassSync.isEnabled();
     }
 }

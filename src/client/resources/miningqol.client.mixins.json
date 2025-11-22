@@ -7,7 +7,9 @@
     "EntityRendererMixin",
     "ChatHudMixin",
     "PlayerListHudMixin",
-    "ItemStackMixin"
+    "ItemStackMixin",
+    "MinecraftClientGlassSyncMixin",
+    "ClientConnectionGlassSyncMixin"
   ],
   "injectors": {
     "defaultRequire": 1
