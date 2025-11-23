@@ -10,6 +10,7 @@ import forfun.miningqol.client.EfficientMinerOverlay;
 import forfun.miningqol.client.GlassSync;
 import forfun.miningqol.client.NameHider;
 import forfun.miningqol.client.PickaxeCooldownHUD;
+import forfun.miningqol.client.SoundPitchFixer;
 import forfun.miningqol.client.profit.BazaarPriceManager;
 import forfun.miningqol.client.profit.GemstoneTracker;
 import forfun.miningqol.client.profit.ProfitTrackerHUD;
@@ -80,6 +81,8 @@ public class MiningConfig {
     public boolean autoSkipShoLoad = false;
 
     public boolean glassSyncEnabled = false;
+
+    public boolean soundPitchFixerEnabled = false;
 
     public java.util.List<String> lobbyFinderBlocks = new java.util.ArrayList<>();
 
@@ -189,6 +192,7 @@ public class MiningConfig {
         forfun.miningqol.client.LobbyFinder.setTrackedBlocks(blocks);
 
         GlassSync.setEnabled(glassSyncEnabled);
+        SoundPitchFixer.setEnabled(soundPitchFixerEnabled);
     }
 
     public void loadFromGame() {
@@ -252,5 +256,6 @@ public class MiningConfig {
         }
 
         glassSyncEnabled = GlassSync.isEnabled();
+        soundPitchFixerEnabled = SoundPitchFixer.isEnabled();
     }
 }
