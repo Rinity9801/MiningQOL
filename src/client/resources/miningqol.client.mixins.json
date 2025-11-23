@@ -9,7 +9,8 @@
     "PlayerListHudMixin",
     "ItemStackMixin",
     "MinecraftClientGlassSyncMixin",
-    "ClientConnectionGlassSyncMixin"
+    "ClientConnectionGlassSyncMixin",
+    "SoundSystemMixin"
   ],
   "injectors": {
     "defaultRequire": 1
