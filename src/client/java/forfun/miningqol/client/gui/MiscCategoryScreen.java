@@ -74,14 +74,6 @@ public class MiscCategoryScreen extends Screen {
                 forfun.miningqol.client.GlassSync.setEnabled(MiningqolClient.getConfig().glassSyncEnabled);
                 toggleButtons.get(1).enabled = MiningqolClient.getConfig().glassSyncEnabled;
             }));
-
-        toggleButtons.add(new ToggleButton("Fixed Sound Pitch",
-            "Removes random pitch variance from sounds (amethyst, glass, etc)", 0xFFAA88,
-            MiningqolClient.getConfig().soundPitchFixerEnabled, () -> {
-                MiningqolClient.getConfig().soundPitchFixerEnabled = !MiningqolClient.getConfig().soundPitchFixerEnabled;
-                forfun.miningqol.client.SoundPitchFixer.setEnabled(MiningqolClient.getConfig().soundPitchFixerEnabled);
-                toggleButtons.get(2).enabled = MiningqolClient.getConfig().soundPitchFixerEnabled;
-            }));
     }
 
     @Override
