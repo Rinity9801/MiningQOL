@@ -40,7 +40,7 @@ class MiningProfitCategoryScreen(private val parentScreen: Screen) : VexelScreen
             borderRadius = 16f,
             borderThickness = 1f
         )
-            .setSizing(550f, Size.Pixels, 580f, Size.Pixels)
+            .setSizing(550f, Size.Pixels, 630f, Size.Pixels)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -53,7 +53,7 @@ class MiningProfitCategoryScreen(private val parentScreen: Screen) : VexelScreen
         mainPanel.xPositionConstraint = Pos.ScreenPixels
         mainPanel.yPositionConstraint = Pos.ScreenPixels
         mainPanel.xConstraint = (mainPanel.screenWidth - 550f) / 2f
-        mainPanel.yConstraint = (mainPanel.screenHeight - 580f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 630f) / 2f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
 
         // Title bar background

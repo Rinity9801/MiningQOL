@@ -37,7 +37,7 @@ class CorpseESPCategoryScreen(private val parentScreen: Screen) : VexelScreen("C
             borderRadius = 16f,
             borderThickness = 1f
         )
-            .setSizing(550f, Size.Pixels, 450f, Size.Pixels)
+            .setSizing(550f, Size.Pixels, 490f, Size.Pixels)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -50,7 +50,7 @@ class CorpseESPCategoryScreen(private val parentScreen: Screen) : VexelScreen("C
         mainPanel.xPositionConstraint = Pos.ScreenPixels
         mainPanel.yPositionConstraint = Pos.ScreenPixels
         mainPanel.xConstraint = (mainPanel.screenWidth - 550f) / 2f
-        mainPanel.yConstraint = (mainPanel.screenHeight - 450f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 490f) / 2f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
 
         // Title bar background
