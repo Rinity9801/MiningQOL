@@ -1,6 +1,7 @@
 package forfun.miningqol.client.gui
 
 import net.minecraft.client.MinecraftClient
+import xyz.meowing.knit.api.input.KnitKeys
 import xyz.meowing.vexel.core.VexelScreen
 import xyz.meowing.vexel.components.core.Rectangle
 import xyz.meowing.vexel.components.core.Text
@@ -201,12 +202,13 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
                 shadowColor = 0x60000000.toInt()
             }
 
-        // Animate card entrance
-        card.xConstraint = if (x < 200f) -50f else 800f
+        // Fade in card with delay
+        card.visible = false
         Thread {
             Thread.sleep(animDelay)
-            card.fadeIn(400, EasingType.EASE_OUT)
-            card.moveTo(x, y, 500, EasingType.EASE_OUT)
+            MinecraftClient.getInstance().execute {
+                card.fadeIn(400, EasingType.EASE_OUT)
+            }
         }.start()
 
         // Glowing accent bar on left
@@ -256,5 +258,15 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
         }
     }
 
-    override fun shouldCloseOnEsc(): Boolean = true
+    override fun onKeyType(typedChar: Char, keyCode: Int, scanCode: Int) {
+        // Handle ESC key to trigger close animation
+        if (keyCode == KnitKeys.KEY_ESCAPE.code) {
+            closeWithAnimation()
+        } else {
+            // Let parent handle other keys
+            super.onKeyType(typedChar, keyCode, scanCode)
+        }
+    }
+
+    override fun shouldCloseOnEsc(): Boolean = false
 }
