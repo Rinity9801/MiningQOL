@@ -78,13 +78,13 @@ public class BlockOutlineRenderer {
         BlockHitResult blockHit = (BlockHitResult) hitResult;
         BlockPos blockPos = blockHit.getBlockPos();
 
-        // Get the actual block state and its shape
+        
         BlockState blockState = client.world.getBlockState(blockPos);
         VoxelShape shape = blockState.getOutlineShape(client.world, blockPos);
 
         if (shape.isEmpty()) return;
 
-        // Boost alpha for transparent blocks to make outline more visible
+        
         boolean isTransparent = !blockState.isOpaque();
         float effectiveAlpha = isTransparent ? 0.4f : alpha;
 
@@ -98,7 +98,7 @@ public class BlockOutlineRenderer {
         GL11.glDisable(GL11.GL_CULL_FACE);
         GL11.glEnable(GL11.GL_BLEND);
 
-        // Render each box in the shape (handles complex shapes like anvils, stairs, etc.)
+        
         for (Box box : shape.getBoundingBoxes()) {
             double minX = blockPos.getX() + box.minX - cameraX;
             double minY = blockPos.getY() + box.minY - cameraY;
@@ -107,10 +107,10 @@ public class BlockOutlineRenderer {
             double maxY = blockPos.getY() + box.maxY - cameraY;
             double maxZ = blockPos.getZ() + box.maxZ - cameraZ;
 
-            // Render based on mode
-            // Note: DebugRenderer.drawBox seems to double-draw, so we halve the alpha
+            
+            
             if (mode == OutlineMode.FILLED || mode == OutlineMode.BOTH) {
-                // Draw filled box (alpha reduced to compensate for double-drawing)
+                
                 float adjustedAlpha = effectiveAlpha * 0.5f;
                 DebugRenderer.drawBox(matrices, immediate,
                     minX, minY, minZ,
@@ -120,9 +120,9 @@ public class BlockOutlineRenderer {
             }
 
             if (mode == OutlineMode.OUTLINE_ONLY || mode == OutlineMode.BOTH) {
-                // Draw outline
+                
                 float outlineAlpha = isTransparent ? 0.4f : (alpha * 2.0f);
-                outlineAlpha = Math.max(0.0f, Math.min(1.0f, outlineAlpha)) * 0.5f; // Halve for double-draw
+                outlineAlpha = Math.max(0.0f, Math.min(1.0f, outlineAlpha)) * 0.5f; 
                 double expand = 0.002;
                 DebugRenderer.drawBox(matrices, immediate,
                     minX - expand, minY - expand, minZ - expand,

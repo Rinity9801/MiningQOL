@@ -19,14 +19,14 @@ public class ProfitPositionScreen extends Screen {
 
     @Override
     protected void init() {
-        // No buttons needed, just dragging
+        
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context, mouseX, mouseY, delta);
 
-        // Draw instructions
+        
         context.drawCenteredTextWithShadow(this.textRenderer,
             "§eDrag the profit tracker to reposition it",
             this.width / 2, 20, 0xFFFFFF);
@@ -34,12 +34,12 @@ public class ProfitPositionScreen extends Screen {
             "§7Press ESC when done",
             this.width / 2, 35, 0xFFFFFF);
 
-        // Update drag position
+        
         if (dragging) {
             ProfitTrackerHUD.setPosition(mouseX - dragOffsetX, mouseY - dragOffsetY);
         }
 
-        // Render the HUD preview
+        
         ProfitTrackerHUD.render(context);
 
         super.render(context, mouseX, mouseY, delta);
@@ -47,7 +47,7 @@ public class ProfitPositionScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) { // Left click
+        if (button == 0) { 
             int hudX = ProfitTrackerHUD.getX();
             int hudY = ProfitTrackerHUD.getY();
             int hudWidth = 120;

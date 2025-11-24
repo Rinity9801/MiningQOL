@@ -1,6 +1,7 @@
 plugins {
     id 'fabric-loom' version '1.11-SNAPSHOT'
     id 'maven-publish'
+    id 'org.jetbrains.kotlin.jvm' version '2.1.0'
 }
 
 version = project.mod_version
@@ -21,6 +22,19 @@ loom {
     }
 }
 
+sourceSets {
+    main {
+        kotlin {
+            srcDir 'src/main/kotlin'
+        }
+    }
+    client {
+        kotlin {
+            srcDir 'src/client/kotlin'
+        }
+    }
+}
+
 fabricApi {
     configureDataGeneration {
         client = true
@@ -28,11 +42,13 @@ fabricApi {
 }
 
 repositories {
-    // Add repositories to retrieve artifacts from in here.
-    // You should only use this when depending on other mods because
-    // Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-    // See https://docs.gradle.org/current/userguide/declaring_repositories.html
-    // for more information about repositories.
+    mavenCentral()
+    maven {
+        url = "https://maven.deftu.dev/snapshots"
+    }
+    maven {
+        url = "https://maven.deftu.dev/releases"
+    }
 }
 
 dependencies {
@@ -42,6 +58,13 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    modImplementation "net.fabricmc:fabric-language-kotlin:1.13.0+kotlin.2.1.0"
+
+    // Vexel GUI Library
+    modImplementation(include("xyz.meowing:vexel-1.21.10-fabric:124"))
 }
 
 processResources {
@@ -66,6 +89,12 @@ tasks.withType(JavaCompile).configureEach {
     it.options.encoding = "UTF-8"
     if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
         it.options.release.set(targetJavaVersion)
+    }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+        jvmTarget = "21"
     }
 }
 

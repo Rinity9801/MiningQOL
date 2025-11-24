@@ -10,13 +10,13 @@ public class GemstoneTracker {
     private static boolean isTracking = false;
     private static long sessionStartTime = 0;
     private static long lastGemTime = 0;
-    private static final long RESET_DELAY = 30000; // 30 seconds
+    private static final long RESET_DELAY = 30000; 
 
     private static final Map<String, Integer> gemCounts = new HashMap<>();
     private static double totalValue = 0;
-    private static int pristineChance = 20; // Default 20%
+    private static int pristineChance = 20; 
     private static boolean includeRough = false;
-    private static int gemTier = 1; // 1=Flawed, 2=Fine, 3=Flawless
+    private static int gemTier = 1; 
 
     public static void setPristineChance(int chance) {
         pristineChance = Math.max(0, Math.min(100, chance));

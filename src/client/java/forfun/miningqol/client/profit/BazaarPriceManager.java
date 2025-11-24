@@ -16,7 +16,7 @@ import java.util.concurrent.CompletableFuture;
 public class BazaarPriceManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("BazaarPriceManager");
     private static final String BAZAAR_API = "https://api.hypixel.net/skyblock/bazaar";
-    private static final long CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+    private static final long CACHE_DURATION = 5 * 60 * 1000; 
 
     private static final Map<String, Double> gemPrices = new HashMap<>();
     private static long lastUpdate = 0;

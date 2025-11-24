@@ -12,9 +12,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-/**
- * Mixin to intercept and modify item tooltip text
- */
+
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {
 
@@ -33,7 +31,7 @@ public abstract class ItemStackMixin {
             return;
         }
 
-        // Process each line of the tooltip
+        
         List<Text> modifiedTooltip = new java.util.ArrayList<>();
         for (Text line : tooltip) {
             modifiedTooltip.add(NameHider.processTextRecursive(line));

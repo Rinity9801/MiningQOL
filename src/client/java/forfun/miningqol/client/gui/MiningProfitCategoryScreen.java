@@ -1,33 +1,32 @@
 package forfun.miningqol.client.gui;
 
 import forfun.miningqol.client.MiningqolClient;
-import forfun.miningqol.client.NameHider;
+import forfun.miningqol.client.profit.BazaarPriceManager;
+import forfun.miningqol.client.profit.GemstoneTracker;
+import forfun.miningqol.client.profit.ProfitTrackerHUD;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.text.Text;
 
 import java.util.ArrayList;
 import java.util.List;
 
 
-public class NameHiderCategoryScreen extends Screen {
+public class MiningProfitCategoryScreen extends Screen {
     private static final int WINDOW_WIDTH = 550;
-    private static final int WINDOW_HEIGHT = 450;
+    private static final int WINDOW_HEIGHT = 380;
     private static final int CONTROL_WIDTH = 400;
     private static final int CONTROL_HEIGHT = 35;
     private static final int CONTROL_SPACING = 8;
     private static final int BACK_BUTTON_WIDTH = 80;
     private static final int BACK_BUTTON_HEIGHT = 30;
-    private static final int SLIDER_WIDTH = 120;
-    private static final int TEXT_FIELD_HEIGHT = 20;
+    private static final int SLIDER_WIDTH = 200;
 
     private final Screen parent;
     private List<Control> controls;
     private int hoveredControl = -1;
     private boolean backButtonHovered = false;
     private int draggingSlider = -1;
-    private TextFieldWidget nameField;
 
     private int windowX, windowY;
 
@@ -35,7 +34,6 @@ public class NameHiderCategoryScreen extends Screen {
         void render(DrawContext context, int x, int y, boolean hovered, int mouseX);
         boolean click(int mouseX, int mouseY, int x, int y);
         void drag(int mouseX, int x);
-        int getHeight();
     }
 
     private static class ToggleControl implements Control {
@@ -79,18 +77,17 @@ public class NameHiderCategoryScreen extends Screen {
 
         @Override
         public void drag(int mouseX, int x) {}
-
-        @Override
-        public int getHeight() { return CONTROL_HEIGHT; }
     }
 
-    private static class TextFieldControl implements Control {
+    private static class SelectorControl implements Control {
         final String label;
-        TextFieldWidget textField;
+        final Runnable onClick;
+        String currentValue;
 
-        TextFieldControl(String label, TextFieldWidget textField) {
+        SelectorControl(String label, String currentValue, Runnable onClick) {
             this.label = label;
-            this.textField = textField;
+            this.currentValue = currentValue;
+            this.onClick = onClick;
         }
 
         @Override
@@ -101,42 +98,80 @@ public class NameHiderCategoryScreen extends Screen {
 
             net.minecraft.client.font.TextRenderer textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
             int labelX = x + 10;
-            int labelY = y + 5;
+            int labelY = y + (CONTROL_HEIGHT - textRenderer.fontHeight) / 2;
             context.drawTextWithShadow(textRenderer, label, labelX, labelY, 0xFFFFFFFF);
 
 
-            textField.setX(x + 10);
-            textField.setY(y + 17);
-            textField.setWidth(CONTROL_WIDTH - 20);
-            textField.render(context, mouseX, y, 0);
+            String valueText = "§e" + currentValue;
+            int valueX = x + CONTROL_WIDTH - textRenderer.getWidth(valueText) - 10;
+            context.drawTextWithShadow(textRenderer, valueText, valueX, labelY, 0xFFFFFFFF);
+
+
+            String arrow = ">";
+            int arrowX = valueX - textRenderer.getWidth(arrow) - 5;
+            context.drawTextWithShadow(textRenderer, arrow, arrowX, labelY, 0xFF888888);
         }
 
         @Override
         public boolean click(int mouseX, int mouseY, int x, int y) {
-            boolean clicked = textField.mouseClicked(mouseX, mouseY, 0);
-            if (clicked) {
-                textField.setFocused(true);
+            if (mouseX >= x && mouseX <= x + CONTROL_WIDTH && mouseY >= y && mouseY <= y + CONTROL_HEIGHT) {
+                onClick.run();
+                return true;
             }
-            return clicked;
+            return false;
         }
 
         @Override
         public void drag(int mouseX, int x) {}
-
-        @Override
-        public int getHeight() { return CONTROL_HEIGHT; }
     }
 
-    private static class ColorSliderControl implements Control {
+    private static class ButtonControl implements Control {
         final String label;
-        final String channelName;
-        final Runnable onChange;
-        float value;
+        final Runnable onClick;
 
-        ColorSliderControl(String label, String channelName, float value, Runnable onChange) {
+        ButtonControl(String label, Runnable onClick) {
             this.label = label;
-            this.channelName = channelName;
+            this.onClick = onClick;
+        }
+
+        @Override
+        public void render(DrawContext context, int x, int y, boolean hovered, int mouseX) {
+            int bgColor = hovered ? 0xCC3A3A3A : 0xCC2A2A2A;
+            context.fill(x, y, x + CONTROL_WIDTH, y + CONTROL_HEIGHT, bgColor);
+            context.drawBorder(x, y, CONTROL_WIDTH, CONTROL_HEIGHT, hovered ? 0xFF44FF44 : 0xFF404040);
+
+            net.minecraft.client.font.TextRenderer textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+            int labelX = x + (CONTROL_WIDTH - textRenderer.getWidth(label)) / 2;
+            int labelY = y + (CONTROL_HEIGHT - textRenderer.fontHeight) / 2;
+            context.drawTextWithShadow(textRenderer, label, labelX, labelY, hovered ? 0xFFFFFFFF : 0xFFC8C8C8);
+        }
+
+        @Override
+        public boolean click(int mouseX, int mouseY, int x, int y) {
+            if (mouseX >= x && mouseX <= x + CONTROL_WIDTH && mouseY >= y && mouseY <= y + CONTROL_HEIGHT) {
+                onClick.run();
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void drag(int mouseX, int x) {}
+    }
+
+    private static class SliderControl implements Control {
+        final String label;
+        final int min, max;
+        final Runnable onChange;
+        int value;
+        String suffix;
+
+        SliderControl(String label, int min, int max, int value, String suffix, Runnable onChange) {
+            this.label = label;
+            this.min = min;
+            this.max = max;
             this.value = value;
+            this.suffix = suffix;
             this.onChange = onChange;
         }
 
@@ -149,43 +184,32 @@ public class NameHiderCategoryScreen extends Screen {
             net.minecraft.client.font.TextRenderer textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
             int labelX = x + 10;
             int labelY = y + 6;
-            context.drawTextWithShadow(textRenderer, label + " - " + channelName, labelX, labelY, 0xFFFFFFFF);
+            context.drawTextWithShadow(textRenderer, label, labelX, labelY, 0xFFFFFFFF);
 
             
-            int sliderX = x + 10;
+            int sliderX = x + (CONTROL_WIDTH - SLIDER_WIDTH) / 2;
             int sliderY = y + 20;
             context.fill(sliderX, sliderY, sliderX + SLIDER_WIDTH, sliderY + 8, 0xFF1A1A1A);
             context.drawBorder(sliderX, sliderY, SLIDER_WIDTH, 8, 0xFF404040);
 
             
-            int fillWidth = (int) (SLIDER_WIDTH * value);
-            int previewColor = getPreviewColor();
-            context.fill(sliderX + 1, sliderY + 1, sliderX + fillWidth - 1, sliderY + 7, previewColor);
+            float percent = (value - min) / (float) (max - min);
+            int fillWidth = (int) (SLIDER_WIDTH * percent);
+            context.fill(sliderX + 1, sliderY + 1, sliderX + fillWidth - 1, sliderY + 7, 0xFF4488FF);
 
             
             int handleX = sliderX + fillWidth - 4;
             context.fill(handleX, sliderY - 2, handleX + 8, sliderY + 10, hovered ? 0xFFFFFFFF : 0xFFC8C8C8);
 
 
-            String valueText = String.format("%d", (int)(value * 255));
+            String valueText = value + suffix;
             int valueX = sliderX + SLIDER_WIDTH + 10;
             context.drawTextWithShadow(textRenderer, valueText, valueX, labelY, 0xFFFFFFFF);
         }
 
-        private int getPreviewColor() {
-            int val = (int)(value * 255);
-            if (channelName.equals("Red")) {
-                return 0xFF000000 | (val << 16);
-            } else if (channelName.equals("Green")) {
-                return 0xFF000000 | (val << 8);
-            } else {
-                return 0xFF000000 | val;
-            }
-        }
-
         @Override
         public boolean click(int mouseX, int mouseY, int x, int y) {
-            int sliderX = x + 10;
+            int sliderX = x + (CONTROL_WIDTH - SLIDER_WIDTH) / 2;
             int sliderY = y + 20;
             if (mouseX >= sliderX && mouseX <= sliderX + SLIDER_WIDTH &&
                 mouseY >= sliderY - 2 && mouseY <= sliderY + 10) {
@@ -197,92 +221,20 @@ public class NameHiderCategoryScreen extends Screen {
 
         @Override
         public void drag(int mouseX, int x) {
-            int sliderX = x + 10;
+            int sliderX = x + (CONTROL_WIDTH - SLIDER_WIDTH) / 2;
             updateValue(mouseX, sliderX);
         }
 
         private void updateValue(int mouseX, int sliderX) {
             int relativeX = Math.max(0, Math.min(SLIDER_WIDTH, mouseX - sliderX));
-            value = relativeX / (float) SLIDER_WIDTH;
+            float percent = relativeX / (float) SLIDER_WIDTH;
+            value = min + Math.round(percent * (max - min));
             onChange.run();
         }
-
-        @Override
-        public int getHeight() { return CONTROL_HEIGHT; }
     }
 
-    private static class PreviewControl implements Control {
-        final String label;
-
-        PreviewControl(String label) {
-            this.label = label;
-        }
-
-        @Override
-        public void render(DrawContext context, int x, int y, boolean hovered, int mouseX) {
-            int bgColor = 0xCC242424;
-            context.fill(x, y, x + CONTROL_WIDTH, y + 45, bgColor);
-            context.drawBorder(x, y, CONTROL_WIDTH, 45, 0xFF404040);
-
-            net.minecraft.client.font.TextRenderer textRenderer = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
-            int labelX = x + 10;
-            int labelY = y + 5;
-            context.drawTextWithShadow(textRenderer, label, labelX, labelY, 0xFFFFFFFF);
-
-
-            String previewText = NameHider.getReplacementName();
-            if (previewText.isEmpty()) previewText = "Preview";
-
-            int previewY = y + 22;
-            if (NameHider.isUsingGradient()) {
-                
-                drawGradientText(context, textRenderer, previewText, x + CONTROL_WIDTH / 2, previewY);
-            } else {
-                
-                int color = rgbToInt(NameHider.getRed1(), NameHider.getGreen1(), NameHider.getBlue1());
-                int textWidth = textRenderer.getWidth(previewText);
-                context.drawTextWithShadow(textRenderer, previewText, x + (CONTROL_WIDTH - textWidth) / 2, previewY, 0xFF000000 | color);
-            }
-        }
-
-        private void drawGradientText(DrawContext context, net.minecraft.client.font.TextRenderer textRenderer, String text, int centerX, int y) {
-            int totalWidth = textRenderer.getWidth(text);
-            int currentX = centerX - totalWidth / 2;
-
-            for (int i = 0; i < text.length(); i++) {
-                float ratio = text.length() == 1 ? 0.5f : (float) i / (text.length() - 1);
-                float r = NameHider.getRed1() + (NameHider.getRed2() - NameHider.getRed1()) * ratio;
-                float g = NameHider.getGreen1() + (NameHider.getGreen2() - NameHider.getGreen1()) * ratio;
-                float b = NameHider.getBlue1() + (NameHider.getBlue2() - NameHider.getBlue1()) * ratio;
-
-                int color = rgbToInt(r, g, b);
-                String character = String.valueOf(text.charAt(i));
-                context.drawTextWithShadow(textRenderer, character, currentX, y, 0xFF000000 | color);
-                currentX += textRenderer.getWidth(character);
-            }
-        }
-
-        private int rgbToInt(float r, float g, float b) {
-            int ri = Math.max(0, Math.min(255, (int)(r * 255)));
-            int gi = Math.max(0, Math.min(255, (int)(g * 255)));
-            int bi = Math.max(0, Math.min(255, (int)(b * 255)));
-            return (ri << 16) | (gi << 8) | bi;
-        }
-
-        @Override
-        public boolean click(int mouseX, int mouseY, int x, int y) {
-            return false;
-        }
-
-        @Override
-        public void drag(int mouseX, int x) {}
-
-        @Override
-        public int getHeight() { return 45; }
-    }
-
-    public NameHiderCategoryScreen(Screen parent) {
-        super(Text.literal("Name Hider Settings"));
+    public MiningProfitCategoryScreen(Screen parent) {
+        super(Text.literal("Mining Profit Settings"));
         this.parent = parent;
     }
 
@@ -294,66 +246,48 @@ public class NameHiderCategoryScreen extends Screen {
         if ((windowX & 1) != 0) windowX--;
         if ((windowY & 1) != 0) windowY--;
 
-        
-        nameField = new TextFieldWidget(this.textRenderer, 0, 0, CONTROL_WIDTH - 20, TEXT_FIELD_HEIGHT, Text.literal("Name"));
-        nameField.setMaxLength(16);
-        nameField.setText(NameHider.getReplacementName());
-        nameField.setChangedListener(text -> {
-            NameHider.setReplacementName(text);
-        });
-        this.addSelectableChild(nameField);
-
         setupControls();
     }
 
     private void setupControls() {
         controls = new ArrayList<>();
 
-        controls.add(new ToggleControl("Enable Name Hider",
-            NameHider.isEnabled(), () -> {
-                NameHider.setEnabled(!NameHider.isEnabled());
-                ((ToggleControl) controls.get(0)).enabled = NameHider.isEnabled();
+        controls.add(new ToggleControl("Enable Profit Tracker",
+            ProfitTrackerHUD.isEnabled(), () -> {
+                ProfitTrackerHUD.setEnabled(!ProfitTrackerHUD.isEnabled());
+                ((ToggleControl) controls.get(0)).enabled = ProfitTrackerHUD.isEnabled();
             }));
 
-        controls.add(new TextFieldControl("Replacement Name", nameField));
-
-        controls.add(new ToggleControl("Use Gradient",
-            NameHider.isUsingGradient(), () -> {
-                NameHider.setUseGradient(!NameHider.isUsingGradient());
-                ((ToggleControl) controls.get(2)).enabled = NameHider.isUsingGradient();
+        controls.add(new SliderControl("Pristine Chance", 0, 100,
+            GemstoneTracker.getPristineChance(), "%", () -> {
+                SliderControl slider = (SliderControl) controls.get(1);
+                GemstoneTracker.setPristineChance(slider.value);
             }));
 
-        controls.add(new ColorSliderControl("Color 1", "Red", NameHider.getRed1(), () -> {
-            ColorSliderControl slider = (ColorSliderControl) controls.get(3);
-            NameHider.setColor1(slider.value, NameHider.getGreen1(), NameHider.getBlue1());
+        controls.add(new SelectorControl("Gem Tier", GemstoneTracker.getGemTierName(), () -> {
+            int currentTier = GemstoneTracker.getGemTier();
+            int nextTier = currentTier >= 3 ? 1 : currentTier + 1;
+            GemstoneTracker.setGemTier(nextTier);
+            ((SelectorControl) controls.get(2)).currentValue = GemstoneTracker.getGemTierName();
         }));
 
-        controls.add(new ColorSliderControl("Color 1", "Green", NameHider.getGreen1(), () -> {
-            ColorSliderControl slider = (ColorSliderControl) controls.get(4);
-            NameHider.setColor1(NameHider.getRed1(), slider.value, NameHider.getBlue1());
-        }));
+        controls.add(new ToggleControl("Include Rough Gemstones",
+            GemstoneTracker.isIncludingRough(), () -> {
+                GemstoneTracker.setIncludeRough(!GemstoneTracker.isIncludingRough());
+                ((ToggleControl) controls.get(3)).enabled = GemstoneTracker.isIncludingRough();
+            }));
 
-        controls.add(new ColorSliderControl("Color 1", "Blue", NameHider.getBlue1(), () -> {
-            ColorSliderControl slider = (ColorSliderControl) controls.get(5);
-            NameHider.setColor1(NameHider.getRed1(), NameHider.getGreen1(), slider.value);
-        }));
+        controls.add(new ToggleControl("Use NPC Prices Instead of Bazaar",
+            BazaarPriceManager.isUsingNPCPrices(), () -> {
+                BazaarPriceManager.setUseNPCPrices(!BazaarPriceManager.isUsingNPCPrices());
+                ((ToggleControl) controls.get(4)).enabled = BazaarPriceManager.isUsingNPCPrices();
+            }));
 
-        controls.add(new ColorSliderControl("Color 2", "Red", NameHider.getRed2(), () -> {
-            ColorSliderControl slider = (ColorSliderControl) controls.get(6);
-            NameHider.setColor2(slider.value, NameHider.getGreen2(), NameHider.getBlue2());
+        controls.add(new ButtonControl("Set HUD Position", () -> {
+            if (this.client != null) {
+                this.client.setScreen(new ProfitPositionScreen(this));
+            }
         }));
-
-        controls.add(new ColorSliderControl("Color 2", "Green", NameHider.getGreen2(), () -> {
-            ColorSliderControl slider = (ColorSliderControl) controls.get(7);
-            NameHider.setColor2(NameHider.getRed2(), slider.value, NameHider.getBlue2());
-        }));
-
-        controls.add(new ColorSliderControl("Color 2", "Blue", NameHider.getBlue2(), () -> {
-            ColorSliderControl slider = (ColorSliderControl) controls.get(8);
-            NameHider.setColor2(NameHider.getRed2(), NameHider.getGreen2(), slider.value);
-        }));
-
-        controls.add(new PreviewControl("Preview"));
     }
 
     @Override
@@ -370,8 +304,8 @@ public class NameHiderCategoryScreen extends Screen {
         context.fill(windowX + 2, windowY + 2, windowX + WINDOW_WIDTH - 2, windowY + WINDOW_HEIGHT - 2, 0x88000000);
 
         
-        context.drawBorder(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0xFFFF9944);
-        context.drawBorder(windowX + 1, windowY + 1, WINDOW_WIDTH - 2, WINDOW_HEIGHT - 2, 0x88FF9944);
+        context.drawBorder(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0xFF44FF44);
+        context.drawBorder(windowX + 1, windowY + 1, WINDOW_WIDTH - 2, WINDOW_HEIGHT - 2, 0x8844FF44);
 
 
         int titleWidth = this.textRenderer.getWidth(this.title);
@@ -396,24 +330,21 @@ public class NameHiderCategoryScreen extends Screen {
             hoveredControl = -1;
         }
 
-        int currentY = startY;
         for (int i = 0; i < controls.size(); i++) {
             Control control = controls.get(i);
-            int controlHeight = control.getHeight();
+            int controlY = startY + i * (CONTROL_HEIGHT + CONTROL_SPACING);
 
             boolean hovered = (draggingSlider == i) ||
                             (draggingSlider == -1 && mouseX >= startX && mouseX <= startX + CONTROL_WIDTH &&
-                             mouseY >= currentY && mouseY <= currentY + controlHeight);
+                             mouseY >= controlY && mouseY <= controlY + CONTROL_HEIGHT);
 
             if (hovered && draggingSlider == -1) hoveredControl = i;
 
-            control.render(context, startX, currentY, hovered, mouseX);
+            control.render(context, startX, controlY, hovered, mouseX);
 
             if (draggingSlider == i) {
                 control.drag(mouseX, startX);
             }
-
-            currentY += controlHeight + CONTROL_SPACING;
         }
     }
 
@@ -430,7 +361,7 @@ public class NameHiderCategoryScreen extends Screen {
         int buttonColor = backButtonHovered ? 0xCC3A3A3A : 0xCC2A2A2A;
         context.fill(buttonX, buttonY, buttonX + BACK_BUTTON_WIDTH, buttonY + BACK_BUTTON_HEIGHT, buttonColor);
         context.drawBorder(buttonX, buttonY, BACK_BUTTON_WIDTH, BACK_BUTTON_HEIGHT,
-                backButtonHovered ? 0xFFFF9944 : 0xFF404040);
+                backButtonHovered ? 0xFF44FF44 : 0xFF404040);
 
         String buttonText = "Back";
         int textWidth = this.textRenderer.getWidth(buttonText);
@@ -449,31 +380,18 @@ public class NameHiderCategoryScreen extends Screen {
             }
 
             int startX = windowX + (WINDOW_WIDTH - CONTROL_WIDTH) / 2;
-            int currentY = windowY + 50;
+            int startY = windowY + 50;
 
-            boolean clickedAnyControl = false;
             for (int i = 0; i < controls.size(); i++) {
                 Control control = controls.get(i);
-                int controlHeight = control.getHeight();
+                int controlY = startY + i * (CONTROL_HEIGHT + CONTROL_SPACING);
 
-                if (control.click((int) mouseX, (int) mouseY, startX, currentY)) {
-                    if (control instanceof ColorSliderControl) {
+                if (control.click((int) mouseX, (int) mouseY, startX, controlY)) {
+                    if (control instanceof SliderControl) {
                         draggingSlider = i;
-                    }
-                    clickedAnyControl = true;
-                    
-                    if (!(control instanceof TextFieldControl)) {
-                        nameField.setFocused(false);
                     }
                     return true;
                 }
-
-                currentY += controlHeight + CONTROL_SPACING;
-            }
-
-            
-            if (!clickedAnyControl) {
-                nameField.setFocused(false);
             }
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -485,22 +403,6 @@ public class NameHiderCategoryScreen extends Screen {
             draggingSlider = -1;
         }
         return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (nameField.keyPressed(keyCode, scanCode, modifiers)) {
-            return true;
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers);
-    }
-
-    @Override
-    public boolean charTyped(char chr, int modifiers) {
-        if (nameField.charTyped(chr, modifiers)) {
-            return true;
-        }
-        return super.charTyped(chr, modifiers);
     }
 
     @Override

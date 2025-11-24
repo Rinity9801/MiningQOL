@@ -8,9 +8,7 @@ import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Main screen for Mining QOL features using card-based design
- */
+
 public class MiningQOLMainScreen extends Screen {
     private static final int WINDOW_WIDTH = 650;
     private static final int WINDOW_HEIGHT = 360;
@@ -90,6 +88,21 @@ public class MiningQOLMainScreen extends Screen {
                 this.client.setScreen(new NameHiderCategoryScreen(this));
             }
         }));
+        configCards.add(new ConfigCard("CoalClick", "Automated mining assistant", 0xFF4444, () -> {
+            if (this.client != null) {
+                this.client.setScreen(new AutoClickerCategoryScreen(this));
+            }
+        }));
+        configCards.add(new ConfigCard("Command Keybinds", "Bind commands to keys", 0xFFAA44, () -> {
+            if (this.client != null) {
+                this.client.setScreen(new CommandKeybindCategoryScreen(this));
+            }
+        }));
+        configCards.add(new ConfigCard("Misc", "Miscellaneous features", 0x88AAFF, () -> {
+            if (this.client != null) {
+                this.client.setScreen(new MiscCategoryScreen(this));
+            }
+        }));
     }
 
     @Override
@@ -101,19 +114,19 @@ public class MiningQOLMainScreen extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         this.renderBackground(context, mouseX, mouseY, delta);
 
-        // Main window background
+        
         context.fill(windowX, windowY, windowX + WINDOW_WIDTH, windowY + WINDOW_HEIGHT, 0xCC000000);
         context.fill(windowX + 2, windowY + 2, windowX + WINDOW_WIDTH - 2, windowY + WINDOW_HEIGHT - 2, 0x88000000);
 
-        // Borders
+        
         context.drawBorder(windowX, windowY, WINDOW_WIDTH, WINDOW_HEIGHT, 0xFF4488FF);
         context.drawBorder(windowX + 1, windowY + 1, WINDOW_WIDTH - 2, WINDOW_HEIGHT - 2, 0x884488FF);
 
-        // Title
+
         int titleWidth = this.textRenderer.getWidth(this.title);
         int titleX = windowX + (WINDOW_WIDTH - titleWidth) / 2;
         int titleY = windowY + 15;
-        context.drawTextWithShadow(this.textRenderer, this.title, titleX, titleY, 0xFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, this.title, titleX, titleY, 0xFFFFFFFF);
 
         drawCloseButton(context, mouseX, mouseY);
         drawCards(context, mouseX, mouseY);
@@ -140,7 +153,7 @@ public class MiningQOLMainScreen extends Screen {
         int xWidth = this.textRenderer.getWidth(xText);
         int xX = buttonX + (CLOSE_BUTTON_SIZE - xWidth) / 2;
         int xY = buttonY + (CLOSE_BUTTON_SIZE - this.textRenderer.fontHeight) / 2;
-        context.drawTextWithShadow(this.textRenderer, xText, xX, xY, closeButtonHovered ? 0xFFFFFF : 0xC8C8C8);
+        context.drawTextWithShadow(this.textRenderer, xText, xX, xY, closeButtonHovered ? 0xFFFFFFFF : 0xFFC8C8C8);
     }
 
     private void drawCards(DrawContext context, int mouseX, int mouseY) {
@@ -186,13 +199,13 @@ public class MiningQOLMainScreen extends Screen {
         int borderColor = hovered ? accentColor : 0xFF404040;
         context.drawBorder(x, y, CARD_WIDTH, CARD_HEIGHT, borderColor);
 
-        // Title
+
         int titleWidth = this.textRenderer.getWidth(card.title);
         int titleX = x + (CARD_WIDTH - titleWidth) / 2;
         int titleY = y + 18;
-        context.drawTextWithShadow(this.textRenderer, card.title, titleX, titleY, 0xFFFFFF);
+        context.drawTextWithShadow(this.textRenderer, card.title, titleX, titleY, 0xFFFFFFFF);
 
-        // Description
+        
         List<String> lines = wrapText(card.description, CARD_WIDTH - 16);
         int descColor = hovered ? accentColor : 0xFFB4B4B4;
 

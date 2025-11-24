@@ -12,7 +12,7 @@ public class ProfitDebugger {
         client.player.sendMessage(Text.literal("§d[Profit Tracker] §eCalculation Details:"), false);
         client.player.sendMessage(Text.literal("§8" + "=".repeat(50)), false);
 
-        // Session info
+        
         long sessionTime = GemstoneTracker.getSessionTime();
         double hours = sessionTime / (1000.0 * 60.0 * 60.0);
         client.player.sendMessage(Text.literal("§6Session Info:"), false);
@@ -20,7 +20,7 @@ public class ProfitDebugger {
         client.player.sendMessage(Text.literal("  §7Hours: §f" + String.format("%.4f", hours)), false);
         client.player.sendMessage(Text.literal("  §7Total Value: §6" + GemstoneTracker.formatCoins(GemstoneTracker.getTotalValue())), false);
 
-        // Base calculation
+        
         double baseCoinsPerHour = hours > 0 ? GemstoneTracker.getTotalValue() / hours : 0;
         client.player.sendMessage(Text.literal(""), false);
         client.player.sendMessage(Text.literal("§aBase Coins/hr Calculation:"), false);
@@ -28,7 +28,7 @@ public class ProfitDebugger {
         client.player.sendMessage(Text.literal("  §7= §f" + GemstoneTracker.formatCoins(GemstoneTracker.getTotalValue()) + " / " + String.format("%.4f", hours)), false);
         client.player.sendMessage(Text.literal("  §7= §a" + GemstoneTracker.formatCoins(baseCoinsPerHour)), false);
 
-        // Rough gems calculation
+        
         if (GemstoneTracker.isIncludingRough()) {
             int pristine = GemstoneTracker.getPristineChance();
             double roughMultiplier = (1 - (pristine / 100.0)) / (pristine / 100.0);
@@ -45,7 +45,7 @@ public class ProfitDebugger {
             client.player.sendMessage(Text.literal("  §7= §a" + GemstoneTracker.formatCoins(totalWithRough)), false);
         }
 
-        // Flawless calculation
+        
         double flawlessPrice = BazaarPriceManager.getGemPrice("RUBY", 3);
         double flawlessPerHour = GemstoneTracker.getFlawlessPerHour();
         client.player.sendMessage(Text.literal(""), false);
@@ -55,7 +55,7 @@ public class ProfitDebugger {
         client.player.sendMessage(Text.literal("  §7= §f" + GemstoneTracker.formatCoins(GemstoneTracker.getCoinsPerHour()) + " / " + GemstoneTracker.formatCoins(flawlessPrice)), false);
         client.player.sendMessage(Text.literal("  §7= §b" + String.format("%.1f", flawlessPerHour) + " fl/hr"), false);
 
-        // Price source
+        
         client.player.sendMessage(Text.literal(""), false);
         client.player.sendMessage(Text.literal("§ePrice Source: §f" + (BazaarPriceManager.isUsingNPCPrices() ? "NPC Prices" : "Bazaar Prices")), false);
         client.player.sendMessage(Text.literal("§8" + "=".repeat(50)), false);

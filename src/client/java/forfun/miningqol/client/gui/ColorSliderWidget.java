@@ -47,12 +47,12 @@ public class ColorSliderWidget extends SliderWidget {
     public void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
         super.renderWidget(context, mouseX, mouseY, delta);
 
-        // Draw color preview on the right side of slider
+        
         int previewSize = this.height - 4;
         int previewX = this.getX() + this.width - previewSize - 2;
         int previewY = this.getY() + 2;
 
-        // Create color with current value
+        
         int r = (color >> 16) & 0xFF;
         int g = (color >> 8) & 0xFF;
         int b = color & 0xFF;

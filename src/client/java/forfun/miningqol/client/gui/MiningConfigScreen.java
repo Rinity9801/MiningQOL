@@ -117,7 +117,7 @@ public class MiningConfigScreen extends Screen {
             .dimensions(buttonX, startY + BUTTON_SPACING * 8, BUTTON_WIDTH, BUTTON_HEIGHT)
             .build());
 
-        // Efficient Miner Settings
+        
         this.addDrawableChild(ButtonWidget.builder(
             Text.literal(EfficientMinerOverlay.isEnabled() ? "§cMiner Overlay: §aON" : "§cMiner Overlay: §cOFF"),
             button -> {
@@ -136,7 +136,7 @@ public class MiningConfigScreen extends Screen {
             .dimensions(buttonX, startY + BUTTON_SPACING * 10, BUTTON_WIDTH, BUTTON_HEIGHT)
             .build());
 
-        // Block Outline Settings
+        
         this.addDrawableChild(ButtonWidget.builder(
             Text.literal(BlockOutlineRenderer.isEnabled() ? "§3Block Outline: §aON" : "§3Block Outline: §cOFF"),
             button -> {
@@ -163,7 +163,7 @@ public class MiningConfigScreen extends Screen {
             .dimensions(buttonX, startY + BUTTON_SPACING * 12, BUTTON_WIDTH, BUTTON_HEIGHT)
             .build());
 
-        // Color sliders
+        
         this.addDrawableChild(new ColorSliderWidget(
             buttonX, startY + BUTTON_SPACING * 13, BUTTON_WIDTH, BUTTON_HEIGHT,
             "§cRed", BlockOutlineRenderer.getRed(), 0xFF0000,

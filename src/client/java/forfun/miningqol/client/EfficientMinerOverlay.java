@@ -104,7 +104,7 @@ public class EfficientMinerOverlay {
             double maxY = block.y + 1.002 - cameraY;
             double maxZ = block.z + 1.001 - cameraZ;
 
-            // Halve alpha to compensate for DebugRenderer double-drawing
+            
             DebugRenderer.drawBox(matrices, immediate,
                 minX, minY, minZ,
                 maxX, maxY, maxZ,
@@ -130,14 +130,14 @@ public class EfficientMinerOverlay {
             return false;
         }
 
-        // Check all 6 adjacent blocks for air
+        
         BlockPos[] adjacent = {
-            pos.up(),    // above
-            pos.down(),  // below
-            pos.east(),  // east
-            pos.west(),  // west
-            pos.north(), // north
-            pos.south()  // south
+            pos.up(),    
+            pos.down(),  
+            pos.east(),  
+            pos.west(),  
+            pos.north(), 
+            pos.south()  
         };
 
         for (BlockPos adjPos : adjacent) {
@@ -173,28 +173,28 @@ public class EfficientMinerOverlay {
         if (priority >= 10) priority = 1;
 
         if (useOldHeatmap) {
-            // Old heatmap with 8 distinct colors
+            
             return switch (priority) {
-                case 1 -> new float[]{20/255f, 90/255f, 38/255f};    // dark green
-                case 2 -> new float[]{42/255f, 230/255f, 92/255f};   // bright green
-                case 3 -> new float[]{180/255f, 252/255f, 69/255f};  // yellow-green
-                case 4 -> new float[]{180/255f, 177/255f, 31/255f};  // yellow
-                case 5 -> new float[]{180/255f, 31/255f, 45/255f};   // red
-                case 6 -> new float[]{212/255f, 57/255f, 229/255f};  // pink
-                case 7 -> new float[]{89/255f, 33/255f, 95/255f};    // purple
-                case 8 -> new float[]{62/255f, 56/255f, 216/255f};   // blue
+                case 1 -> new float[]{20/255f, 90/255f, 38/255f};    
+                case 2 -> new float[]{42/255f, 230/255f, 92/255f};   
+                case 3 -> new float[]{180/255f, 252/255f, 69/255f};  
+                case 4 -> new float[]{180/255f, 177/255f, 31/255f};  
+                case 5 -> new float[]{180/255f, 31/255f, 45/255f};   
+                case 6 -> new float[]{212/255f, 57/255f, 229/255f};  
+                case 7 -> new float[]{89/255f, 33/255f, 95/255f};    
+                case 8 -> new float[]{62/255f, 56/255f, 216/255f};   
                 default -> new float[]{0f, 0f, 0f};
             };
         } else {
-            // New simplified heatmap
+            
             if (priority < 3) {
-                return new float[]{20/255f, 90/255f, 38/255f};      // green
+                return new float[]{20/255f, 90/255f, 38/255f};      
             } else if (priority < 5) {
-                return new float[]{145/255f, 23/255f, 23/255f};     // red
+                return new float[]{145/255f, 23/255f, 23/255f};     
             } else if (priority < 7) {
-                return new float[]{104/255f, 210/255f, 249/255f};   // sky blue
+                return new float[]{104/255f, 210/255f, 249/255f};   
             } else {
-                return new float[]{49/255f, 41/255f, 165/255f};     // dark blue
+                return new float[]{49/255f, 41/255f, 165/255f};     
             }
         }
     }

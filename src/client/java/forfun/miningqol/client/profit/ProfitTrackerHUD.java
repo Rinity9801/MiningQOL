@@ -56,10 +56,10 @@ public class ProfitTrackerHUD {
         }
 
         int y = hudY;
-        context.drawTextWithShadow(textRenderer, uptime, hudX, y, 0xFFFFFF);
+        context.drawTextWithShadow(textRenderer, uptime, hudX, y, 0xFFFFFFFF);
         y += 10;
-        context.drawTextWithShadow(textRenderer, coinsPerHour, hudX, y, 0xFFFFFF);
+        context.drawTextWithShadow(textRenderer, coinsPerHour, hudX, y, 0xFFFFFFFF);
         y += 10;
-        context.drawTextWithShadow(textRenderer, flawlessPerHour, hudX, y, 0xFFFFFF);
+        context.drawTextWithShadow(textRenderer, flawlessPerHour, hudX, y, 0xFFFFFFFF);
     }
 }
