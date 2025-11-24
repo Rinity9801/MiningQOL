@@ -11,6 +11,8 @@ import xyz.meowing.vexel.core.VexelScreen
 import xyz.meowing.vexel.components.core.Rectangle
 import xyz.meowing.vexel.components.core.Text as VText
 import xyz.meowing.vexel.elements.Button
+import xyz.meowing.vexel.elements.ColorPicker
+import xyz.meowing.vexel.elements.TextInput
 import xyz.meowing.vexel.components.base.Pos
 import xyz.meowing.vexel.components.base.Size
 import xyz.meowing.vexel.animations.*
@@ -18,17 +20,9 @@ import xyz.meowing.vexel.animations.*
 class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("Name Hider Settings") {
     private lateinit var overlay: Rectangle
     private lateinit var mainPanel: Rectangle
-    private lateinit var nameField: TextFieldWidget
     private val mc = MinecraftClient.getInstance()
 
     override fun afterInitialization() {
-        // Initialize text field
-        nameField = TextFieldWidget(mc.textRenderer, 0, 0, 460, 20, Text.literal("Name"))
-        nameField.setMaxLength(16)
-        nameField.text = NameHider.getReplacementName()
-        nameField.setChangedListener { text ->
-            NameHider.setReplacementName(text)
-        }
 
         // Semi-transparent dark overlay background
         overlay = Rectangle(
@@ -49,7 +43,7 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
             borderRadius = 16f,
             borderThickness = 1f
         )
-            .setSizing(550f, Size.Pixels, 550f, Size.Pixels)
+            .setSizing(550f, Size.Pixels, 620f, Size.Pixels)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -62,7 +56,7 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
         mainPanel.xPositionConstraint = Pos.ScreenPixels
         mainPanel.yPositionConstraint = Pos.ScreenPixels
         mainPanel.xConstraint = (mainPanel.screenWidth - 550f) / 2f
-        mainPanel.yConstraint = (mainPanel.screenHeight - 550f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 620f) / 2f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
 
         // Title bar background
@@ -107,13 +101,15 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
             200L
         )
 
-        // Replacement name text field
-        createTextFieldCard(
+        // Replacement name text input
+        createTextInputCard(
             "Replacement Name",
+            NameHider.getReplacementName(),
+            { text -> NameHider.setReplacementName(text) },
             35f,
             180f,
             480f,
-            65f,
+            75f,
             mainPanel,
             300L
         )
@@ -125,30 +121,42 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
             { NameHider.isUsingGradient() },
             { NameHider.setUseGradient(!NameHider.isUsingGradient()) },
             35f,
-            260f,
+            270f,
             480f,
             65f,
             mainPanel,
             400L
         )
 
-        // Preview card
-        createPreviewCard(
+        // Color 1 picker
+        createColorPickerCard(
+            "Color 1",
+            (NameHider.getRed1() * 255).toInt(),
+            (NameHider.getGreen1() * 255).toInt(),
+            (NameHider.getBlue1() * 255).toInt(),
+            { r, g, b -> NameHider.setColor1(r / 255f, g / 255f, b / 255f) },
             35f,
-            340f,
+            350f,
             480f,
-            80f,
+            75f,
             mainPanel,
             500L
         )
 
-        // Note about color settings
-        VText("Color sliders not yet implemented - use Java screen for now", 0xFF666666.toInt(), 11f, false)
-            .setPositioning(0f, Pos.ParentCenter, 0f, Pos.ParentPixels)
-            .alignBottom()
-            .setOffset(0f, -75f)
-            .childOf(mainPanel)
-            .fadeIn(900, EasingType.EASE_OUT)
+        // Color 2 picker (for gradient)
+        createColorPickerCard(
+            "Color 2 (Gradient)",
+            (NameHider.getRed2() * 255).toInt(),
+            (NameHider.getGreen2() * 255).toInt(),
+            (NameHider.getBlue2() * 255).toInt(),
+            { r, g, b -> NameHider.setColor2(r / 255f, g / 255f, b / 255f) },
+            35f,
+            440f,
+            480f,
+            75f,
+            mainPanel,
+            600L
+        )
 
         // Back button at bottom
         Button("Back", 0xFFFFFFFF.toInt(), fontSize = 15f)
@@ -241,8 +249,10 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
         }.start()
     }
 
-    private fun createTextFieldCard(
+    private fun createTextInputCard(
         label: String,
+        initialText: String,
+        onTextChange: (String) -> Unit,
         x: Float,
         y: Float,
         width: Float,
@@ -264,10 +274,43 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
                 shadowBlur = 15f
                 shadowSpread = 1f
                 shadowColor = 0x40000000.toInt()
+            }
+
+        // Accent bar
+        Rectangle(
+            backgroundColor = 0xFFFF9944.toInt(),
+            borderRadius = 12f
+        )
+            .setSizing(5f, Size.Pixels, 100f, Size.ParentPerc)
+            .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentPixels)
+            .ignoreMouseEvents()
+            .childOf(card)
+            .apply {
+                borderRadiusTopRight = 0f
+                borderRadiusBottomRight = 0f
             }
 
         VText(label, 0xFFFFFFFF.toInt(), 16f, true)
-            .setPositioning(15f, Pos.ParentPixels, 12f, Pos.ParentPixels)
+            .setPositioning(20f, Pos.ParentPixels, 12f, Pos.ParentPixels)
+            .childOf(card)
+
+        TextInput(
+            initialValue = initialText,
+            placeholder = "Enter name...",
+            fontSize = 14f,
+            textColor = 0xFFFFFFFF.toInt(),
+            backgroundColor = 0xFF1A1A1A.toInt(),
+            borderColor = 0xFF2A2A2A.toInt(),
+            borderRadius = 6f,
+            borderThickness = 1f,
+            padding = floatArrayOf(8f, 6f, 8f, 6f)
+        )
+            .setSizing(width - 40f, Size.Pixels, 30f, Size.Pixels)
+            .setPositioning(20f, Pos.ParentPixels, 37f, Pos.ParentPixels)
+            .onValueChange { newValue ->
+                val textValue = (newValue as? String) ?: initialText
+                onTextChange(textValue)
+            }
             .childOf(card)
 
         card.visible = false
@@ -279,7 +322,12 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
         }.start()
     }
 
-    private fun createPreviewCard(
+    private fun createColorPickerCard(
+        label: String,
+        initialR: Int,
+        initialG: Int,
+        initialB: Int,
+        onColorChange: (Int, Int, Int) -> Unit,
         x: Float,
         y: Float,
         width: Float,
@@ -303,13 +351,38 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
                 shadowColor = 0x40000000.toInt()
             }
 
-        VText("Preview", 0xFFFFFFFF.toInt(), 16f, true)
-            .setPositioning(15f, Pos.ParentPixels, 12f, Pos.ParentPixels)
+        // Accent bar
+        Rectangle(
+            backgroundColor = 0xFFFF9944.toInt(),
+            borderRadius = 12f
+        )
+            .setSizing(5f, Size.Pixels, 100f, Size.ParentPerc)
+            .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentPixels)
+            .ignoreMouseEvents()
+            .childOf(card)
+            .apply {
+                borderRadiusTopRight = 0f
+                borderRadiusBottomRight = 0f
+            }
+
+        VText(label, 0xFFFFFFFF.toInt(), 16f, true)
+            .setPositioning(20f, Pos.ParentPixels, 12f, Pos.ParentPixels)
             .childOf(card)
 
-        // Note: Preview text rendering would need custom implementation
-        VText("(Preview rendering not yet implemented)", 0xFF888888.toInt(), 12f, false)
-            .setPositioning(0f, Pos.ParentCenter, 45f, Pos.ParentPixels)
+        ColorPicker(
+            initialColor = java.awt.Color(initialR, initialG, initialB),
+            backgroundColor = 0xFF1A1A1A.toInt(),
+            borderColor = 0xFF2A2A2A.toInt(),
+            borderRadius = 6f,
+            borderThickness = 1f,
+            padding = floatArrayOf(4f, 4f, 4f, 4f)
+        )
+            .setSizing(width - 40f, Size.Pixels, 35f, Size.Pixels)
+            .setPositioning(20f, Pos.ParentPixels, 32f, Pos.ParentPixels)
+            .onValueChange { newValue ->
+                val color = (newValue as? java.awt.Color) ?: java.awt.Color(initialR, initialG, initialB)
+                onColorChange(color.red, color.green, color.blue)
+            }
             .childOf(card)
 
         card.visible = false
@@ -319,36 +392,6 @@ class NameHiderCategoryScreen(private val parentScreen: Screen) : VexelScreen("N
                 card.fadeIn(400, EasingType.EASE_OUT)
             }
         }.start()
-    }
-
-    override fun render(context: net.minecraft.client.gui.DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        super.render(context, mouseX, mouseY, delta)
-
-        // Render text field on top
-        val panelX = (width - 550f) / 2f
-        val panelY = (height - 550f) / 2f
-        nameField.setPosition((panelX + 50).toInt(), (panelY + 215).toInt())
-        nameField.setWidth(460)
-        nameField.render(context, mouseX, mouseY, delta)
-    }
-
-    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
-        nameField.mouseClicked(mouseX, mouseY, button)
-        return super.mouseClicked(mouseX, mouseY, button)
-    }
-
-    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
-        if (nameField.keyPressed(keyCode, scanCode, modifiers)) {
-            return true
-        }
-        return super.keyPressed(keyCode, scanCode, modifiers)
-    }
-
-    override fun charTyped(chr: Char, modifiers: Int): Boolean {
-        if (nameField.charTyped(chr, modifiers)) {
-            return true
-        }
-        return super.charTyped(chr, modifiers)
     }
 
     private fun closeWithAnimation() {

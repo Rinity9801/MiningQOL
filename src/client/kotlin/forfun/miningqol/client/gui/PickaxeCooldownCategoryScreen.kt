@@ -9,6 +9,7 @@ import xyz.meowing.vexel.core.VexelScreen
 import xyz.meowing.vexel.components.core.Rectangle
 import xyz.meowing.vexel.components.core.Text
 import xyz.meowing.vexel.elements.Button
+import xyz.meowing.vexel.elements.Slider
 import xyz.meowing.vexel.components.base.Pos
 import xyz.meowing.vexel.components.base.Size
 import xyz.meowing.vexel.animations.*
@@ -37,7 +38,7 @@ class PickaxeCooldownCategoryScreen(private val parentScreen: Screen) : VexelScr
             borderRadius = 16f,
             borderThickness = 1f
         )
-            .setSizing(550f, Size.Pixels, 450f, Size.Pixels)
+            .setSizing(550f, Size.Pixels, 500f, Size.Pixels)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -50,7 +51,7 @@ class PickaxeCooldownCategoryScreen(private val parentScreen: Screen) : VexelScr
         mainPanel.xPositionConstraint = Pos.ScreenPixels
         mainPanel.yPositionConstraint = Pos.ScreenPixels
         mainPanel.xConstraint = (mainPanel.screenWidth - 550f) / 2f
-        mainPanel.yConstraint = (mainPanel.screenHeight - 450f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 500f) / 2f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
 
         // Title bar background
@@ -113,10 +114,26 @@ class PickaxeCooldownCategoryScreen(private val parentScreen: Screen) : VexelScr
             )
         }
 
+        // Title threshold slider
+        createSliderCard(
+            "Title Threshold",
+            0f,
+            15f,
+            PickaxeCooldownHUD.getTitleThreshold().toFloat(),
+            { value -> PickaxeCooldownHUD.setTitleThreshold(value.toInt()) },
+            "s",
+            (mainPanel.width - toggleWidth) / 2f,
+            275f,
+            toggleWidth,
+            75f,
+            mainPanel,
+            400L
+        )
+
         // Position button
         Button("Set HUD Position", 0xFFFFFFFF.toInt(), fontSize = 16f)
             .setSizing(480f, Size.Pixels, 50f, Size.Pixels)
-            .setPositioning((mainPanel.width - 480f) / 2f, Pos.ParentPixels, 270f, Pos.ParentPixels)
+            .setPositioning((mainPanel.width - 480f) / 2f, Pos.ParentPixels, 370f, Pos.ParentPixels)
             .backgroundColor(0xFF2A2A2A.toInt())
             .borderColor(0xFF4A90E2.toInt())
             .borderRadius(12f)
@@ -137,14 +154,6 @@ class PickaxeCooldownCategoryScreen(private val parentScreen: Screen) : VexelScr
                     }
                 }.start()
             }
-
-        // Note about slider
-        Text("Note: Title threshold slider not yet implemented - use Java screen", 0xFF666666.toInt(), 11f, false)
-            .setPositioning(0f, Pos.ParentCenter, 0f, Pos.ParentPixels)
-            .alignBottom()
-            .setOffset(0f, -75f)
-            .childOf(mainPanel)
-            .fadeIn(900, EasingType.EASE_OUT)
 
         // Back button at bottom
         Button("Back", 0xFFFFFFFF.toInt(), fontSize = 15f)
@@ -227,6 +236,91 @@ class PickaxeCooldownCategoryScreen(private val parentScreen: Screen) : VexelScr
             accentBar.backgroundColor = if (newEnabled) accentColor else 0xFF303030.toInt()
             true
         }
+
+        card.visible = false
+        Thread {
+            Thread.sleep(animDelay)
+            MinecraftClient.getInstance().execute {
+                card.fadeIn(400, EasingType.EASE_OUT)
+            }
+        }.start()
+    }
+
+    private fun createSliderCard(
+        label: String,
+        min: Float,
+        max: Float,
+        initialValue: Float,
+        onValueChange: (Float) -> Unit,
+        suffix: String,
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        parent: Rectangle,
+        animDelay: Long
+    ) {
+        val card = Rectangle(
+            backgroundColor = 0xF01E1E1E.toInt(),
+            borderColor = 0xFF2A2A2A.toInt(),
+            borderRadius = 12f,
+            borderThickness = 1f
+        )
+            .setSizing(width, Size.Pixels, height, Size.Pixels)
+            .setPositioning(x, Pos.ParentPixels, y, Pos.ParentPixels)
+            .childOf(parent)
+            .apply {
+                dropShadow = true
+                shadowBlur = 15f
+                shadowSpread = 1f
+                shadowColor = 0x40000000.toInt()
+            }
+
+        // Accent bar
+        Rectangle(
+            backgroundColor = 0xFF4A90E2.toInt(),
+            borderRadius = 12f
+        )
+            .setSizing(5f, Size.Pixels, 100f, Size.ParentPerc)
+            .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentPixels)
+            .ignoreMouseEvents()
+            .childOf(card)
+            .apply {
+                borderRadiusTopRight = 0f
+                borderRadiusBottomRight = 0f
+            }
+
+        Text(label, 0xFFFFFFFF.toInt(), 16f, true)
+            .setPositioning(20f, Pos.ParentPixels, 12f, Pos.ParentPixels)
+            .childOf(card)
+
+        val valueText = Text("${initialValue.toInt()}$suffix", 0xFF4A90E2.toInt(), 14f, true)
+            .setPositioning(0f, Pos.ParentPixels, 12f, Pos.ParentPixels)
+            .alignRight()
+            .setOffset(-20f, 0f)
+            .childOf(card)
+
+        Slider(
+            value = initialValue,
+            minValue = min,
+            maxValue = max,
+            trackColor = 0xFF1A1A1A.toInt(),
+            trackFillColor = 0xFF4A90E2.toInt(),
+            thumbColor = 0xFF4A90E2.toInt(),
+            trackHeight = 4f,
+            thumbWidth = 16f,
+            thumbHeight = 16f,
+            thumbRadius = 8f,
+            trackRadius = 2f
+        )
+            .setSizing(width - 40f, Size.Pixels, 25f, Size.Pixels)
+            .setPositioning(20f, Pos.ParentPixels, 40f, Pos.ParentPixels)
+            .onValueChange { newValue ->
+                val floatValue = (newValue as? Float) ?: initialValue
+                onValueChange(floatValue)
+                valueText.text = "${floatValue.toInt()}$suffix"
+            }
+            .childOf(card)
 
         card.visible = false
         Thread {
