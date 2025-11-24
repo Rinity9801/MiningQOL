@@ -1,0 +1,173 @@
+---- Minecraft Crash Report ----
+// Would you like a cupcake?
+
+Time: 2025-10-28 19:53:26
+Description: Bootstrap
+
+java.lang.BootstrapMethodError: java.lang.RuntimeException: Mixin transformation of net.minecraft.entity.player.PlayerInventory failed
+	at knot//net.minecraft.screen.ScreenHandlerType.<clinit>(ScreenHandlerType.java:16)
+	at knot//net.minecraft.registry.Registries.method_47461(Registries.java:172)
+	at knot//net.minecraft.registry.Registries.method_47485(Registries.java:269)
+	at knot//net.minecraft.registry.Registries.method_47482(Registries.java:284)
+	at java.base/java.util.LinkedHashMap.forEach(LinkedHashMap.java:987)
+	at knot//net.minecraft.registry.Registries.init(Registries.java:282)
+	at knot//net.minecraft.Bootstrap.redirect$zol000$fabric-registry-sync-v0$initialize(Bootstrap.java:561)
+	at knot//net.minecraft.Bootstrap.initialize(Bootstrap.java:68)
+	at knot//net.minecraft.client.main.Main.main(Main.java:141)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:480)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:74)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+Caused by: java.lang.RuntimeException: Mixin transformation of net.minecraft.entity.player.PlayerInventory failed
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.getPostMixinClassByteArray(KnotClassDelegate.java:427)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.tryLoadClass(KnotClassDelegate.java:323)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.loadClass(KnotClassDelegate.java:218)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassLoader.loadClass(KnotClassLoader.java:119)
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490)
+	... 13 more
+Caused by: org.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError: An unexpected critical error was encountered
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:392)
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClass(MixinTransformer.java:234)
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClassBytes(MixinTransformer.java:202)
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.getPostMixinClassByteArray(KnotClassDelegate.java:422)
+	... 17 more
+Caused by: org.spongepowered.asm.mixin.throwables.MixinApplyError: Mixin [miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol] from phase [DEFAULT] in config [miningqol.client.mixins.json] FAILED during APPLY
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.handleMixinError(MixinProcessor.java:638)
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.handleMixinApplyError(MixinProcessor.java:589)
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:379)
+	... 20 more
+Caused by: org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException: getSelectedSlot()I in miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol cannot overwrite method in net.minecraft.entity.player.PlayerInventory because @Overwrite is required by the parent configuration [ -> ACCESSOR Applicator Phase -> miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol -> Apply Accessors]
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.mergeMethod(MixinApplicatorStandard.java:501)
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.applyAccessors(MixinApplicatorStandard.java:764)
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.applyMixin(MixinApplicatorStandard.java:320)
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.apply(MixinApplicatorStandard.java:246)
+	at org.spongepowered.asm.mixin.transformer.TargetClassContext.apply(TargetClassContext.java:437)
+	at org.spongepowered.asm.mixin.transformer.TargetClassContext.applyMixins(TargetClassContext.java:418)
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:363)
+	... 20 more
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- Head --
+Thread: main
+Stacktrace:
+	at knot//net.minecraft.screen.ScreenHandlerType.<clinit>(ScreenHandlerType.java:16)
+	at knot//net.minecraft.registry.Registries.method_47461(Registries.java:172)
+	at knot//net.minecraft.registry.Registries.method_47485(Registries.java:269)
+	at knot//net.minecraft.registry.Registries.method_47482(Registries.java:284)
+	at java.base/java.util.LinkedHashMap.forEach(LinkedHashMap.java:987)
+	at knot//net.minecraft.registry.Registries.init(Registries.java:282)
+	at knot//net.minecraft.Bootstrap.redirect$zol000$fabric-registry-sync-v0$initialize(Bootstrap.java:561)
+	at knot//net.minecraft.Bootstrap.initialize(Bootstrap.java:68)
+
+-- Initialization --
+Details:
+	Modules: 
+Stacktrace:
+	at knot//net.minecraft.client.main.Main.main(Main.java:141)
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:480)
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:74)
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23)
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86)
+
+-- System Details --
+Details:
+	Minecraft Version: 1.21.8
+	Minecraft Version ID: 1.21.8
+	Operating System: Mac OS X (x86_64) version 15.3.2
+	Java Version: 24.0.1, Azul Systems, Inc.
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Azul Systems, Inc.
+	Memory: 231020464 bytes (220 MiB) / 423624704 bytes (404 MiB) up to 6442450944 bytes (6144 MiB)
+	CPUs: 14
+	Processor Vendor: Apple Inc.
+	Processor Name: Apple M4 Pro
+	Identifier: Apple Inc. Family 0x1b588bb3 Model 0 Stepping 0
+	Microarchitecture: ARM64 SoC: Firestorm + Icestorm
+	Frequency (GHz): 0.00
+	Number of physical packages: 1
+	Number of physical CPUs: 14
+	Number of logical CPUs: 14
+	Graphics card #0 name: Apple M4 Pro
+	Graphics card #0 vendor: Apple (0x106b)
+	Graphics card #0 VRAM (MiB): 0.00
+	Graphics card #0 deviceId: unknown
+	Graphics card #0 versionInfo: unknown
+	Memory slot #0 capacity (MiB): 0.00
+	Memory slot #0 clockSpeed (GHz): 0.00
+	Memory slot #0 type: unknown
+	Virtual memory max (MiB): 28672.00
+	Virtual memory used (MiB): 20275.09
+	Swap memory total (MiB): 4096.00
+	Swap memory used (MiB): 3042.81
+	Space in storage for jna.tmpdir (MiB): <path not set>
+	Space in storage for org.lwjgl.system.SharedLibraryExtractPath (MiB): <path not set>
+	Space in storage for io.netty.native.workdir (MiB): <path not set>
+	Space in storage for java.io.tmpdir (MiB): available: 432145.19, total: 948584.19
+	Space in storage for workdir (MiB): available: 432145.16, total: 948584.19
+	JVM Flags: 0 total; 
+	Fabric Mods: 
+		fabric-api: Fabric API 0.130.0+1.21.8
+		fabric-api-base: Fabric API Base 0.4.64+9ec45cd82c
+		fabric-api-lookup-api-v1: Fabric API Lookup API (v1) 1.6.100+946bf4c32c
+		fabric-biome-api-v1: Fabric Biome API (v1) 16.0.11+946bf4c32c
+		fabric-block-api-v1: Fabric Block API (v1) 1.1.3+946bf4c32c
+		fabric-block-view-api-v2: Fabric BlockView API (v2) 1.0.31+946bf4c32c
+		fabric-client-gametest-api-v1: Fabric Client Game Test API (v1) 4.2.5+8a98c3fc2c
+		fabric-command-api-v2: Fabric Command API (v2) 2.3.0+52fff9ec2c
+		fabric-content-registries-v0: Fabric Content Registries (v0) 10.0.18+946bf4c32c
+		fabric-convention-tags-v1: Fabric Convention Tags 2.1.40+7f945d5b2c
+		fabric-convention-tags-v2: Fabric Convention Tags (v2) 2.15.5+eb5df52f2c
+		fabric-crash-report-info-v1: Fabric Crash Report Info (v1) 0.3.15+946bf4c32c
+		fabric-data-attachment-api-v1: Fabric Data Attachment API (v1) 1.8.10+946bf4c32c
+		fabric-data-generation-api-v1: Fabric Data Generation API (v1) 23.2.5+9fc9c3b12c
+		fabric-dimensions-v1: Fabric Dimensions API (v1) 4.0.19+946bf4c32c
+		fabric-entity-events-v1: Fabric Entity Events (v1) 2.1.1+c9e472732c
+		fabric-events-interaction-v0: Fabric Events Interaction (v0) 4.0.23+946bf4c32c
+		fabric-game-rule-api-v1: Fabric Game Rule API (v1) 1.0.73+c64c9c5b2c
+		fabric-gametest-api-v1: Fabric Game Test API (v1) 3.1.9+39ce47f52c
+		fabric-item-api-v1: Fabric Item API (v1) 11.4.3+946bf4c32c
+		fabric-item-group-api-v1: Fabric Item Group API (v1) 4.2.13+946bf4c32c
+		fabric-key-binding-api-v1: Fabric Key Binding API (v1) 1.0.65+946bf4c32c
+		fabric-lifecycle-events-v1: Fabric Lifecycle Events (v1) 2.6.3+db4dfd852c
+		fabric-loot-api-v2: Fabric Loot API (v2) 3.0.55+3f89f5a52c
+		fabric-loot-api-v3: Fabric Loot API (v3) 2.0.2+946bf4c32c
+		fabric-message-api-v1: Fabric Message API (v1) 6.1.1+946bf4c32c
+		fabric-model-loading-api-v1: Fabric Model Loading API (v1) 5.2.5+946bf4c32c
+		fabric-networking-api-v1: Fabric Networking API (v1) 5.0.1+946bf4c32c
+		fabric-object-builder-api-v1: Fabric Object Builder API (v1) 21.1.7+946bf4c32c
+		fabric-particles-v1: Fabric Particles (v1) 4.1.7+946bf4c32c
+		fabric-recipe-api-v1: Fabric Recipe API (v1) 8.1.14+946bf4c32c
+		fabric-registry-sync-v0: Fabric Registry Sync (v0) 6.1.27+946bf4c32c
+		fabric-renderer-api-v1: Fabric Renderer API (v1) 7.0.2+946bf4c32c
+		fabric-renderer-indigo: Fabric Renderer - Indigo 4.0.2+946bf4c32c
+		fabric-rendering-fluids-v1: Fabric Rendering Fluids (v1) 3.1.30+fa6cb72b2c
+		fabric-rendering-v1: Fabric Rendering (v1) 12.4.0+e8d43c762c
+		fabric-resource-conditions-api-v1: Fabric Resource Conditions API (v1) 5.0.24+946bf4c32c
+		fabric-resource-loader-v0: Fabric Resource Loader (v0) 3.1.11+946bf4c32c
+		fabric-screen-api-v1: Fabric Screen API (v1) 2.1.0+277ecf7d2c
+		fabric-screen-handler-api-v1: Fabric Screen Handler API (v1) 1.3.136+946bf4c32c
+		fabric-sound-api-v1: Fabric Sound API (v1) 1.0.42+946bf4c32c
+		fabric-tag-api-v1: Fabric Tag API (v1) 1.2.1+946bf4c32c
+		fabric-transfer-api-v1: Fabric Transfer API (v1) 6.0.5+946bf4c32c
+		fabric-transitive-access-wideners-v1: Fabric Transitive Access Wideners (v1) 6.4.1+ac3e15d12c
+		fabricloader: Fabric Loader 0.16.14
+		java: OpenJDK 64-Bit Server VM 24
+		minecraft: Minecraft 1.21.8
+		miningqol: MiningQOL 1.0-SNAPSHOT
+		mixinextras: MixinExtras 0.4.1
+	Launched Version: Fabric
+	Backend library: LWJGL version 3.3.3-snapshot
+	Backend API: Unknown
+	Window size: <not initialized>
+	GFLW Platform: <error>
+	Render Extensions: ERR
+	GL debug messages: <no renderer available>
+	Is Modded: Definitely; Client brand changed to 'fabric'
+	Universe: 404
+	Type: Client (map_client.txt)
+	Locale: en_US
+	System encoding: UTF-8
+	File encoding: UTF-8
+	CPU: 14x Apple M4 Pro

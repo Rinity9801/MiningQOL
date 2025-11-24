@@ -1,0 +1,97 @@
+[19:53:14] [main/INFO] (FabricLoader/GameProvider) Loading Minecraft 1.21.8 with Fabric Loader 0.16.14
+[19:53:14] [main/INFO] (FabricLoader) Loading 49 mods:
+	- fabric-api 0.130.0+1.21.8
+	- fabric-api-base 0.4.64+9ec45cd82c
+	- fabric-api-lookup-api-v1 1.6.100+946bf4c32c
+	- fabric-biome-api-v1 16.0.11+946bf4c32c
+	- fabric-block-api-v1 1.1.3+946bf4c32c
+	- fabric-block-view-api-v2 1.0.31+946bf4c32c
+	- fabric-client-gametest-api-v1 4.2.5+8a98c3fc2c
+	- fabric-command-api-v2 2.3.0+52fff9ec2c
+	- fabric-content-registries-v0 10.0.18+946bf4c32c
+	- fabric-convention-tags-v1 2.1.40+7f945d5b2c
+	- fabric-convention-tags-v2 2.15.5+eb5df52f2c
+	- fabric-crash-report-info-v1 0.3.15+946bf4c32c
+	- fabric-data-attachment-api-v1 1.8.10+946bf4c32c
+	- fabric-data-generation-api-v1 23.2.5+9fc9c3b12c
+	- fabric-dimensions-v1 4.0.19+946bf4c32c
+	- fabric-entity-events-v1 2.1.1+c9e472732c
+	- fabric-events-interaction-v0 4.0.23+946bf4c32c
+	- fabric-game-rule-api-v1 1.0.73+c64c9c5b2c
+	- fabric-gametest-api-v1 3.1.9+39ce47f52c
+	- fabric-item-api-v1 11.4.3+946bf4c32c
+	- fabric-item-group-api-v1 4.2.13+946bf4c32c
+	- fabric-key-binding-api-v1 1.0.65+946bf4c32c
+	- fabric-lifecycle-events-v1 2.6.3+db4dfd852c
+	- fabric-loot-api-v2 3.0.55+3f89f5a52c
+	- fabric-loot-api-v3 2.0.2+946bf4c32c
+	- fabric-message-api-v1 6.1.1+946bf4c32c
+	- fabric-model-loading-api-v1 5.2.5+946bf4c32c
+	- fabric-networking-api-v1 5.0.1+946bf4c32c
+	- fabric-object-builder-api-v1 21.1.7+946bf4c32c
+	- fabric-particles-v1 4.1.7+946bf4c32c
+	- fabric-recipe-api-v1 8.1.14+946bf4c32c
+	- fabric-registry-sync-v0 6.1.27+946bf4c32c
+	- fabric-renderer-api-v1 7.0.2+946bf4c32c
+	- fabric-renderer-indigo 4.0.2+946bf4c32c
+	- fabric-rendering-fluids-v1 3.1.30+fa6cb72b2c
+	- fabric-rendering-v1 12.4.0+e8d43c762c
+	- fabric-resource-conditions-api-v1 5.0.24+946bf4c32c
+	- fabric-resource-loader-v0 3.1.11+946bf4c32c
+	- fabric-screen-api-v1 2.1.0+277ecf7d2c
+	- fabric-screen-handler-api-v1 1.3.136+946bf4c32c
+	- fabric-sound-api-v1 1.0.42+946bf4c32c
+	- fabric-tag-api-v1 1.2.1+946bf4c32c
+	- fabric-transfer-api-v1 6.0.5+946bf4c32c
+	- fabric-transitive-access-wideners-v1 6.4.1+ac3e15d12c
+	- fabricloader 0.16.14
+	- java 24
+	- minecraft 1.21.8
+	- miningqol 1.0-SNAPSHOT
+	- mixinextras 0.4.1
+[19:53:14] [main/INFO] (FabricLoader/Mixin) SpongePowered MIXIN Subsystem Version=0.8.7 Source=file:/Users/alexdong/.gradle/caches/modules-2/files-2.1/net.fabricmc/sponge-mixin/0.15.5+mixin.0.8.7/22f9eb729e216a091673a574a5906dc1b9027fb3/sponge-mixin-0.15.5+mixin.0.8.7.jar Service=Knot/Fabric Env=CLIENT
+[19:53:14] [main/INFO] (FabricLoader/Mixin) Loaded Fabric development mappings for mixin remapper!
+[19:53:15] [main/INFO] (FabricLoader/Mixin) Compatibility level set to JAVA_21
+[19:53:16] [main/INFO] (FabricLoader/MixinExtras|Service) Initializing MixinExtras via com.llamalad7.mixinextras.service.MixinExtrasServiceImpl(version=0.4.1).
+[19:53:18] [Datafixer Bootstrap/INFO] (Minecraft) 269 Datafixer optimizations took 600 milliseconds
+[19:53:24] [main/ERROR] (FabricLoader/Mixin) Mixin apply for mod miningqol failed miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol -> net.minecraft.entity.player.PlayerInventory: org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException getSelectedSlot()I in miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol cannot overwrite method in net.minecraft.entity.player.PlayerInventory because @Overwrite is required by the parent configuration [ -> ACCESSOR Applicator Phase -> miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol -> Apply Accessors]
+org.spongepowered.asm.mixin.transformer.throwables.InvalidMixinException: getSelectedSlot()I in miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol cannot overwrite method in net.minecraft.entity.player.PlayerInventory because @Overwrite is required by the parent configuration [ -> ACCESSOR Applicator Phase -> miningqol.client.mixins.json:PlayerInventoryAccessor from mod miningqol -> Apply Accessors]
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.mergeMethod(MixinApplicatorStandard.java:501) ~[sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.applyAccessors(MixinApplicatorStandard.java:764) ~[sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.applyMixin(MixinApplicatorStandard.java:320) ~[sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.MixinApplicatorStandard.apply(MixinApplicatorStandard.java:246) ~[sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.TargetClassContext.apply(TargetClassContext.java:437) ~[sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.TargetClassContext.applyMixins(TargetClassContext.java:418) ~[sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.MixinProcessor.applyMixins(MixinProcessor.java:363) [sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClass(MixinTransformer.java:234) [sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at org.spongepowered.asm.mixin.transformer.MixinTransformer.transformClassBytes(MixinTransformer.java:202) [sponge-mixin-0.15.5+mixin.0.8.7.jar:0.15.5+mixin.0.8.7]
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.getPostMixinClassByteArray(KnotClassDelegate.java:422) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.tryLoadClass(KnotClassDelegate.java:323) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotClassDelegate.loadClass(KnotClassDelegate.java:218) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotClassLoader.loadClass(KnotClassLoader.java:119) [fabric-loader-0.16.14.jar:?]
+	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:490) [?:?]
+	at knot/net.minecraft.screen.ScreenHandlerType.<clinit>(ScreenHandlerType.java:16) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.registry.Registries.method_47461(Registries.java:172) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.registry.Registries.method_47485(Registries.java:269) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.registry.Registries.method_47482(Registries.java:284) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at java.base/java.util.LinkedHashMap.forEach(LinkedHashMap.java:987) [?:?]
+	at knot/net.minecraft.registry.Registries.init(Registries.java:282) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.Bootstrap.redirect$zol000$fabric-registry-sync-v0$initialize(Bootstrap.java:561) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.Bootstrap.initialize(Bootstrap.java:68) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.client.main.Main.main(Main.java:141) [minecraft-clientOnly-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:480) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:74) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86) [dev-launch-injector-0.2.1+build.8.jar:?]
+[19:53:26] [main/WARN] (Minecraft) Failed to get system info for Render Extensions
+java.lang.IllegalStateException: Can't getDevice() before it was initialized
+	at knot/com.mojang.blaze3d.systems.RenderSystem.getDevice(RenderSystem.java:410) ~[minecraft-clientOnly-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.client.MinecraftClient.method_68671(MinecraftClient.java:2461) ~[minecraft-clientOnly-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.util.SystemDetails.addSection(SystemDetails.java:70) [minecraft-common-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.client.MinecraftClient.addSystemDetailsToCrashReport(MinecraftClient.java:2461) [minecraft-clientOnly-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.client.MinecraftClient.addSystemDetailsToCrashReport(MinecraftClient.java:2431) [minecraft-clientOnly-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at knot/net.minecraft.client.main.Main.main(Main.java:222) [minecraft-clientOnly-1ee8af1322-1.21.8-net.fabricmc.yarn.1_21_8.1.21.8+build.1-v2.jar:?]
+	at net.fabricmc.loader.impl.game.minecraft.MinecraftGameProvider.launch(MinecraftGameProvider.java:480) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.Knot.launch(Knot.java:74) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.loader.impl.launch.knot.KnotClient.main(KnotClient.java:23) [fabric-loader-0.16.14.jar:?]
+	at net.fabricmc.devlaunchinjector.Main.main(Main.java:86) [dev-launch-injector-0.2.1+build.8.jar:?]

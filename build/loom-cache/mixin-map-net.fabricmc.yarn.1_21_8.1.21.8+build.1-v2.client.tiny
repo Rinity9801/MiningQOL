@@ -1,0 +1,2 @@
+v1	named	intermediary
+FIELD	forfun/miningqol/mixin/client/MinecraftClientGlassSyncMixin	Lnet/minecraft/util/hit/HitResult;	crosshairTarget	field_1765
