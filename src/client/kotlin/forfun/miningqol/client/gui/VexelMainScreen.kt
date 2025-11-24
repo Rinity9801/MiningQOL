@@ -43,8 +43,12 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
                 shadowColor = 0xA0000000.toInt()
             }
 
-        // Animate main panel entrance
-        mainPanel.yConstraint = -700f
+        // Ensure proper positioning by invalidating cache and recalculating
+        mainPanel.cache.invalidate()
+
+        // Animate main panel entrance with dynamic offset based on screen height
+        val startOffset = -(mainPanel.screenHeight / 2f + mainPanel.height)
+        mainPanel.yConstraint = startOffset
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
         mainPanel.moveTo(0f, 0f, 600, EasingType.EASE_OUT)
 
