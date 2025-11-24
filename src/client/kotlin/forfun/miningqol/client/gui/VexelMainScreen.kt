@@ -34,7 +34,7 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             borderThickness = 1f
         )
             .setSizing(750f, Size.Pixels, 580f, Size.Pixels)
-            .setPositioning(0f, Pos.ParentCenter, 0f, Pos.ParentCenter)
+            .setPositioning(0f, Pos.ScreenCenter, 0f, Pos.ScreenCenter)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -44,7 +44,7 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             }
 
         // Animate main panel entrance
-        mainPanel.yConstraint = -100f
+        mainPanel.yConstraint = -700f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
         mainPanel.moveTo(0f, 0f, 600, EasingType.EASE_OUT)
 
