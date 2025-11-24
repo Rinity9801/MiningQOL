@@ -34,7 +34,6 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             borderThickness = 1f
         )
             .setSizing(750f, Size.Pixels, 580f, Size.Pixels)
-            .setPositioning(0f, Pos.ScreenCenter, 0f, Pos.ScreenCenter)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -43,14 +42,16 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
                 shadowColor = 0xA0000000.toInt()
             }
 
-        // Ensure proper positioning by invalidating cache and recalculating
-        mainPanel.cache.invalidate()
+        // Center the panel manually using ScreenPixels for reliable positioning
+        mainPanel.xPositionConstraint = Pos.ScreenPixels
+        mainPanel.yPositionConstraint = Pos.ScreenPixels
 
-        // Animate main panel entrance with dynamic offset based on screen height
-        val startOffset = -(mainPanel.screenHeight / 2f + mainPanel.height)
-        mainPanel.yConstraint = startOffset
+        // Calculate center position (must be done after setting size)
+        mainPanel.xConstraint = (mainPanel.screenWidth - 750f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 580f) / 2f
+
+        // Fade in animation
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
-        mainPanel.moveTo(0f, 0f, 600, EasingType.EASE_OUT)
 
         // Title bar background
         Rectangle(
