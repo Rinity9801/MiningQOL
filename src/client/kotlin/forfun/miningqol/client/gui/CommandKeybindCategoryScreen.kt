@@ -9,13 +9,24 @@ import xyz.meowing.vexel.core.VexelScreen
 import xyz.meowing.vexel.components.core.Rectangle
 import xyz.meowing.vexel.components.core.Text
 import xyz.meowing.vexel.elements.Button
+import xyz.meowing.vexel.elements.TextInput
+import xyz.meowing.vexel.elements.Keybind
 import xyz.meowing.vexel.components.base.Pos
 import xyz.meowing.vexel.components.base.Size
 import xyz.meowing.vexel.animations.*
 
+data class KeybindEntry(
+    var keyCode: Int,
+    var command: String,
+    var card: Rectangle? = null
+)
+
 class CommandKeybindCategoryScreen(private val parentScreen: Screen) : VexelScreen("Command Keybinds") {
     private lateinit var overlay: Rectangle
     private lateinit var mainPanel: Rectangle
+    private lateinit var scrollContainer: Rectangle
+    private lateinit var entriesContainer: Rectangle
+    private val entries = mutableListOf<KeybindEntry>()
 
     override fun afterInitialization() {
         // Semi-transparent dark overlay background
@@ -30,14 +41,14 @@ class CommandKeybindCategoryScreen(private val parentScreen: Screen) : VexelScre
             .childOf(window)
             .fadeIn(400, EasingType.EASE_OUT)
 
-        // Main panel - darker and more modern
+        // Main panel - wider for more comfortable layout
         mainPanel = Rectangle(
             backgroundColor = 0xF0121212.toInt(),
             borderColor = 0xFF2A2A2A.toInt(),
             borderRadius = 16f,
             borderThickness = 1f
         )
-            .setSizing(600f, Size.Pixels, 500f, Size.Pixels)
+            .setSizing(900f, Size.Pixels, 650f, Size.Pixels)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -49,8 +60,8 @@ class CommandKeybindCategoryScreen(private val parentScreen: Screen) : VexelScre
         // Center the panel manually
         mainPanel.xPositionConstraint = Pos.ScreenPixels
         mainPanel.yPositionConstraint = Pos.ScreenPixels
-        mainPanel.xConstraint = (mainPanel.screenWidth - 600f) / 2f
-        mainPanel.yConstraint = (mainPanel.screenHeight - 500f) / 2f
+        mainPanel.xConstraint = (mainPanel.screenWidth - 900f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 650f) / 2f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
 
         // Title bar background
@@ -76,88 +87,61 @@ class CommandKeybindCategoryScreen(private val parentScreen: Screen) : VexelScre
             .fadeIn(700, EasingType.EASE_OUT)
 
         // Subtitle
-        Text("Bind commands to keys (not fully implemented)", 0xFF888888.toInt(), 13f, false)
+        Text("Bind commands to keys for quick access", 0xFF888888.toInt(), 13f, false)
             .setPositioning(0f, Pos.ParentCenter, 50f, Pos.ParentPixels)
             .childOf(mainPanel)
             .fadeIn(800, EasingType.EASE_OUT)
 
-        // Info card
-        val infoCard = Rectangle(
-            backgroundColor = 0xF01E1E1E.toInt(),
-            borderColor = 0xFF4488FF.toInt(),
+        // Scroll container for keybind entries (scrollable Rectangle)
+        scrollContainer = Rectangle(
+            backgroundColor = 0xFF1A1A1A.toInt(),
+            borderColor = 0xFF2A2A2A.toInt(),
             borderRadius = 12f,
-            borderThickness = 1f
+            borderThickness = 1f,
+            scrollable = true
         )
-            .setSizing(520f, Size.Pixels, 280f, Size.Pixels)
-            .setPositioning((600f - 520f) / 2f, Pos.ParentPixels, 120f, Pos.ParentPixels)
+            .setSizing(800f, Size.Pixels, 450f, Size.Pixels)
+            .setPositioning(50f, Pos.ParentPixels, 110f, Pos.ParentPixels)
             .childOf(mainPanel)
             .apply {
-                dropShadow = true
-                shadowBlur = 15f
-                shadowSpread = 1f
-                shadowColor = 0x40000000.toInt()
+                padding(25f)
             }
 
-        // Info icon/accent
-        Rectangle(
-            backgroundColor = 0xFF4488FF.toInt(),
-            borderRadius = 12f
+        // Container for all entries
+        entriesContainer = Rectangle(
+            backgroundColor = 0x00000000,
+            borderColor = 0x00000000
         )
-            .setSizing(5f, Size.Pixels, 100f, Size.ParentPerc)
+            .setSizing(100f, Size.ParentPerc, 0f, Size.Pixels)
             .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentPixels)
-            .ignoreMouseEvents()
-            .childOf(infoCard)
-            .apply {
-                borderRadiusTopRight = 0f
-                borderRadiusBottomRight = 0f
+            .childOf(scrollContainer)
+
+        // Load existing keybinds
+        loadExistingKeybinds()
+
+        // Add Keybind button
+        Button("+ Add Keybind", 0xFFFFFFFF.toInt(), fontSize = 14f)
+            .setSizing(200f, Size.Pixels, 42f, Size.Pixels)
+            .setPositioning(0f, Pos.ParentCenter, 575f, Pos.ParentPixels)
+            .backgroundColor(0xFF2A5A2A.toInt())
+            .borderColor(0xFF40A040.toInt())
+            .borderRadius(8f)
+            .borderThickness(1f)
+            .hoverColors(0xFF357035.toInt(), 0xFFFFFFFF.toInt())
+            .pressedColors(0xFF1A3A1A.toInt(), 0xFFAAAAAA.toInt())
+            .onClick { _, _, _ ->
+                addNewKeybindEntry()
+                true
             }
-
-        Text("Keybind Management", 0xFFFFFFFF.toInt(), 20f, true)
-            .setPositioning(20f, Pos.ParentPixels, 18f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("This feature is not yet fully implemented in the Vexel UI.", 0xFFAAAAAA.toInt(), 14f, false)
-            .setPositioning(20f, Pos.ParentPixels, 55f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("The keybind entry UI with text fields, key binding,", 0xFF888888.toInt(), 13f, false)
-            .setPositioning(20f, Pos.ParentPixels, 85f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("and scrolling is complex and requires more work.", 0xFF888888.toInt(), 13f, false)
-            .setPositioning(20f, Pos.ParentPixels, 105f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("For now, please use the Java version of this screen", 0xFFFF9944.toInt(), 14f, true)
-            .setPositioning(20f, Pos.ParentPixels, 145f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("to manage your command keybinds.", 0xFFFF9944.toInt(), 14f, true)
-            .setPositioning(20f, Pos.ParentPixels, 165f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("Current keybinds: ${CommandKeybindManager.getAllKeybinds().size}", 0xFF44FF44.toInt(), 13f, false)
-            .setPositioning(20f, Pos.ParentPixels, 205f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        Text("(They will continue to work normally)", 0xFF666666.toInt(), 11f, false)
-            .setPositioning(20f, Pos.ParentPixels, 230f, Pos.ParentPixels)
-            .childOf(infoCard)
-
-        infoCard.visible = false
-        Thread {
-            Thread.sleep(200L)
-            MinecraftClient.getInstance().execute {
-                infoCard.fadeIn(400, EasingType.EASE_OUT)
-            }
-        }.start()
+            .childOf(mainPanel)
+            .fadeIn(900, EasingType.EASE_OUT)
 
         // Back button at bottom
         Button("Back", 0xFFFFFFFF.toInt(), fontSize = 15f)
             .setSizing(140f, Size.Pixels, 42f, Size.Pixels)
             .setPositioning(0f, Pos.ParentCenter, 0f, Pos.ParentPixels)
             .alignBottom()
-            .setOffset(0f, -25f)
+            .setOffset(0f, -40f)
             .backgroundColor(0xFF2A2A2A.toInt())
             .borderColor(0xFF404040.toInt())
             .borderRadius(8f)
@@ -170,16 +154,224 @@ class CommandKeybindCategoryScreen(private val parentScreen: Screen) : VexelScre
             }
             .childOf(mainPanel)
             .fadeIn(1000, EasingType.EASE_OUT)
+
+        scrollContainer.visible = false
+        Thread {
+            Thread.sleep(200L)
+            MinecraftClient.getInstance().execute {
+                scrollContainer.fadeIn(400, EasingType.EASE_OUT)
+            }
+        }.start()
+    }
+
+    private fun loadExistingKeybinds() {
+        val keybinds = CommandKeybindManager.getAllKeybinds()
+        keybinds.forEach { (keyCode, command) ->
+            val entry = KeybindEntry(keyCode, command)
+            entries.add(entry)
+            createKeybindCard(entry, entries.size - 1)
+        }
+        updateEntriesContainerHeight()
+    }
+
+    private fun addNewKeybindEntry() {
+        val entry = KeybindEntry(-1, "")
+        entries.add(entry)
+        createKeybindCard(entry, entries.size - 1)
+        updateEntriesContainerHeight()
+    }
+
+    private fun createKeybindCard(entry: KeybindEntry, index: Int) {
+        val cardHeight = 120f
+        val cardSpacing = 20f
+        val yPos = index * (cardHeight + cardSpacing)
+
+        // Card
+        val card = Rectangle(
+            backgroundColor = 0xF01E1E1E.toInt(),
+            borderColor = 0xFF2A2A2A.toInt(),
+            borderRadius = 12f,
+            borderThickness = 1f
+        )
+            .setSizing(100f, Size.ParentPerc, cardHeight, Size.Pixels)
+            .setPositioning(0f, Pos.ParentPixels, yPos, Pos.ParentPixels)
+            .childOf(entriesContainer)
+            .apply {
+                dropShadow = true
+                shadowBlur = 10f
+                shadowSpread = 1f
+                shadowColor = 0x30000000.toInt()
+            }
+
+        entry.card = card
+
+        // Accent bar
+        Rectangle(
+            backgroundColor = 0xFFA05BFF.toInt(),
+            borderRadius = 12f
+        )
+            .setSizing(5f, Size.Pixels, 100f, Size.ParentPerc)
+            .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentPixels)
+            .ignoreMouseEvents()
+            .childOf(card)
+            .apply {
+                borderRadiusTopRight = 0f
+                borderRadiusBottomRight = 0f
+            }
+
+        // "Key:" label
+        Text("Key:", 0xFFAAAAAA.toInt(), 13f, false)
+            .setPositioning(30f, Pos.ParentPixels, 22f, Pos.ParentPixels)
+            .childOf(card)
+
+        // Keybind component
+        val keybind = Keybind()
+            .setSizing(180f, Size.Pixels, 36f, Size.Pixels)
+            .setPositioning(30f, Pos.ParentPixels, 48f, Pos.ParentPixels)
+            .backgroundColor(0xFF252525.toInt())
+            .borderColor(0xFF404040.toInt())
+            .borderRadius(6f)
+            .borderThickness(1f)
+            .childOf(card)
+
+        // Set initial key if exists
+        if (entry.keyCode != -1) {
+            keybind.selectedKeyId = entry.keyCode
+        }
+
+        keybind.onValueChange { keyId ->
+            entry.keyCode = keyId as Int
+            // Save immediately after key selection
+            Thread {
+                Thread.sleep(100) // Small delay to ensure value is set
+                MinecraftClient.getInstance().execute {
+                    saveKeybinds()
+                }
+            }.start()
+        }
+
+        // "Command:" label
+        Text("Command:", 0xFFAAAAAA.toInt(), 13f, false)
+            .setPositioning(260f, Pos.ParentPixels, 22f, Pos.ParentPixels)
+            .childOf(card)
+
+        // Command text input
+        val commandInput = TextInput(
+            entry.command,
+            "e.g. /warp hub",
+            fontSize = 13f,
+            textColor = 0xFFFFFFFF.toInt()
+        )
+            .setSizing(400f, Size.Pixels, 36f, Size.Pixels)
+            .setPositioning(260f, Pos.ParentPixels, 48f, Pos.ParentPixels)
+            .backgroundColor(0xFF252525.toInt())
+            .borderColor(0xFF404040.toInt())
+            .borderRadius(6f)
+            .borderThickness(1f)
+            .childOf(card)
+
+        commandInput.onValueChange { newValue ->
+            entry.command = newValue as String
+            // Save immediately after command entry
+            Thread {
+                Thread.sleep(100) // Small delay to ensure value is set
+                MinecraftClient.getInstance().execute {
+                    saveKeybinds()
+                }
+            }.start()
+        }
+
+        // Delete button
+        Button("×", 0xFFFF5555.toInt(), fontSize = 20f)
+            .setSizing(40f, Size.Pixels, 40f, Size.Pixels)
+            .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentCenter)
+            .alignRight()
+            .setOffset(-50f, 0f)
+            .backgroundColor(0xFF3A2A2A.toInt())
+            .borderColor(0xFF5A4040.toInt())
+            .borderRadius(6f)
+            .borderThickness(1f)
+            .hoverColors(0xFF5A3535.toInt(), 0xFFFFAAAA.toInt())
+            .pressedColors(0xFF2A1A1A.toInt(), 0xFFFF8888.toInt())
+            .onClick { _, _, _ ->
+                deleteKeybindEntry(entry)
+                true
+            }
+            .childOf(card)
+    }
+
+    private fun deleteKeybindEntry(entry: KeybindEntry) {
+        // Remove from CommandKeybindManager
+        if (entry.keyCode != -1) {
+            CommandKeybindManager.removeKeybind(entry.keyCode)
+        }
+
+        // Remove from entries list
+        entries.remove(entry)
+
+        // Rebuild all cards to fix positioning
+        rebuildAllCards()
+    }
+
+    private fun rebuildAllCards() {
+        // Clear the entries container by recreating it
+        val oldContainer = entriesContainer
+        scrollContainer.children.remove(oldContainer)
+
+        entriesContainer = Rectangle(
+            backgroundColor = 0x00000000,
+            borderColor = 0x00000000
+        )
+            .setSizing(100f, Size.ParentPerc, 0f, Size.Pixels)
+            .setPositioning(0f, Pos.ParentPixels, 0f, Pos.ParentPixels)
+            .childOf(scrollContainer)
+
+        // Recreate all cards with updated positions
+        entries.forEachIndexed { index, entry ->
+            createKeybindCard(entry, index)
+        }
+
+        updateEntriesContainerHeight()
+    }
+
+    private fun updateEntriesContainerHeight() {
+        val cardHeight = 120f
+        val cardSpacing = 20f
+        val totalHeight = if (entries.isEmpty()) 0f else entries.size * (cardHeight + cardSpacing) - cardSpacing
+        entriesContainer.height = totalHeight.coerceAtLeast(450f)
+    }
+
+    private fun saveKeybinds() {
+        // Clear all existing keybinds first
+        val allKeybinds = CommandKeybindManager.getAllKeybinds()
+        allKeybinds.keys.forEach { keyCode ->
+            CommandKeybindManager.removeKeybind(keyCode)
+        }
+
+        // Register all current keybinds
+        entries.forEach { entry ->
+            if (entry.keyCode != -1 && entry.command.isNotBlank()) {
+                CommandKeybindManager.registerKeybind(entry.keyCode, entry.command)
+            }
+        }
     }
 
     private fun closeWithAnimation() {
+        // Save all keybinds before closing
+        saveKeybinds()
+
         MiningqolClient.getConfig()?.loadFromGame()
         MiningqolClient.getConfig()?.save()
 
-        overlay.fadeOut(300, EasingType.EASE_IN)
-        mainPanel.fadeOut(300, EasingType.EASE_IN) {
-            MinecraftClient.getInstance().setScreen(parentScreen)
+        MinecraftClient.getInstance().setScreen(parentScreen)
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (keyCode == KnitKeys.KEY_ESCAPE.code) {
+            closeWithAnimation()
+            return true  // Consume the event to prevent pause menu
         }
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
     override fun onKeyType(typedChar: Char, keyCode: Int, scanCode: Int) {

@@ -32,14 +32,14 @@ class AutoClickerCategoryScreen(private val parentScreen: Screen) : VexelScreen(
             .childOf(window)
             .fadeIn(400, EasingType.EASE_OUT)
 
-        // Main panel - darker and more modern
+        // Main panel - taller to fit all content
         mainPanel = Rectangle(
             backgroundColor = 0xF0121212.toInt(),
             borderColor = 0xFF2A2A2A.toInt(),
             borderRadius = 16f,
             borderThickness = 1f
         )
-            .setSizing(550f, Size.Pixels, 650f, Size.Pixels)
+            .setSizing(550f, Size.Pixels, 720f, Size.Pixels)
             .childOf(window)
             .apply {
                 dropShadow = true
@@ -52,7 +52,7 @@ class AutoClickerCategoryScreen(private val parentScreen: Screen) : VexelScreen(
         mainPanel.xPositionConstraint = Pos.ScreenPixels
         mainPanel.yPositionConstraint = Pos.ScreenPixels
         mainPanel.xConstraint = (mainPanel.screenWidth - 550f) / 2f
-        mainPanel.yConstraint = (mainPanel.screenHeight - 650f) / 2f
+        mainPanel.yConstraint = (mainPanel.screenHeight - 720f) / 2f
         mainPanel.fadeIn(500, EasingType.EASE_OUT)
 
         // Title bar background
@@ -172,7 +172,7 @@ class AutoClickerCategoryScreen(private val parentScreen: Screen) : VexelScreen(
             .setSizing(140f, Size.Pixels, 42f, Size.Pixels)
             .setPositioning(0f, Pos.ParentCenter, 0f, Pos.ParentPixels)
             .alignBottom()
-            .setOffset(0f, -25f)
+            .setOffset(0f, -40f)
             .backgroundColor(0xFF2A2A2A.toInt())
             .borderColor(0xFF404040.toInt())
             .borderRadius(8f)
@@ -347,10 +347,15 @@ class AutoClickerCategoryScreen(private val parentScreen: Screen) : VexelScreen(
         MiningqolClient.getConfig()?.loadFromGame()
         MiningqolClient.getConfig()?.save()
 
-        overlay.fadeOut(300, EasingType.EASE_IN)
-        mainPanel.fadeOut(300, EasingType.EASE_IN) {
-            MinecraftClient.getInstance().setScreen(parentScreen)
+        MinecraftClient.getInstance().setScreen(parentScreen)
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (keyCode == KnitKeys.KEY_ESCAPE.code) {
+            closeWithAnimation()
+            return true  // Consume the event to prevent pause menu
         }
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
     override fun onKeyType(typedChar: Char, keyCode: Int, scanCode: Int) {

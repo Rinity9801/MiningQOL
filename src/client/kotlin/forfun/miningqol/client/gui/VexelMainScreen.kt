@@ -6,6 +6,7 @@ import xyz.meowing.vexel.core.VexelScreen
 import xyz.meowing.vexel.components.core.Rectangle
 import xyz.meowing.vexel.components.core.Text
 import xyz.meowing.vexel.elements.Button
+import xyz.meowing.vexel.elements.TextInput
 import xyz.meowing.vexel.components.base.Pos
 import xyz.meowing.vexel.components.base.Size
 import xyz.meowing.vexel.animations.*
@@ -13,6 +14,15 @@ import xyz.meowing.vexel.animations.*
 class VexelMainScreen : VexelScreen("MiningQOL Settings") {
     private lateinit var overlay: Rectangle
     private lateinit var mainPanel: Rectangle
+    private lateinit var searchInput: TextInput
+    private val allCards = mutableListOf<Pair<Rectangle, CardInfo>>()
+
+    data class CardInfo(
+        val title: String,
+        val description: String,
+        val color: Int,
+        val keywords: List<String>
+    )
 
     override fun afterInitialization() {
         // Semi-transparent dark overlay background
@@ -71,46 +81,112 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             .fadeIn(600, EasingType.EASE_OUT)
 
         // Title
-        Text("MiningQOL", 0xFFFFFFFF.toInt(), 36f, true)
+        Text("MiningQOL", 0xFFFFFFFF.toInt(), 38f, true)
             .setPositioning(0f, Pos.ParentCenter, 18f, Pos.ParentPixels)
             .childOf(mainPanel)
             .fadeIn(700, EasingType.EASE_OUT)
 
         // Subtitle
-        Text("Enhanced mining experience for Hypixel Skyblock", 0xFF888888.toInt(), 13f, false)
+        Text("Enhanced mining experience for Hypixel Skyblock", 0xFF888888.toInt(), 14f, false)
             .setPositioning(0f, Pos.ParentCenter, 55f, Pos.ParentPixels)
             .childOf(mainPanel)
             .fadeIn(800, EasingType.EASE_OUT)
 
+        // Search bar
+        searchInput = TextInput(
+            "",
+            "Search settings...",
+            fontSize = 15f,
+            textColor = 0xFFFFFFFF.toInt()
+        )
+            .setSizing(680f, Size.Pixels, 38f, Size.Pixels)
+            .setPositioning(0f, Pos.ParentCenter, 85f, Pos.ParentPixels)
+            .backgroundColor(0xFF1E1E1E.toInt())
+            .borderColor(0xFF404040.toInt())
+            .borderRadius(8f)
+            .borderThickness(1f)
+            .childOf(mainPanel)
+            .apply {
+                onValueChange { query ->
+                    filterCards((query as String).lowercase())
+                }
+            }
+
+        searchInput.visible = false
+        Thread {
+            Thread.sleep(850L)
+            MinecraftClient.getInstance().execute {
+                searchInput.fadeIn(400, EasingType.EASE_OUT)
+            }
+        }.start()
+
         // Category cards container with grid layout
-        val cardStartY = 110f
+        val cardStartY = 140f
         val cardSpacing = 12f
         val cardHeight = 70f
         val leftX = 25f
         val rightX = 390f
         val cardWidth = 335f
 
-        // Left column cards
+        // Left column cards with searchable keywords
         val leftCards = listOf(
-            Triple("Mining Profit", "Track earnings and optimize gains", 0xFF5B7CFF.toInt()),
-            Triple("Efficient Miner", "Overlay for max mining efficiency", 0xFFFF7C5B.toInt()),
-            Triple("Corpse ESP", "Highlight corpses in Crystal Hollows", 0xFF5BFF7C.toInt()),
-            Triple("Block Outline", "Custom mining block outlines", 0xFFFFEB5B.toInt()),
-            Triple("Pickaxe Cooldown", "HUD for ability cooldown tracking", 0xFF5BFFFF.toInt())
+            CardInfo(
+                "Mining Profit",
+                "Track earnings and optimize gains",
+                0xFF5B7CFF.toInt(),
+                listOf("profit", "tracker", "gemstone", "rough", "npc", "bazaar", "gem tier", "pristine", "chance", "earnings", "money", "coins")
+            ),
+            CardInfo(
+                "Efficient Miner",
+                "Overlay for max mining efficiency",
+                0xFFFF7C5B.toInt(),
+                listOf("efficient", "miner", "overlay", "heatmap", "beacon", "perk", "highlight", "players")
+            ),
+            CardInfo(
+                "Corpse ESP",
+                "Highlight corpses in Crystal Hollows",
+                0xFF5BFF7C.toInt(),
+                listOf("corpse", "esp", "lapis", "tungsten", "umber", "vanguard", "crystal hollows", "highlight", "bodies")
+            ),
+            CardInfo(
+                "Pickaxe Cooldown",
+                "HUD for ability cooldown tracking",
+                0xFF5BFFFF.toInt(),
+                listOf("pickaxe", "cooldown", "ability", "hud", "display", "almost ready", "title", "threshold", "mining speed")
+            )
         )
 
         val rightCards = listOf(
-            Triple("Name Hider", "Hide or customize your name display", 0xFFFF5BFF.toInt()),
-            Triple("Auto Clicker", "Automated clicking for mining", 0xFFFFA05B.toInt()),
-            Triple("Command Keybinds", "Bind commands to keys", 0xFFA05BFF.toInt()),
-            Triple("Misc", "Miscellaneous features and utilities", 0xFF888888.toInt())
+            CardInfo(
+                "Name Hider",
+                "Hide or customize your name display",
+                0xFFFF5BFF.toInt(),
+                listOf("name", "hider", "replacement", "gradient", "color", "hide", "username", "disguise", "anonymize")
+            ),
+            CardInfo(
+                "Auto Clicker",
+                "Automated clicking for mining",
+                0xFFFFA05B.toInt(),
+                listOf("auto", "clicker", "coalclick", "hud", "tab", "cooldown", "rod", "swap", "drill", "mining slot", "maniac miner", "second drill", "automated")
+            ),
+            CardInfo(
+                "Command Keybinds",
+                "Bind commands to keys",
+                0xFFA05BFF.toInt(),
+                listOf("command", "keybind", "key", "bind", "hotkey", "shortcut", "macro", "keyboard")
+            ),
+            CardInfo(
+                "Misc",
+                "Miscellaneous features and utilities",
+                0xFF888888.toInt(),
+                listOf("misc", "miscellaneous", "auto-skip", "sho", "load", "glass", "pane", "sync", "gemstone", "connection", "utilities")
+            )
         )
 
         val leftScreens = listOf(
             { MiningProfitCategoryScreen(this) },
             { MinerOverlayCategoryScreen(this) },
             { CorpseESPCategoryScreen(this) },
-            { BlockOutlineCategoryScreen(this) },
             { PickaxeCooldownCategoryScreen(this) }
         )
 
@@ -122,10 +198,10 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
         )
 
         // Create left column cards
-        leftCards.forEachIndexed { index, (title, desc, color) ->
+        leftCards.forEachIndexed { index, cardInfo ->
             val delay = 200L + (index * 100L)
-            createCategoryCard(
-                title, desc, color,
+            val card = createCategoryCard(
+                cardInfo.title, cardInfo.description, cardInfo.color,
                 leftX, cardStartY + (index * (cardHeight + cardSpacing)),
                 cardWidth, cardHeight,
                 mainPanel,
@@ -133,13 +209,14 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             ) {
                 MinecraftClient.getInstance().setScreen(leftScreens[index]())
             }
+            allCards.add(card to cardInfo)
         }
 
         // Create right column cards
-        rightCards.forEachIndexed { index, (title, desc, color) ->
+        rightCards.forEachIndexed { index, cardInfo ->
             val delay = 200L + (index * 100L)
-            createCategoryCard(
-                title, desc, color,
+            val card = createCategoryCard(
+                cardInfo.title, cardInfo.description, cardInfo.color,
                 rightX, cardStartY + (index * (cardHeight + cardSpacing)),
                 cardWidth, cardHeight,
                 mainPanel,
@@ -147,6 +224,7 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             ) {
                 MinecraftClient.getInstance().setScreen(rightScreens[index]())
             }
+            allCards.add(card to cardInfo)
         }
 
         // Close button at bottom
@@ -169,6 +247,16 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             .fadeIn(1000, EasingType.EASE_OUT)
     }
 
+    private fun filterCards(query: String) {
+        allCards.forEach { (card, info) ->
+            val matches = query.isEmpty() ||
+                         info.title.lowercase().contains(query) ||
+                         info.description.lowercase().contains(query) ||
+                         info.keywords.any { it.lowercase().contains(query) }
+            card.visible = matches
+        }
+    }
+
     private fun createCategoryCard(
         title: String,
         description: String,
@@ -180,7 +268,7 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
         parent: Rectangle,
         animDelay: Long,
         onClick: () -> Unit
-    ) {
+    ): Rectangle {
         val card = Rectangle(
             backgroundColor = 0xF01E1E1E.toInt(),
             borderColor = 0xFF2A2A2A.toInt(),
@@ -226,12 +314,12 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
             }
 
         // Title
-        Text(title, 0xFFFFFFFF.toInt(), 18f, true)
+        Text(title, 0xFFFFFFFF.toInt(), 19f, true)
             .setPositioning(20f, Pos.ParentPixels, 16f, Pos.ParentPixels)
             .childOf(card)
 
         // Description
-        Text(description, 0xFF888888.toInt(), 13f, false)
+        Text(description, 0xFF888888.toInt(), 14f, false)
             .setPositioning(20f, Pos.ParentPixels, 42f, Pos.ParentPixels)
             .childOf(card)
 
@@ -249,13 +337,20 @@ class VexelMainScreen : VexelScreen("MiningQOL Settings") {
                 card.animateSize(width, height, 200, EasingType.EASE_IN)
             }
         }
+
+        return card
     }
 
     private fun closeWithAnimation() {
-        overlay.fadeOut(300, EasingType.EASE_IN)
-        mainPanel.fadeOut(300, EasingType.EASE_IN) {
-            close()
+        close()
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (keyCode == KnitKeys.KEY_ESCAPE.code) {
+            closeWithAnimation()
+            return true  // Consume the event to prevent pause menu
         }
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
     override fun onKeyType(typedChar: Char, keyCode: Int, scanCode: Int) {

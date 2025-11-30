@@ -228,10 +228,15 @@ class MinerOverlayCategoryScreen(private val parentScreen: Screen) : VexelScreen
         MiningqolClient.getConfig()?.loadFromGame()
         MiningqolClient.getConfig()?.save()
 
-        overlay.fadeOut(300, EasingType.EASE_IN)
-        mainPanel.fadeOut(300, EasingType.EASE_IN) {
-            MinecraftClient.getInstance().setScreen(parentScreen)
+        MinecraftClient.getInstance().setScreen(parentScreen)
+    }
+
+    override fun keyPressed(keyCode: Int, scanCode: Int, modifiers: Int): Boolean {
+        if (keyCode == KnitKeys.KEY_ESCAPE.code) {
+            closeWithAnimation()
+            return true  // Consume the event to prevent pause menu
         }
+        return super.keyPressed(keyCode, scanCode, modifiers)
     }
 
     override fun onKeyType(typedChar: Char, keyCode: Int, scanCode: Int) {
