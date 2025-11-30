@@ -49,8 +49,8 @@ Fixes gemstone (stained glass) pane connections when mining:
 - Properly updates visual connections when breaking adjacent panes
 - Purely cosmetic client-side fix
 
-### Auto Clicker
-Automated clicking for mining (use responsibly):
+### Click Lock
+Click lock functionality for mining (use responsibly):
 - Configurable mining slot and cooldown
 - Rod swap support for Grappling Hook
 - Second drill support for dual-drill setups
@@ -96,7 +96,7 @@ The mod features a sleek, modern interface built with the Vexel GUI library:
 - **Corpse ESP** - Highlight different corpse types in Crystal Hollows
 - **Pickaxe Cooldown** - HUD for ability cooldown tracking
 - **Name Hider** - Customize or hide your name display with gradients
-- **Auto Clicker** - Automated clicking for mining (use responsibly)
+- **Click Lock** - Click lock functionality for mining (use responsibly)
 - **Command Keybinds** - Bind any command to any key for quick access
 - **Misc** - Glass pane sync, auto-skip /sho load, and more
 
@@ -115,9 +115,9 @@ All settings are saved automatically to `config/miningqol.json` and persist betw
 
 ## Disclaimer
 
-This mod is designed for Hypixel Skyblock and includes features like auto-clicking. Use at your own risk. Always check [Hypixel's rules](https://hypixel.net/threads/guide-allowed-modifications.345453/) regarding allowed modifications. The developers are not responsible for any consequences from using this mod.
+This mod is designed for Hypixel Skyblock and includes features like click lock. Use at your own risk. Always check [Hypixel's rules](https://hypixel.net/threads/guide-allowed-modifications.345453/) regarding allowed modifications. The developers are not responsible for any consequences from using this mod.
 
-Most features are purely visual/informational and should be safe, but features like auto-clicking may be against server rules.
+Most features are purely visual/informational and should be safe, but features like click lock may be against server rules.
 
 ## License
 
