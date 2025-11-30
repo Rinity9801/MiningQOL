@@ -1,6 +1,8 @@
 # MiningQOL
 
-A Minecraft Fabric mod for 1.21.8 that provides quality-of-life improvements for mining in Hypixel Skyblock.
+A modern Minecraft Fabric mod for 1.21.8 that provides quality-of-life improvements for mining in Hypixel Skyblock.
+
+Built with the Vexel GUI library for a sleek, modern interface with smooth animations and an intuitive card-based design.
 
 ## Features
 
@@ -33,12 +35,6 @@ Visual overlay showing efficiency when mining blocks:
 - Displays when Maniac Miner or similar abilities are active
 - Configurable position and title display
 - Customizable cooldown threshold for title visibility
-
-### Block Outline Customization
-Customize the outline color and style of blocks you're looking at:
-- Adjustable RGB color values with transparency
-- Three modes: Inside, Outside, or Both
-- Smooth color transitions with sliders
 
 ### Name Hider
 Privacy feature to hide your username:
@@ -80,28 +76,41 @@ Automated clicking for mining (use responsibly):
 
 ## Usage
 
-Open the config GUI in-game with `/miningqol` or by pressing the configured keybind (default: Right Control).
+Open the config GUI in-game with `/miningconfig` command.
 
-The GUI features a modern card-based interface with categories:
-- **Corpse ESP** - Configure corpse highlighting
-- **Mining Profit** - Set up profit tracking
-- **Efficient Miner** - Customize efficiency overlay
-- **Pickaxe Cooldown** - Configure cooldown display
-- **Block Outline** - Customize block outlines
-- **Name Hider** - Set up name replacement
-- **Auto Clicker** - Configure auto-clicking (use responsibly)
-- **Command Keybinds** - Manage command shortcuts
-- **Misc** - Other features and utilities
+### Modern GUI Interface
+
+The mod features a sleek, modern interface built with the Vexel GUI library:
+- **Card-based design** - Clean, organized categories with smooth hover effects
+- **Powerful search** - Search bar that finds settings across all categories
+  - Search by feature name (e.g., "profit", "cooldown")
+  - Search by specific settings (e.g., "bazaar", "heatmap", "gradient")
+  - Search by keywords (e.g., "lapis", "rod swap", "pristine")
+- **Instant navigation** - Fast screen transitions with no loading delays
+- **Responsive controls** - Modern sliders, toggles, and color pickers
+
+### Categories
+
+- **Mining Profit** - Track earnings and optimize gains with bazaar integration
+- **Efficient Miner** - Overlay showing players with max mining efficiency
+- **Corpse ESP** - Highlight different corpse types in Crystal Hollows
+- **Pickaxe Cooldown** - HUD for ability cooldown tracking
+- **Name Hider** - Customize or hide your name display with gradients
+- **Auto Clicker** - Automated clicking for mining (use responsibly)
+- **Command Keybinds** - Bind any command to any key for quick access
+- **Misc** - Glass pane sync, auto-skip /sho load, and more
 
 ## Configuration
 
 All settings are saved automatically to `config/miningqol.json` and persist between game sessions.
 
-## Compatibility
+## Dependencies
 
 - **Minecraft Version:** 1.21.8
 - **Loader:** Fabric Loader 0.16.14+
-- **API:** Fabric API 0.130.0+1.21.8
+- **Fabric API:** 0.130.0+1.21.8
+- **Fabric Language Kotlin:** 1.13.0+kotlin.2.1.0
+- **Vexel GUI Library:** 121 (included)
 - **Java Version:** Java 21
 
 ## Disclaimer
