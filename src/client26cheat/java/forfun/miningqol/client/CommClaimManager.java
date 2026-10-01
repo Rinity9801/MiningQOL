@@ -222,6 +222,8 @@ public class CommClaimManager {
     private static int pigeonHoldMs = 100;
     /** How long it stays in hand after the click before switching back to the mining tool. */
     private static int pigeonReleaseMs = 25;
+    /** Said once per hold, so looking at a portal/corpse doesn't spam chat every frame. */
+    private static boolean announcedAimWait = false;
 
     // Config values
     private static int batPersonSlot = 1; // 1-12, loadout index (equip before claim)
@@ -595,6 +597,7 @@ public class CommClaimManager {
     private static void stepPigeon(Minecraft client, long now) {
         switch (phase) {
             case USE_PIGEON -> {
+                if (waitForClearAim(client, now)) return;
                 int slot = findPigeonSlot(client);
                 if (slot < 0) {
                     fail("No Royal Pigeon in your hotbar.");
@@ -609,6 +612,7 @@ public class CommClaimManager {
                 advanceIn(State.CLICK_PIGEON, pigeonHoldMs);
             }
             case CLICK_PIGEON -> {
+                if (waitForClearAim(client, now)) return;
                 client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND);
                 lastPigeonUseAt = now;
                 advanceIn(State.PIGEON_BACK_TO_TOOL, pigeonReleaseMs);
@@ -619,6 +623,27 @@ public class CommClaimManager {
             }
             default -> { }
         }
+    }
+
+    /**
+     * Right-clicking while the crosshair is on a Mineshaft portal or a frozen corpse in reach
+     * would hit that instead of using the pigeon, so the claim holds until you look away.
+     * @return true while it is holding.
+     */
+    private static boolean waitForClearAim(Minecraft client, long now) {
+        if (client.hitResult instanceof net.minecraft.world.phys.EntityHitResult hit
+                && (MineshaftPortal.isPortalEntity(hit.getEntity()) || CorpseESP.isCorpse(hit.getEntity()))) {
+            if (!announcedAimWait) {
+                announcedAimWait = true;
+                MqoChat.log(Component.literal("\u00A76[CommClaim] \u00A7eLooking at a "
+                    + (MineshaftPortal.isPortalEntity(hit.getEntity()) ? "portal" : "corpse")
+                    + " \u2014 claiming once you look away."));
+            }
+            readyAt = now; // re-checked next frame
+            return true;
+        }
+        announcedAimWait = false;
+        return false;
     }
 
     /** Selects a hotbar slot and tells the server straight away, not on the next tick. */

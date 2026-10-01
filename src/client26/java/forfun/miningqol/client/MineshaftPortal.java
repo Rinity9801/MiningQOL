@@ -94,6 +94,11 @@ public final class MineshaftPortal {
         portalId = -1;
     }
 
+    /** Whether an entity is a Glacite Mineshaft portal ("[RANK] name's Mineshaft Portal"). */
+    public static boolean isPortalEntity(Entity entity) {
+        return entity instanceof ArmorStand stand && isPortal(stand);
+    }
+
     private static boolean isPortal(ArmorStand stand) {
         if (!stand.hasCustomName()) return false;
         String name = FORMATTING.matcher(stand.getCustomName().getString()).replaceAll("")

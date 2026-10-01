@@ -259,6 +259,13 @@ public class CorpseESP {
         claimedPositions.clear();
     }
 
+    /** Whether an entity is a frozen corpse (any type, tracked or not), judged by its helmet. */
+    public static boolean isCorpse(Entity entity) {
+        if (!(entity instanceof ArmorStand stand)) return false;
+        ItemStack helmet = stand.getItemBySlot(EquipmentSlot.HEAD);
+        return !helmet.isEmpty() && CorpseType.fromSkyblockId(getSkyblockId(helmet)) != null;
+    }
+
     private static boolean isCorpseTypeEnabled(CorpseType type) {
         switch (type) {
             case LAPIS: return lapisEnabled;
