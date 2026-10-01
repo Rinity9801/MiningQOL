@@ -299,8 +299,6 @@ public class MiningConfig {
     public java.util.List<String> autoForgeRecordedCrafts = new java.util.ArrayList<>();
     /** Built-in Auto Forge crafts hidden from the picker, by label. */
     public java.util.List<String> autoForgeHiddenCrafts = new java.util.ArrayList<>();
-    /** Auto Fusion never restores its on state: it starts off each launch for safety. */
-    public int autoFusionClickDelay = 4;
     public boolean shaftJoinCdEnabled = true;
     public int shaftJoinCdSeconds = 30;
 

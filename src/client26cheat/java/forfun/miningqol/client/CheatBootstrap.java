@@ -22,7 +22,6 @@ public final class CheatBootstrap {
     private static KeyMapping toggleAutoClickerKey;
     private static KeyMapping toggleShaftClickerKey;
     private static KeyMapping toggleInShaftClickKey;
-    private static KeyMapping toggleAutoFusionKey;
 
     private CheatBootstrap() {}
 
@@ -38,10 +37,6 @@ public final class CheatBootstrap {
             "key.miningqol.toggle_shaftclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         toggleInShaftClickKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.miningqol.toggle_inshaftclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
-        // Bound to ' by default so it can be hit with the fusion GUI open (see the screen
-        // key handler below, which is what makes a keybind work inside a GUI).
-        toggleAutoFusionKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.miningqol.toggle_autofusion", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_APOSTROPHE, category));
 
         AutoClickerHUD.register();
         forfun.miningqol.client.hotm.HotmManager.init();
@@ -55,7 +50,6 @@ public final class CheatBootstrap {
             while (toggleAutoClickerKey.consumeClick()) AutoClickerManager.toggle();
             while (toggleShaftClickerKey.consumeClick()) ShaftClickerManager.toggle();
             while (toggleInShaftClickKey.consumeClick()) InShaftClickManager.toggle();
-            while (toggleAutoFusionKey.consumeClick()) AutoFusionManager.toggle();
 
             if (client.level != null && client.player != null) {
                 AutoClickerManager.tick();
@@ -64,8 +58,6 @@ public final class CheatBootstrap {
                 InShaftClickManager.tick();
                 ShaftClickerManager.tick();
                 EmptyStashManager.tick();
-                ExcavatorMacro.tick();
-                AutoFusionManager.tick();
                 AutoForgeManager.tick(client);
                 ShaftJoinCdManager.tick();
                 forfun.miningqol.client.hotm.AutoHotmManager.tick();
@@ -89,16 +81,6 @@ public final class CheatBootstrap {
                         return true; // let Esc close the screen / abort the claim
                     }
                     return false; // swallow every other key
-                }
-                // Vanilla only fires keybinds in-world; match the toggle key here so it also
-                // works while a GUI (the fusion menu, a HUD screen) is open.
-                if (toggleAutoFusionKey.matches(keyEvent) && !(s instanceof net.minecraft.client.gui.screens.ChatScreen)) {
-                    AutoFusionManager.toggle();
-                    return false;
-                }
-                if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE && AutoFusionManager.isFusionScreen(s)) {
-                    AutoFusionManager.onEscape();
-                    return true; // Esc still closes the GUI
                 }
                 if (AutoForgeManager.shouldBlockKeys(s)) {
                     if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
@@ -158,27 +140,6 @@ public final class CheatBootstrap {
                         }));
             }
             dispatcher.register(emptyStash);
-            dispatcher.register(ClientCommands.literal("excavator")
-                .executes(ctx -> {
-                    ExcavatorMacro.toggle();
-                    return 1;
-                })
-                .then(ClientCommands.literal("stop").executes(ctx -> {
-                    ExcavatorMacro.stop("\u00A7cExcavator stopped.");
-                    return 1;
-                }))
-                .then(ClientCommands.literal("debug").executes(ctx -> {
-                    ExcavatorMacro.setDebug(!ExcavatorMacro.isDebug());
-                    ExcavatorMacro.printDebug();
-                    return 1;
-                })));
-
-            dispatcher.register(ClientCommands.literal("autofusion")
-                .executes(ctx -> {
-                    AutoFusionManager.toggle();
-                    return 1;
-                }));
-
             dispatcher.register(ClientCommands.literal("hotmconfig")
                 .executes(context -> {
                     forfun.miningqol.client.hotm.HotmChestScreen.open();
@@ -222,7 +183,6 @@ public final class CheatBootstrap {
                 CommClaimManager.onCommissionComplete(messageText);
             }
             EmptyStashManager.onChatMessage(messageText);
-            ExcavatorMacro.onChatMessage(messageText);
             AutoForgeManager.onChatMessage(messageText);
             ShaftJoinCdManager.onChatMessage(messageText);
             forfun.miningqol.client.hotm.AutoHotmManager.onChatMessage(messageText);
@@ -233,8 +193,6 @@ public final class CheatBootstrap {
             InShaftClickManager.cleanup();
             ShaftClickerManager.cleanup();
             EtherwarpClickManager.cleanup();
-            ExcavatorMacro.cleanup();
-            AutoFusionManager.cleanup();
         };
 
         // Auto Forge records a craft by watching the player's own container clicks.
@@ -307,7 +265,6 @@ public final class CheatBootstrap {
             AutoForgeManager.setRunCount(config.autoForgeRunCount);
 
             ShaftJoinCdManager.setEnabled(config.shaftJoinCdEnabled);
-            AutoFusionManager.setClickDelay(config.autoFusionClickDelay);
             ShaftJoinCdManager.setCooldownSeconds(config.shaftJoinCdSeconds);
 
             EtherwarpClickManager.setEnabled(config.orderedWaypointEtherwarpClick);
@@ -360,7 +317,6 @@ public final class CheatBootstrap {
             config.autoForgeRunCount = AutoForgeManager.getRunCount();
 
             config.shaftJoinCdEnabled = ShaftJoinCdManager.isEnabled();
-            config.autoFusionClickDelay = AutoFusionManager.getClickDelay();
             config.shaftJoinCdSeconds = ShaftJoinCdManager.getCooldownSeconds();
 
             config.orderedWaypointEtherwarpClick = EtherwarpClickManager.isEnabled();

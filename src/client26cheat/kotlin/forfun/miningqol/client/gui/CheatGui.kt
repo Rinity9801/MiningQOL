@@ -4,8 +4,6 @@ import forfun.miningqol.client.AutoClickerHUD
 import forfun.miningqol.client.AutoClickerManager
 import forfun.miningqol.client.AutoForgeManager
 import forfun.miningqol.client.CommClaimManager
-import forfun.miningqol.client.ExcavatorMacro
-import forfun.miningqol.client.AutoFusionManager
 import forfun.miningqol.client.EmptyStashManager
 import forfun.miningqol.client.EtherwarpClickManager
 import forfun.miningqol.client.InShaftClickManager
@@ -124,11 +122,6 @@ object CheatGui {
                 .add(bool("Toggle Message", "Chat message when toggled via keybind",
                     { ShaftClickerManager.isShowToggleMessage() }, { ShaftClickerManager.setShowToggleMessage(it) }))
 
-            module("Auto Fusion", "Repeat Previous Fusion + confirm, on a loop", automation,
-                { AutoFusionManager.isEnabled() }, { AutoFusionManager.setEnabled(it) })
-                .add(slider("Click Delay", "Ticks between clicks", 1.0, 20.0, 1.0, " ticks",
-                    { AutoFusionManager.getClickDelay().toDouble() }, { AutoFusionManager.setClickDelay(it.toInt()) }))
-
             module("Comm Claim", "/claimcomms — auto commission claiming", automation, null, null)
                 .add(bool("Auto Trigger", "Run when all mining commissions complete",
                     { CommClaimManager.isAutoTrigger() }, { CommClaimManager.setAutoTrigger(it) }))
@@ -175,16 +168,6 @@ object CheatGui {
                 .add(forfun.miningqol.client.shatter.ActionSetting("Run", "Stops on its own when the stash is empty", false,
                     Runnable { EmptyStashManager.toggle() })
                     .label { if (EmptyStashManager.isRunning()) "Stop" else "Start" })
-
-            module("Excavator", "/excavator — Fossil Excavator scrap digger", automation, null, null)
-                .add(bool("No Delay", "Click as soon as the grid updates instead of waiting the tick delay",
-                    { ExcavatorMacro.isNoDelay() }, { ExcavatorMacro.setNoDelay(it) }))
-                .add(slider("Tick Delay", "", 1.0, 10.0, 1.0, " ticks",
-                    { ExcavatorMacro.getTickDelay().toDouble() }, { ExcavatorMacro.setTickDelay(it.toInt()) }))
-                .add(forfun.miningqol.client.shatter.ActionSetting("Run",
-                    "Stand next to the Fossil Excavator first; stops when you walk away or run out of scrap", false,
-                    Runnable { ExcavatorMacro.toggle() })
-                    .label { if (ExcavatorMacro.isRunning()) "Stop" else "Start" })
 
             val autoForge = module("Auto Forge", "Craft picker whenever The Forge opens", automation,
                 { AutoForgeManager.isEnabled() }, { AutoForgeManager.setEnabled(it) })
