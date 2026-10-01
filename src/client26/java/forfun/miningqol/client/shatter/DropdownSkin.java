@@ -39,11 +39,7 @@ public class DropdownSkin implements Skin {
 	private final Map<Category, float[]> drawn = new HashMap<>();
 
 	public DropdownSkin() {
-		float x = 20f;
-		for (Category c : Category.values()) {
-			if (ShatterConfig.panel(c) == null) ShatterConfig.setPanel(c, new ShatterConfig.Panel(Math.round(x), 20, true));
-			x += PANEL_W + GAP;
-		}
+		for (Category c : Category.values()) panel(c);
 	}
 
 	private boolean animate() {
@@ -70,8 +66,21 @@ public class DropdownSkin implements Skin {
 		drawMoveButton(width / 2f + 110f + 8f, height - 46f, mx, my);
 	}
 
-	private void drawPanel(Category c, float mx, float my) {
+	/**
+	 * The category's saved panel, created in the next free column when it has none — a category
+	 * can be registered after the skin was built, or be new since the config was saved.
+	 */
+	private ShatterConfig.Panel panel(Category c) {
 		ShatterConfig.Panel p = ShatterConfig.panel(c);
+		if (p == null) {
+			p = new ShatterConfig.Panel(Math.round(20f + c.ordinal * (PANEL_W + GAP)), 20, true);
+			ShatterConfig.setPanel(c, p);
+		}
+		return p;
+	}
+
+	private void drawPanel(Category c, float mx, float my) {
+		ShatterConfig.Panel p = panel(c);
 		float x = Math.max(0, Math.min(width - PANEL_W, p.x()));
 		float y = Math.max(0, Math.min(height - HEADER_H, p.y()));
 		List<Module> modules = Modules.in(c);
@@ -283,7 +292,7 @@ public class DropdownSkin implements Skin {
 					Category c = Category.byId(h.option());
 					if (button == 0) {
 						dragging = c;
-						ShatterConfig.Panel p = ShatterConfig.panel(c);
+						ShatterConfig.Panel p = panel(c);
 						dragDx = mx - p.x();
 						dragDy = my - p.y();
 						dragMoved = false;
@@ -318,7 +327,7 @@ public class DropdownSkin implements Skin {
 	@Override
 	public void mouseDragged(float mx, float my) {
 		if (dragging != null) {
-			ShatterConfig.Panel p = ShatterConfig.panel(dragging);
+			ShatterConfig.Panel p = panel(dragging);
 			int nx = Math.round(Math.max(0, Math.min(width - PANEL_W, mx - dragDx)));
 			int ny = Math.round(Math.max(0, Math.min(height - HEADER_H, my - dragDy)));
 			if (nx != p.x() || ny != p.y()) dragMoved = true;
@@ -348,7 +357,7 @@ public class DropdownSkin implements Skin {
 	}
 
 	private void togglePanel(Category c) {
-		ShatterConfig.Panel p = ShatterConfig.panel(c);
+		ShatterConfig.Panel p = panel(c);
 		ShatterConfig.setPanel(c, new ShatterConfig.Panel(p.x(), p.y(), !p.open()));
 	}
 }

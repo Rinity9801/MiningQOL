@@ -14,11 +14,13 @@ import net.minecraft.network.chat.Component;
  * first, and to the skin otherwise.
  */
 public class ShatterScreen extends Screen {
-    private final Skin skin = new DropdownSkin();
+    private final Skin skin;
 
     public ShatterScreen() {
         super(Component.literal("MiningQOL"));
+        // Categories must exist before the skin lays out its panels.
         ShatterModules.ensureRegistered();
+        skin = new DropdownSkin();
         CommandKeybindRows.reload();
     }
 
