@@ -101,6 +101,9 @@ public final class MineshaftAutoParty {
     private static int settleSeconds = 5;
     /** Set while scanning when the tab list's corpse section has rendered. */
     private static boolean sawCorpseSection;
+    /** Shaft id as read on the latest scan, and how many consecutive scans agreed on it. */
+    private static ShaftType lastSeenType;
+    private static int typeStableScans;
 
     /** Player name (as typed) -> what they want. Insertion ordered: the list is a priority. */
     private static final Map<String, Signup> signups = new LinkedHashMap<>();
@@ -167,7 +170,7 @@ public final class MineshaftAutoParty {
 
         String sidebar = sidebarText(client);
         // Mineshafts only — no other scoreboard should be searched for shaft ids.
-        if (sidebar == null || !sidebar.contains("Mineshaft")) {
+        if (sidebar == null || !saysMineshaft(sidebar)) {
             // Hypixel rebuilds the scoreboard periodically, so a single empty reading is
             // not proof the shaft was left — and treating it as such re-arms the trigger
             // and parties everyone a second time.
@@ -176,6 +179,8 @@ public final class MineshaftAutoParty {
                 shaftSeenAt = 0;
                 shaftFromWarp = false;
                 shaftCorpsePeak.clear();
+                lastSeenType = null;
+                typeStableScans = 0;
             }
             return;
         }
@@ -191,6 +196,18 @@ public final class MineshaftAutoParty {
         // so a disband part way through cannot hand the shaft back to the auto-party.
         if (foreignParty) shaftFromWarp = true;
 
+        // The shaft id line renders a beat after "Mineshaft" does — and on a shaft-to-shaft
+        // warp the old shaft's id can linger on the scoreboard for a scan or two. Track what
+        // the id reads each scan and only trust it once two consecutive scans agree, the same
+        // way the commit already waits for the tab list to settle.
+        ShaftType seen = ShaftType.fromScoreboard(sidebar);
+        if (seen != null && seen == lastSeenType) {
+            typeStableScans++;
+        } else {
+            lastSeenType = seen;
+            typeStableScans = seen == null ? 0 : 1;
+        }
+
         Map<CorpseType, Integer> corpses = observeCorpses(client);
         // The tab list and the ESP fill in a beat after the shaft loads, and an "Any"
         // sign-up matches with no data at all. Committing early would party them alone and
@@ -198,10 +215,10 @@ public final class MineshaftAutoParty {
         // corpse section has rendered — or until the settle runs out, for a shaft that
         // never shows one.
         long waited = now - shaftSeenAt;
-        boolean ready = sawCorpseSection && waited >= MIN_SETTLE_MS;
+        boolean ready = sawCorpseSection && waited >= MIN_SETTLE_MS && typeStableScans >= 2;
         if (!ready && waited < settleSeconds * 1000L) return;
 
-        ShaftType shaft = ShaftType.fromScoreboard(sidebar);
+        ShaftType shaft = typeStableScans >= 2 ? lastSeenType : ShaftType.fromScoreboard(sidebar);
         boolean littlefoot = ShaftESP.hasLittlefoot();
         List<String> wanted = playersWanting(shaft, corpses, littlefoot);
 
@@ -209,6 +226,10 @@ public final class MineshaftAutoParty {
             // Every command below assumes we lead the party, so stay out of the way
             // while we are a guest in someone else's.
             if (foreignParty || shaftFromWarp || wanted.isEmpty()) return;
+            // No id, no corpses, no littlefoot after the settle: that is not a real shaft —
+            // it's the spawn announcement / a shaft the server cancelled before entry. A
+            // genuine shaft always shows its id (and usually corpses); never party on nothing.
+            if (shaft == null && corpses.isEmpty() && !littlefoot) return;
             if (now - partyEndedAt < PARTY_COOLDOWN_MS) return;
             actedThisShaft = true;
             startParty(client, describe(shaft, corpses, littlefoot), wanted);
@@ -392,6 +413,8 @@ public final class MineshaftAutoParty {
         shaftCorpsePeak.clear();
         pendingInvites.clear();
         roster.clear();
+        lastSeenType = null;
+        typeStableScans = 0;
     }
 
     private static void send(Minecraft client, String command) {
@@ -449,11 +472,11 @@ public final class MineshaftAutoParty {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null || client.level == null) return false;
         String sidebar = sidebarText(client);
-        return sidebar != null && sidebar.contains("Mineshaft");
+        return saysMineshaft(sidebar);
     }
 
     /** The sidebar as one formatting-stripped string, or null when there is no sidebar. */
-    private static String sidebarText(Minecraft client) {
+    public static String sidebarText(Minecraft client) {
         if (client.level == null) return null;
         Scoreboard scoreboard = client.level.getScoreboard();
         Objective sidebar = scoreboard.getDisplayObjective(DisplaySlot.SIDEBAR);
@@ -473,7 +496,7 @@ public final class MineshaftAutoParty {
     }
 
     /** Tab list entries, formatting stripped, blanks dropped. */
-    private static List<String> tabLines(Minecraft client) {
+    public static List<String> tabLines(Minecraft client) {
         List<String> lines = new ArrayList<>();
         if (client.getConnection() == null) return lines;
         for (PlayerInfo info : client.getConnection().getListedOnlinePlayers()) {
@@ -497,6 +520,16 @@ public final class MineshaftAutoParty {
      * <p>Hypixel writes the available state as {@code NOT LOOTED}, which contains the
      * word LOOTED — so the negatives have to be ruled out before the positive.
      */
+    /**
+     * Whether scoreboard text names a mineshaft. The shaft island itself is called
+     * "Glacite Mineshafts" (the join message reads "entered Glacite Mineshafts!"), so the
+     * plural has to count — excluding it made every shaft-gated feature blind inside a
+     * shaft. The public tunnels area is "Glacite Tunnels" and never matches.
+     */
+    public static boolean saysMineshaft(String text) {
+        return text != null && text.contains("Mineshaft");
+    }
+
     private static boolean isLooted(String upperCasedLine) {
         if (!upperCasedLine.contains("LOOTED")) return false;
         return !upperCasedLine.contains("NOT LOOTED") && !upperCasedLine.contains("UNLOOTED");
@@ -510,30 +543,49 @@ public final class MineshaftAutoParty {
         return shaftCorpsePeak;
     }
 
-    private static Map<CorpseType, Integer> corpseCounts(Minecraft client) {
+    public static Map<CorpseType, Integer> corpseCounts(Minecraft client) {
         Map<CorpseType, Integer> lineCount = new EnumMap<>(CorpseType.class);
         Map<CorpseType, Integer> lastNumber = new EnumMap<>(CorpseType.class);
         sawCorpseSection = false;
+        boolean inCorpseSection = false;
 
         for (String line : tabLines(client)) {
             String upper = line.toUpperCase(Locale.ROOT);
             // The "Frozen Corpses:" header shows the section has rendered, whether or not
             // this shaft actually holds any.
-            if (upper.contains("CORPSE")) sawCorpseSection = true;
-            if (isLooted(upper)) continue;
+            if (upper.contains("CORPSE")) {
+                sawCorpseSection = true;
+                inCorpseSection = true;
+                continue;   // the header itself is not an entry
+            }
+            // Only lines INSIDE the corpse section count. The VANGUARD tokens include the
+            // loose "FAIR", and matching the whole tab list let player names and other
+            // widgets tally as corpses ("15x Vanguard" from unrelated lines).
+            if (!inCorpseSection) continue;
 
+            CorpseType matched = null;
             for (CorpseType type : CorpseType.values()) {
-                if (!type.matches(upper)) continue;
-                lineCount.merge(type, 1, Integer::sum);
-                Matcher matcher = CORPSE_COUNT.matcher(line);
-                if (matcher.find()) {
-                    try {
-                        lastNumber.put(type, Integer.parseInt(matcher.group(1)));
-                    } catch (NumberFormatException ignored) {
-                        // absurdly long digit run; the line tally still counts it
-                    }
+                if (type.matches(upper)) {
+                    matched = type;
+                    break;
                 }
-                break;   // one corpse per line
+            }
+            // The section ends at the first line that is neither a corpse entry nor a
+            // looted marker — whatever follows (player rows, the next widget) must not count.
+            if (matched == null && !upper.contains("LOOTED")) {
+                inCorpseSection = false;
+                continue;
+            }
+            if (isLooted(upper) || matched == null) continue;
+
+            lineCount.merge(matched, 1, Integer::sum);
+            Matcher matcher = CORPSE_COUNT.matcher(line);
+            if (matcher.find()) {
+                try {
+                    lastNumber.put(matched, Integer.parseInt(matcher.group(1)));
+                } catch (NumberFormatException ignored) {
+                    // absurdly long digit run; the line tally still counts it
+                }
             }
         }
 
@@ -620,9 +672,10 @@ public final class MineshaftAutoParty {
         Map<CorpseType, Integer> corpses = observeCorpses(client);
         boolean littlefoot = ShaftESP.hasLittlefoot();
 
-        MqoChat.reply("§6[Auto Party] §7In mineshaft: §f" + sidebar.contains("Mineshaft"));
+        MqoChat.reply("§6[Auto Party] §7In mineshaft: §f" + saysMineshaft(sidebar));
         MqoChat.reply("§6[Auto Party] §7Shaft id: §f"
-            + (shaft == null ? "§cnone found" : shaft.scoreboardId() + " §7(" + shaft.displayName() + ")"));
+            + (shaft == null ? "§cnone found" : shaft.scoreboardId() + " §7(" + shaft.displayName() + ")")
+            + " §7— stable for §f" + typeStableScans + " §7scans");
         MqoChat.reply("§6[Auto Party] §7Littlefoot (ESP): §f" + littlefoot);
         MqoChat.reply("§6[Auto Party] §7Corpse section rendered: §f" + sawCorpseSection);
         MqoChat.reply("§6[Auto Party] §7Guest in another party: §f" + foreignParty

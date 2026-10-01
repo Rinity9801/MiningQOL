@@ -66,6 +66,10 @@ public class CommStatsHUD {
             if (!CommTracker.isStatsEnabled()) {
                 return;
             }
+            // Shares the commission HUD's "Hide with F1" toggle — the two draw together.
+            if (CommissionHUD.isHideWithF1() && mc.options.hideGui) {
+                return;
+            }
             if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) {
                 return;
             }

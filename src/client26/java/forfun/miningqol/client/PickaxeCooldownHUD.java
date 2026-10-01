@@ -48,6 +48,7 @@ public class PickaxeCooldownHUD {
 
     private static boolean registered = false;
     private static boolean enabled = true;
+    private static boolean hideWithF1 = false;
 
     private static String currentCooldown = "Ready";
     private static String abilityName = "Pickaxe";
@@ -188,6 +189,7 @@ public class PickaxeCooldownHUD {
 
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
+        if (hideWithF1 && client.options.hideGui) return;
 
         Font font = client.font;
 
@@ -287,6 +289,14 @@ public class PickaxeCooldownHUD {
 
     public static void setEnabled(boolean value) {
         enabled = value;
+    }
+
+    public static boolean isHideWithF1() {
+        return hideWithF1;
+    }
+
+    public static void setHideWithF1(boolean value) {
+        hideWithF1 = value;
     }
 
     public static int getX() {

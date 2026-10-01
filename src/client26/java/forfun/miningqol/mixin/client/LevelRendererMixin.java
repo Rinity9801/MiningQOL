@@ -42,7 +42,12 @@ public class LevelRendererMixin {
         forfun.miningqol.client.ShaftESP.render(cameraState, viewMatrix);
         forfun.miningqol.client.CorpseESP.render(cameraState, viewMatrix);
         forfun.miningqol.client.EfficientMinerOverlay.render(cameraState, viewMatrix);
+        forfun.miningqol.client.WispRadius.render(cameraState, viewMatrix);
+        forfun.miningqol.client.MineshaftPortal.render(cameraState, viewMatrix);
         // No-op unless the local-only ESP feed module is compiled in.
         forfun.miningqol.client.EspHooks.render(cameraState);
+        if (forfun.miningqol.client.CheatHooks.onRenderFrame != null) {
+            forfun.miningqol.client.CheatHooks.onRenderFrame.run();
+        }
     }
 }

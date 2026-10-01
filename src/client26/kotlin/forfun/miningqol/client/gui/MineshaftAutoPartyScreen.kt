@@ -59,7 +59,7 @@ class MineshaftAutoPartyScreen(private val parent: Screen?) : VexelScreen("Mines
 
         val panel = Rectangle(
             backgroundColor = SettingsUi.alpha(SettingsUi.PANEL_BG),
-            borderColor = SettingsUi.edge(SettingsUi.PANEL_BORDER),
+            borderColor = SettingsUi.PANEL_OUTLINE,
             borderRadius = 16f,
             borderThickness = SettingsUi.EDGE_WIDTH
         )
@@ -557,7 +557,7 @@ class MineshaftAutoPartyScreen(private val parent: Screen?) : VexelScreen("Mines
     }
 
     private fun rebuild() {
-        // Deferred a tick, like VexelMainScreen: afterInitialization does not re-run on
+        // Deferred a tick: afterInitialization does not re-run on
         // setScreen, and tearing the element tree down inside a click dispatch is unsafe.
         playerInput = null
         acceptInput = null

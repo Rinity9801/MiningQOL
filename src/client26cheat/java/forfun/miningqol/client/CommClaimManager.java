@@ -102,8 +102,11 @@ public class CommClaimManager {
         String justCompleted = name.trim();
         int otherMiningPending = 0;
         for (String line : getTabListLines(client)) {
-            String l = line.replaceAll("§.", "").trim().toLowerCase();
-            if (!(l.contains("%") || l.contains("done"))) continue;
+            String cleanLine = line.replaceAll("§.", "").trim();
+            java.util.regex.Matcher commMatch = COMMISSION_LINE.matcher(cleanLine);
+            if (!commMatch.matches()) continue;
+            String l = cleanLine.toLowerCase();
+            String progress = commMatch.group(2).toLowerCase();
             if (l.contains("slayer")) continue;
             if (l.contains("mineshaft explorer")) continue; // instant-claim, never batched
             boolean m = false;
@@ -112,7 +115,7 @@ public class CommClaimManager {
             }
             if (!m) continue;
             if (!justCompleted.isEmpty() && l.contains(justCompleted)) continue; // this one — its tab lags
-            if (!(l.contains("done") || l.contains("100%"))) otherMiningPending++;
+            if (!(progress.equals("done") || progress.startsWith("100"))) otherMiningPending++;
         }
         if (otherMiningPending == 0) {
             fireAutoClaim("all mining commissions done");
@@ -167,13 +170,16 @@ public class CommClaimManager {
         }
         // Mismyla cannot be called from a shaft. Hold the trigger without latching or
         // announcing, so it fires on its own once you are out — Mineshaft Explorer
-        // completes the moment you enter one, which is exactly this case.
-        if (hasMineshaftScoreboard(client)) {
+        // completes the moment you enter one, which is exactly this case. The Royal
+        // Pigeon works in shafts, so it claims right there.
+        boolean inShaft = hasMineshaftScoreboard(client);
+        if (inShaft && !usePigeon) {
             pendingFireTicks = Math.max(pendingFireTicks, 200);
             pendingFireReason = reason;
             return;
         }
-        if (!tabHasCommissionsWidget(client)) {
+        // A shaft's tab list has no Commissions widget to wait for.
+        if (!inShaft && !tabHasCommissionsWidget(client)) {
             pendingFireTicks = 200; // keep trying for ~10s while the tab populates
             pendingFireReason = reason;
             return;
@@ -207,6 +213,15 @@ public class CommClaimManager {
     private static boolean blockInput = true;   // while running, swallow the player's clicks/keys
                                                 // so they can't interfere with the automated claim
     private static boolean hideGui = false;     // while running, hide the container GUI visuals
+    private static boolean usePigeon = false;   // open commissions with the Royal Pigeon instead of
+                                                // calling Queen Mismyla on the Abiphone
+    /** The Royal Pigeon has a 5s use cooldown; using it sooner silently does nothing. */
+    private static final long PIGEON_COOLDOWN_MS = 5_100L;
+    private static long lastPigeonUseAt = 0L;
+    /** How long the pigeon is held before its click, so the swap is visible (the Pigeon Hold slider). */
+    private static int pigeonHoldMs = 100;
+    /** How long it stays in hand after the click before switching back to the mining tool. */
+    private static int pigeonReleaseMs = 25;
 
     // Config values
     private static int batPersonSlot = 1; // 1-12, loadout index (equip before claim)
@@ -218,6 +233,9 @@ public class CommClaimManager {
     private enum State {
         IDLE,
         CALL_MISMYLA,
+        USE_PIGEON,
+        CLICK_PIGEON,
+        PIGEON_BACK_TO_TOOL,
         OPEN_CLAIM_LOADOUT,
         WAIT_CLAIM_LOADOUT,
         CLOSE_CLAIM_LOADOUT,
@@ -234,6 +252,9 @@ public class CommClaimManager {
     private static long readyAt = 0L;
     private static long timeoutAt = 0L;
     private static int claimAttempts = 0;
+    /** "Peridot Gemstone Collector: 15%" / "Mineshaft Explorer: DONE". */
+    private static final java.util.regex.Pattern COMMISSION_LINE =
+        java.util.regex.Pattern.compile("^(.+?):\\s*(\\d+(?:\\.\\d+)?%|DONE)\\s*$", java.util.regex.Pattern.CASE_INSENSITIVE);
     private static long lastShaftCheckAt = 0L;
     private static long fireNotBefore = 0L;
     private static final int MAX_CLAIM_ATTEMPTS = 10;
@@ -249,21 +270,24 @@ public class CommClaimManager {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
 
-        // Mismyla cannot be called from a shaft, so the run would only time out.
-        if (hasMineshaftScoreboard(client)) {
+        // Mismyla cannot be called from a shaft, so the run would only time out. The
+        // Royal Pigeon can be used anywhere.
+        if (!usePigeon && hasMineshaftScoreboard(client)) {
             MqoChat.log(Component.literal("\u00A76[CommClaim] \u00A7cUnavailable in mineshafts."));
             return;
         }
 
         running = true;
-        phase = State.CALL_MISMYLA;
+        // The pigeon opens the menu on the spot, so any loadout swap has to come first;
+        // Mismyla takes a while to answer, so her call goes out before the swap.
+        phase = !usePigeon ? State.CALL_MISMYLA : wardrobeSwap ? State.OPEN_CLAIM_LOADOUT : State.USE_PIGEON;
         // A beat before the first command so the sidebar can catch up with a location
         // change that happened in the same moment as the trigger.
         readyAt = System.currentTimeMillis() + 500L;
         timeoutAt = 0L;
         claimAttempts = 0;
 
-        LOGGER.info("[CommClaim] Starting commission claim sequence (loadoutSwap={})", wardrobeSwap);
+        LOGGER.info("[CommClaim] Starting commission claim sequence (loadoutSwap={}, pigeon={})", wardrobeSwap, usePigeon);
         MqoChat.log(Component.literal("\u00A76[CommClaim] \u00A7aStarting commission claim..."));
     }
 
@@ -301,7 +325,8 @@ public class CommClaimManager {
         // Retry a claim that was held for the tab to load (checked every tick).
         if (pendingFireTicks > 0) {
             pendingFireTicks--;
-            if (tabHasCommissionsWidget(client)) {
+            // In a shaft there is no widget to wait for, and the pigeon can claim there.
+            if (tabHasCommissionsWidget(client) || (usePigeon && hasMineshaftScoreboard(client))) {
                 String reason = pendingFireReason != null ? pendingFireReason : "commission ready";
                 pendingFireTicks = 0;
                 pendingFireReason = null;
@@ -333,12 +358,13 @@ public class CommClaimManager {
             if (clean.isEmpty()) continue;
             String lower = clean.toLowerCase();
 
-            // A commission line is one showing progress (a percentage) or "DONE".
-            // This excludes location/HUD text like "Glacite Tunnels".
-            boolean commissionLine = lower.contains("%") || lower.contains("done");
-            if (!commissionLine) continue;
+            // A commission line reads "Name: 15%" or "Name: DONE". Anything looser lets
+            // player rows through: a name like "AlmostNamedOne" contains "done".
+            java.util.regex.Matcher commMatch = COMMISSION_LINE.matcher(clean);
+            if (!commMatch.matches()) continue;
             if (isSkillOrXpLine(lower)) continue; // skill widget lines also carry percentages
             commissionLines++;
+            String progress = commMatch.group(2).toLowerCase();
 
             boolean slayer = lower.contains("slayer");
             // Mineshaft Explorer stays non-mining even where its tab name carries a
@@ -353,7 +379,7 @@ public class CommClaimManager {
                     }
                 }
             }
-            boolean isDone = lower.contains("done") || lower.contains("100%");
+            boolean isDone = progress.equals("done") || progress.startsWith("100");
 
             if (isMining) {
                 miningTotal++;
@@ -426,9 +452,9 @@ public class CommClaimManager {
         if (!running) return;
 
         long now = System.currentTimeMillis();
-        // A warp can drop you into a shaft part way through; the rest of the run would
-        // only time out there.
-        if (now - lastShaftCheckAt >= 500L) {
+        // A warp can drop you into a shaft part way through; with the Abiphone the rest of
+        // the run would only time out there. The pigeon carries on.
+        if (!usePigeon && now - lastShaftCheckAt >= 500L) {
             lastShaftCheckAt = now;
             if (hasMineshaftScoreboard(client)) {
                 fail("Entered a mineshaft — claim aborted.");
@@ -454,6 +480,7 @@ public class CommClaimManager {
                     waitForCommissions();
                 }
             }
+            case USE_PIGEON, CLICK_PIGEON, PIGEON_BACK_TO_TOOL -> stepPigeon(client, now);
             case OPEN_CLAIM_LOADOUT -> {
                 client.player.connection.sendCommand("loadout");
                 phase = State.WAIT_CLAIM_LOADOUT;
@@ -472,13 +499,17 @@ public class CommClaimManager {
             }
             case CLOSE_CLAIM_LOADOUT -> {
                 closeIfOpen(client, true);
-                waitForCommissions();
+                if (usePigeon) {
+                    advanceIn(State.USE_PIGEON, COMMISSION_CLOSE_DELAY_MS);
+                } else {
+                    waitForCommissions();
+                }
             }
             case WAIT_COMMISSIONS -> {
                 if (isCommissionsOpen(client)) {
                     advance(State.CLAIM);
                 } else if (now >= timeoutAt) {
-                    fail("Queen Mismyla did not answer.");
+                    fail(usePigeon ? "The Royal Pigeon menu did not open." : "Queen Mismyla did not answer.");
                 }
             }
             case CLAIM -> {
@@ -546,6 +577,54 @@ public class CommClaimManager {
     /** How long a menu gets to appear before the run is abandoned. */
     private static long menuTimeoutMs() {
         return Math.max(5, guiWaitDelay) * 1000L;
+    }
+
+    /**
+     * Every rendered frame: runs the pigeon steps when they are due, so the Pigeon Hold and
+     * Pigeon Release delays land to the frame rather than on the next 50ms client tick.
+     */
+    public static void frame() {
+        if (!running || System.currentTimeMillis() < readyAt) return;
+        if (phase != State.USE_PIGEON && phase != State.CLICK_PIGEON && phase != State.PIGEON_BACK_TO_TOOL) return;
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null || client.gameMode == null) return;
+        stepPigeon(client, System.currentTimeMillis());
+    }
+
+    /** Swap to the pigeon, click it after Pigeon Hold, swap back after Pigeon Release. */
+    private static void stepPigeon(Minecraft client, long now) {
+        switch (phase) {
+            case USE_PIGEON -> {
+                int slot = findPigeonSlot(client);
+                if (slot < 0) {
+                    fail("No Royal Pigeon in your hotbar.");
+                    return;
+                }
+                long cooldownEnds = lastPigeonUseAt + PIGEON_COOLDOWN_MS;
+                if (now < cooldownEnds) {
+                    readyAt = cooldownEnds;
+                    return;
+                }
+                selectSlotNow(client, slot);
+                advanceIn(State.CLICK_PIGEON, pigeonHoldMs);
+            }
+            case CLICK_PIGEON -> {
+                client.gameMode.useItem(client.player, net.minecraft.world.InteractionHand.MAIN_HAND);
+                lastPigeonUseAt = now;
+                advanceIn(State.PIGEON_BACK_TO_TOOL, pigeonReleaseMs);
+            }
+            case PIGEON_BACK_TO_TOOL -> {
+                selectSlotNow(client, Math.max(0, Math.min(8, refinedToolSlot)));
+                waitForCommissions();
+            }
+            default -> { }
+        }
+    }
+
+    /** Selects a hotbar slot and tells the server straight away, not on the next tick. */
+    private static void selectSlotNow(Minecraft client, int slot) {
+        client.player.getInventory().setSelectedSlot(slot);
+        ((forfun.miningqol.mixin.client.MultiPlayerGameModeInvoker) client.gameMode).miningqol$ensureHasSentCarriedItem();
     }
 
     private static void advance(State next) {
@@ -723,6 +802,53 @@ public class CommClaimManager {
 
     public static void setBlockInput(boolean enabled) {
         blockInput = enabled;
+    }
+
+    /**
+     * The Royal Pigeon in the hotbar, by its SkyBlock id (custom data or the id line in its
+     * lore), falling back to the name. -1 when there is none.
+     */
+    private static int findPigeonSlot(Minecraft client) {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = client.player.getInventory().getItem(i);
+            if (stack.isEmpty()) continue;
+            var customData = stack.get(DataComponents.CUSTOM_DATA);
+            if (customData != null && customData.toString().contains("ROYAL_PIGEON")) return i;
+            var lore = stack.get(DataComponents.LORE);
+            if (lore != null) {
+                for (var line : lore.lines()) {
+                    if (line.getString().contains("ROYAL_PIGEON")) return i;
+                }
+            }
+            if (stack.getHoverName().getString().replaceAll("\u00A7.", "").toLowerCase(Locale.ROOT).contains("royal pigeon")) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public static int getPigeonHoldMs() {
+        return pigeonHoldMs;
+    }
+
+    public static void setPigeonHoldMs(int ms) {
+        pigeonHoldMs = Math.max(0, Math.min(1000, ms));
+    }
+
+    public static int getPigeonReleaseMs() {
+        return pigeonReleaseMs;
+    }
+
+    public static void setPigeonReleaseMs(int ms) {
+        pigeonReleaseMs = Math.max(0, Math.min(1000, ms));
+    }
+
+    public static boolean isUsePigeon() {
+        return usePigeon;
+    }
+
+    public static void setUsePigeon(boolean enabled) {
+        usePigeon = enabled;
     }
 
     public static boolean isHideGui() {

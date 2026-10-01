@@ -124,6 +124,9 @@ public class OrderedWaypointRenderer {
             // Only the camera-relative transform happens per frame. Colour, alpha and thickness are
             // applied here rather than baked in, so changing them in the GUI still looks instant.
             // Faces first so the edges land on top of the fill rather than under it.
+            // Re-fetched: line() asked the immediate buffer source for a different render
+            // type, which ends the boxes' buffer — writing to the old one crashes "Not building!".
+            quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
             if (OrderedWaypointManager.isBlockOutlineFill()) {
                 for (double[] f : cachedFaces) {
                     face(quads, pose, camPos, f[0], f[1], f[2], (int) f[3],

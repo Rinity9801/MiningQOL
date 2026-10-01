@@ -18,6 +18,12 @@ public class ContainerScreenHideMixin {
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V",
             at = @At("HEAD"), cancellable = true)
     private void miningqol$hideDuringClaim(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        // Custom commissions menu GUI: the NanoVG pass draws the replacement each frame.
+        if (forfun.miningqol.client.CommissionGui.renderReplacing(
+                (net.minecraft.client.gui.screens.Screen) (Object) this, mouseX, mouseY)) {
+            ci.cancel();
+            return;
+        }
         if (CheatHooks.hideContainerGui != null && CheatHooks.hideContainerGui.getAsBoolean()) {
             ci.cancel();
             return;
@@ -28,6 +34,33 @@ public class ContainerScreenHideMixin {
                     (net.minecraft.client.gui.screens.Screen) (Object) this, ctx, mouseX, mouseY)) {
             ci.cancel();
         }
+    }
+
+    /** The item/slot passes are invoked separately from extractRenderState — hide them too. */
+    @Inject(method = "extractContents(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V",
+            at = @At("HEAD"), cancellable = true)
+    private void miningqol$hideContents(GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        if (miningqol$hideAll()) ci.cancel();
+    }
+
+    @Inject(method = "extractCarriedItem(Lnet/minecraft/client/gui/GuiGraphicsExtractor;II)V",
+            at = @At("HEAD"), cancellable = true)
+    private void miningqol$hideCarried(GuiGraphicsExtractor ctx, int mouseX, int mouseY, CallbackInfo ci) {
+        if (miningqol$hideAll()) ci.cancel();
+    }
+
+    @Inject(method = "extractSnapbackItem(Lnet/minecraft/client/gui/GuiGraphicsExtractor;)V",
+            at = @At("HEAD"), cancellable = true)
+    private void miningqol$hideSnapback(GuiGraphicsExtractor ctx, CallbackInfo ci) {
+        if (miningqol$hideAll()) ci.cancel();
+    }
+
+    private boolean miningqol$hideAll() {
+        if (forfun.miningqol.client.CommissionGui.isReplacing(
+                (net.minecraft.client.gui.screens.Screen) (Object) this)) {
+            return true;
+        }
+        return CheatHooks.hideContainerGui != null && CheatHooks.hideContainerGui.getAsBoolean();
     }
 
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;IIF)V",

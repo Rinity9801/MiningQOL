@@ -26,6 +26,8 @@ base {
 loom {
     if (is26_1_2) {
         noIntermediateMappings()
+        // official-namespace widener; 1.21.11 builds use yarn and would reject it
+        accessWidenerPath.set(rootProject.file("src/main/resources/miningqol.accesswidener"))
     }
 
     splitEnvironmentSourceSets()

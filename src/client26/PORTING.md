@@ -87,14 +87,14 @@ differs from 1.21: `Pos`/`Size` are in `xyz.meowing.vexel.components.base.enums`
 Use the `SettingsUi` helpers + copy `OrderedWaypointsCategoryScreen.kt`.
 - NEVER open a screen with Vexel's `display()` — it fires from a timer thread and
   crashes fabric-screen-api. Use `client.schedule(() -> client.setScreen(...))`.
-- Add new feature settings as a category card in `gui/VexelMainScreen.kt`.
+- Add new feature settings as a module in `shatter/ShatterModules.java` (the dropdown menu).
 
 ## Integration points (coordinate — single owner each)
 
 - `MiningqolClient.java` (entrypoint): feature init, tick handlers, command registration
 - `config/MiningConfig.java`: fields + `applyToGame()` + `loadFromGame()`
 - `miningqol.client.mixins.json`: register any new mixin class
-- `gui/VexelMainScreen.kt`: category cards
+- `shatter/ShatterModules.java`: menu modules
 
 When porting a feature as a standalone class, keep the same public static API
 (setEnabled/isEnabled/getters/setters) as the 1.21 version so config and GUI

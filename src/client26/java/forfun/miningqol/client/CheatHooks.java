@@ -25,6 +25,8 @@ public final class CheatHooks {
     public static BooleanSupplier hideContainerGui = null;
     /** Cheat drawing on container GUIs (e.g. the Auto Forge picker/status). */
     public static ContainerGuiOverlay containerGuiOverlay = null;
+    /** Called once per render frame after the level renders (smooth cheat rotations). */
+    public static Runnable onRenderFrame = null;
     /** Every container click the client sends — Auto Forge records crafts from these. */
     public static ContainerClickListener onContainerClick = null;
 

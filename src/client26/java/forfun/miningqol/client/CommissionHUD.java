@@ -1,10 +1,16 @@
 package forfun.miningqol.client;
 
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.PlayerTabOverlay;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.Slot;
@@ -45,7 +51,33 @@ public class CommissionHUD {
         COLUMN
     }
 
+    /**
+     * How the commissions are drawn.
+     *
+     * <p>{@link #PANEL} is the NanoVG card: icons, glow text, animated bars, backdrop. The rest
+     * are plain vanilla-font text like the other HUDs, in the text colours below — one line per
+     * commission ({@link #TEXT}), with a thin progress bar under each ({@link #BARS}), or all on
+     * one line ({@link #COMPACT}).
+     */
+    public enum DisplayStyle {
+        PANEL("Panel"),
+        TEXT("Text"),
+        BARS("Text + Bars"),
+        COMPACT("Compact");
+
+        public final String displayName;
+
+        DisplayStyle(String displayName) {
+            this.displayName = displayName;
+        }
+
+        public boolean isText() {
+            return this != PANEL;
+        }
+    }
+
     private static final Identifier HUD_ID = Identifier.fromNamespaceAndPath("miningqol", "commission_hud");
+    private static final Identifier TEXT_HUD_ID = Identifier.fromNamespaceAndPath("miningqol", "commission_text_hud");
     private static final long LOCATION_REFRESH_INTERVAL_MS = 200L;
     private static final Pattern PROGRESS_PATTERN = Pattern.compile("(\\d+(?:\\.\\d+)?)%");
     private static final Pattern FRACTION_PROGRESS_PATTERN = Pattern.compile("(\\d[\\d,]*)\\s*/\\s*(\\d[\\d,]*)");
@@ -99,10 +131,20 @@ public class CommissionHUD {
     private static boolean registered = false;
     private static boolean nvgHooked = false;
     private static boolean enabled = true;
+    private static boolean hideWithF1 = false;
     private static final HudAnchor ANCHOR = new HudAnchor(10, 90, CommissionHUD::getWidth, CommissionHUD::getHeight);
     private static float scale = 1.0f;
     private static boolean backgroundEnabled = true;
     private static LayoutMode layoutMode = LayoutMode.GRID;
+    private static DisplayStyle displayStyle = DisplayStyle.PANEL;
+    // ----- text styles only -----
+    private static boolean showHeader = true;
+    /** Colour the percent (and bar) by progress tier instead of the flat percent colour. */
+    private static boolean progressColors = false;
+    private static final float[] headerColor = {1.0f, 170.0f / 255.0f, 0.0f};
+    private static final float[] nameColor = {1.0f, 1.0f, 1.0f};
+    private static final float[] percentColor = {1.0f, 1.0f, 85.0f / 255.0f};
+    private static final float[] doneColor = {85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
     private static int lastWidth = 220;
     private static int lastHeight = 118;
     private static long lastLocationRefreshAt = 0L;
@@ -157,6 +199,12 @@ public class CommissionHUD {
             return;
         }
         registered = true;
+        // The text styles draw in the vanilla HUD pass like every other plain-text HUD.
+        HudElementRegistry.attachElementBefore(
+            VanillaHudElements.SLEEP,
+            TEXT_HUD_ID,
+            (context, tickCounter) -> renderText(context)
+        );
         // Draw through Vexel's NanoVG frame (same font/glow/rounded look as 1.21).
         // Vexel's static init loads its font from the resource manager, which is null
         // during mod init — so defer first contact with the Vexel class until the
@@ -170,6 +218,7 @@ public class CommissionHUD {
                 xyz.meowing.vexel.events.GuiEvent.Render.class, 0, true, event -> {
                     renderNvg();
                     CommStatsHUD.renderNvg();
+                    CommissionGui.renderNvg();
                     return kotlin.Unit.INSTANCE;
                 });
         });
@@ -181,6 +230,14 @@ public class CommissionHUD {
 
     public static boolean isEnabled() {
         return enabled;
+    }
+
+    public static boolean isHideWithF1() {
+        return hideWithF1;
+    }
+
+    public static void setHideWithF1(boolean value) {
+        hideWithF1 = value;
     }
 
     public static void setPosition(int x, int y) {
@@ -220,6 +277,75 @@ public class CommissionHUD {
 
     public static LayoutMode getLayoutMode() {
         return layoutMode;
+    }
+
+    public static void setDisplayStyle(DisplayStyle style) {
+        displayStyle = style == null ? DisplayStyle.PANEL : style;
+    }
+
+    public static DisplayStyle getDisplayStyle() {
+        return displayStyle;
+    }
+
+    public static boolean isShowHeader() {
+        return showHeader;
+    }
+
+    public static void setShowHeader(boolean value) {
+        showHeader = value;
+    }
+
+    public static boolean isProgressColors() {
+        return progressColors;
+    }
+
+    public static void setProgressColors(boolean value) {
+        progressColors = value;
+    }
+
+    public static float[] getHeaderColor() {
+        return headerColor.clone();
+    }
+
+    public static void setHeaderColor(float red, float green, float blue) {
+        setColor(headerColor, red, green, blue);
+    }
+
+    public static float[] getNameColor() {
+        return nameColor.clone();
+    }
+
+    public static void setNameColor(float red, float green, float blue) {
+        setColor(nameColor, red, green, blue);
+    }
+
+    public static float[] getPercentColor() {
+        return percentColor.clone();
+    }
+
+    public static void setPercentColor(float red, float green, float blue) {
+        setColor(percentColor, red, green, blue);
+    }
+
+    public static float[] getDoneColor() {
+        return doneColor.clone();
+    }
+
+    public static void setDoneColor(float red, float green, float blue) {
+        setColor(doneColor, red, green, blue);
+    }
+
+    private static void setColor(float[] color, float red, float green, float blue) {
+        color[0] = Math.max(0.0f, Math.min(1.0f, red));
+        color[1] = Math.max(0.0f, Math.min(1.0f, green));
+        color[2] = Math.max(0.0f, Math.min(1.0f, blue));
+    }
+
+    private static int toRgb(float[] color) {
+        int red = Math.round(color[0] * 255.0f);
+        int green = Math.round(color[1] * 255.0f);
+        int blue = Math.round(color[2] * 255.0f);
+        return (red << 16) | (green << 8) | blue;
     }
 
     public static int getWidth() {
@@ -295,19 +421,24 @@ public class CommissionHUD {
         if (mc.player == null || mc.level == null) {
             return;
         }
+        if (displayStyle != DisplayStyle.PANEL) {
+            return;   // drawn by renderText in the vanilla pass
+        }
+        if (CommissionGui.isActive()) {
+            return;   // the custom commissions menu owns the screen
+        }
 
         boolean editor = mc.screen instanceof forfun.miningqol.client.gui.CommissionHudPositionScreen
             || (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen && enabled);
         if (editor) {
-            List<CommissionEntry> sample = commissions.isEmpty()
-                ? List.of(new CommissionEntry("Mithril Miner", 62.0), new CommissionEntry("Goblin Slayer", 31.0),
-                          new CommissionEntry("Titanium Miner", 100.0), new CommissionEntry("Glacite Walker Slayer", 8.5))
-                : commissions;
-            drawPanelNvg(sample, true);
+            drawPanelNvg(sampleEntries(), true);
             return;
         }
 
         if (!enabled) {
+            return;
+        }
+        if (hideWithF1 && mc.options.hideGui) {
             return;
         }
         // Vexel's NanoVG pass draws on top of open screens, so anything left un-gated paints
@@ -324,6 +455,132 @@ public class CommissionHUD {
             return;
         }
         drawPanelNvg(commissions, false);
+    }
+
+    /** The live list, or a stand-in for the editor when nothing is tracked. */
+    private static List<CommissionEntry> sampleEntries() {
+        return commissions.isEmpty()
+            ? List.of(new CommissionEntry("Mithril Miner", 62.0), new CommissionEntry("Goblin Slayer", 31.0),
+                      new CommissionEntry("Titanium Miner", 100.0), new CommissionEntry("Glacite Walker Slayer", 8.5))
+            : commissions;
+    }
+
+    // ===== Vanilla-font text styles =====
+
+    private static final int BAR_HEIGHT = 2;
+    private static final int LINE_GAP = 2;
+
+    /** Vanilla HUD element — the text styles only; the panel goes through {@link #renderNvg()}. */
+    public static void renderText(GuiGraphicsExtractor ctx) {
+        if (!enabled || displayStyle == DisplayStyle.PANEL) {
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) {
+            return;
+        }
+        if (hideWithF1 && mc.options.hideGui) {
+            return;
+        }
+        if (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen) {
+            return;   // the editor draws the sample itself
+        }
+        if (CommissionGui.isActive()) {
+            return;   // the custom commissions menu owns the screen
+        }
+        refreshLocation(mc);
+        if (!cachedAllowedLocation || commissions.isEmpty()) {
+            return;
+        }
+        drawTextStyle(ctx, commissions);
+    }
+
+    /** What the move editor draws for a text style: the live list or a stand-in. */
+    public static void renderTextPreview(GuiGraphicsExtractor ctx) {
+        drawTextStyle(ctx, sampleEntries());
+    }
+
+    private static void drawTextStyle(GuiGraphicsExtractor ctx, List<CommissionEntry> entries) {
+        Minecraft mc = Minecraft.getInstance();
+        Font font = mc.font;
+        List<Component> lines = textLines(entries);
+        boolean bars = displayStyle == DisplayStyle.BARS;
+        int lineStep = font.lineHeight + LINE_GAP + (bars ? BAR_HEIGHT + LINE_GAP : 0);
+
+        int maxWidth = 0;
+        for (Component line : lines) {
+            maxWidth = Math.max(maxWidth, font.width(line));
+        }
+        int height = lines.size() * lineStep - LINE_GAP;
+
+        ctx.pose().pushMatrix();
+        ctx.pose().translate(ANCHOR.x(), ANCHOR.y());
+        ctx.pose().scale(scale, scale);
+        int y = 0;
+        int entryIndex = 0;
+        boolean headerLine = showHeader && displayStyle != DisplayStyle.COMPACT;
+        for (int i = 0; i < lines.size(); i++) {
+            ctx.text(font, lines.get(i), 0, y, 0xFFFFFFFF, true);
+            boolean isHeader = headerLine && i == 0;
+            if (bars && !isHeader && entryIndex < entries.size()) {
+                CommissionEntry entry = entries.get(entryIndex++);
+                int barY = y + font.lineHeight + LINE_GAP;
+                ctx.fill(0, barY, maxWidth, barY + BAR_HEIGHT, 0x50FFFFFF);
+                int filled = Math.round(maxWidth * animatedProgress(entry));
+                if (filled > 0) {
+                    ctx.fill(0, barY, filled, barY + BAR_HEIGHT, 0xFF000000 | percentRgb(entry.progress()));
+                }
+            }
+            y += lineStep;
+        }
+        ctx.pose().popMatrix();
+
+        lastWidth = Math.round(maxWidth * scale);
+        lastHeight = Math.round(height * scale);
+    }
+
+    /** The lines a text style draws — a header, then one per commission, or a single joined line. */
+    private static List<Component> textLines(List<CommissionEntry> entries) {
+        List<Component> lines = new ArrayList<>();
+        if (displayStyle == DisplayStyle.COMPACT) {
+            MutableComponent line = Component.empty();
+            if (showHeader) {
+                line.append(colored("Commissions: ", toRgb(headerColor)));
+            }
+            for (int i = 0; i < entries.size(); i++) {
+                if (i > 0) {
+                    line.append(colored(" | ", toRgb(headerColor)));
+                }
+                CommissionEntry entry = entries.get(i);
+                line.append(colored(entry.name() + " ", toRgb(nameColor)));
+                line.append(colored(progressLabel(entry.progress()), percentRgb(entry.progress())));
+            }
+            lines.add(line);
+            return lines;
+        }
+        if (showHeader) {
+            lines.add(colored("Commissions:", toRgb(headerColor)));
+        }
+        for (CommissionEntry entry : entries) {
+            lines.add(colored(entry.name() + ": ", toRgb(nameColor))
+                .append(colored(progressLabel(entry.progress()), percentRgb(entry.progress()))));
+        }
+        return lines;
+    }
+
+    /** Colour of a percent in the text styles: done, by tier, or the flat percent colour. */
+    private static int percentRgb(double progress) {
+        if (progress >= 100.0) {
+            return toRgb(doneColor);
+        }
+        if (progressColors) {
+            return progressColor(progress) & 0xFFFFFF;
+        }
+        return toRgb(percentColor);
+    }
+
+    private static MutableComponent colored(String text, int rgb) {
+        return Component.literal(text).setStyle(Style.EMPTY.withColor(rgb));
     }
 
     private static void drawPanelNvg(List<CommissionEntry> entries, boolean editor) {
@@ -689,6 +946,47 @@ public class CommissionHUD {
         }
     }
 
+    /** One commission item in the open Royal Pigeon menu, for the custom menu GUI. */
+    public record MenuCommission(int slotId, String name, double progress, boolean claimable) {}
+
+    /** The commissions in the currently open menu, in slot order; empty when none is open. */
+    public static List<MenuCommission> menuCommissions() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) {
+            return List.of();
+        }
+        AbstractContainerMenu menu = mc.player.containerMenu;
+        if (menu == null || !isOurCommissionMenu(mc, menu)) {
+            return List.of();
+        }
+        List<MenuCommission> out = new ArrayList<>();
+        for (Slot slot : menu.slots) {
+            if (slot.container == mc.player.getInventory()) continue;
+            ItemStack stack = slot.getItem();
+            if (stack.isEmpty()) continue;
+            String label = cleanName(stack);
+            List<String> lore = loreOf(stack);
+            if (!isCommissionItem(label, lore)) continue;
+
+            String name = findCommissionName(lore);
+            String progressText = findProgressText(lore);
+            Double progress = progressText == null ? null : parseProgress(progressText);
+            boolean claimable = progress != null && progress >= 100.0;
+            for (String line : lore) {
+                String lower = line.toLowerCase(Locale.ROOT);
+                if (lower.contains("click to claim") || lower.contains("completed")) {
+                    claimable = true;
+                    break;
+                }
+            }
+            out.add(new MenuCommission(slot.index,
+                name != null ? name : label,
+                progress != null ? progress : (claimable ? 100.0 : 0.0),
+                claimable));
+        }
+        return out;
+    }
+
     private static boolean isCommissionStack(ItemStack stack) {
         return !stack.isEmpty() && isCommissionItem(cleanName(stack), loreOf(stack));
     }
@@ -873,7 +1171,7 @@ public class CommissionHUD {
 
     /** Marks a commission complete the moment chat says so (SCT's completeCollectorCommission). */
     public static void onCommissionComplete(String message) {
-        if (message == null) return;
+        if (message == null || !CommTracker.isCompletionLine(message)) return;
         String clean = FORMATTING.matcher(message).replaceAll("").trim();
         String lower = clean.toLowerCase(Locale.ROOT);
         int idx = lower.indexOf("commission complete");

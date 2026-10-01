@@ -37,6 +37,7 @@ public final class ForgeDisplay {
 
     private static boolean registered = false;
     private static boolean enabled = false;
+    private static boolean hideWithF1 = false;
     private static boolean showEmpty = false;
     private static boolean sortByTime = true;
 
@@ -141,6 +142,7 @@ public final class ForgeDisplay {
         if (!enabled) return;
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
+        if (hideWithF1 && client.options.hideGui) return;
 
         List<Component> lines = buildLines();
         if (lines.isEmpty()) return;
@@ -199,6 +201,14 @@ public final class ForgeDisplay {
 
     public static boolean isEnabled() {
         return enabled;
+    }
+
+    public static boolean isHideWithF1() {
+        return hideWithF1;
+    }
+
+    public static void setHideWithF1(boolean value) {
+        hideWithF1 = value;
     }
 
     public static void setEnabled(boolean value) {

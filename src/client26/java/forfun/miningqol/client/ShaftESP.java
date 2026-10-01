@@ -88,6 +88,7 @@ public class ShaftESP {
                         String line = team.getPlayerPrefix().getString() + member + team.getPlayerSuffix().getString();
                         String cleanLine = line.replaceAll("\u00A7.", "").trim();
 
+                        // The shaft island is named "Glacite Mineshafts"; the plural must match.
                         if (cleanLine.contains("Mineshaft")) {
                             return true;
                         }

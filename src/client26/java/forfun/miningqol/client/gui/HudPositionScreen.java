@@ -4,8 +4,10 @@ import forfun.miningqol.client.CommStatsHUD;
 import forfun.miningqol.client.CommTracker;
 import forfun.miningqol.client.CommissionHUD;
 import forfun.miningqol.client.ForgeDisplay;
+import forfun.miningqol.client.MayhemHUD;
 import forfun.miningqol.client.MiningqolClient;
 import forfun.miningqol.client.PickaxeCooldownHUD;
+import forfun.miningqol.client.ItemCooldownTimer;
 import forfun.miningqol.client.RollingMinerCooldown;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -23,9 +25,12 @@ public class HudPositionScreen extends Screen {
     private enum Target {
         PICKAXE,
         ROLLING,
+        MAYHEM,
         FORGE,
         COMMISSIONS,
-        COMMISSION_STATS
+        COMMISSION_STATS,
+        ROGUE_SWORD,
+        TUBA
     }
 
     private final Screen parent;
@@ -60,6 +65,26 @@ public class HudPositionScreen extends Screen {
                 0xFFFFFFFF, true);
             ctx.outline(RollingMinerCooldown.getX() - 2, RollingMinerCooldown.getY() - 2,
                 targetWidth(Target.ROLLING) + 4, targetHeight(Target.ROLLING) + 4, 0xFF7FDB8A);
+        }
+        for (Target timerTarget : new Target[]{Target.ROGUE_SWORD, Target.TUBA}) {
+            if (!isVisible(timerTarget)) continue;
+            ItemCooldownTimer timer = timer(timerTarget);
+            timer.drawPreview(ctx);
+            ctx.outline(timer.getX() - 2, timer.getY() - 2,
+                targetWidth(timerTarget) + 4, targetHeight(timerTarget) + 4, 0xFFDBD27F);
+        }
+        if (isVisible(Target.MAYHEM)) {
+            ctx.text(font, MayhemHUD.getPreviewText(), MayhemHUD.getX(), MayhemHUD.getY(),
+                0xFFFFFFFF, true);
+            ctx.outline(MayhemHUD.getX() - 2, MayhemHUD.getY() - 2,
+                targetWidth(Target.MAYHEM) + 4, targetHeight(Target.MAYHEM) + 4, 0xFFDB7FDB);
+        }
+        if (isVisible(Target.COMMISSIONS) && CommissionHUD.getDisplayStyle().isText()) {
+            // The panel style draws its own editor frame in the NanoVG pass; the text styles
+            // are vanilla-font like the rest and get their preview here.
+            CommissionHUD.renderTextPreview(ctx);
+            ctx.outline(CommissionHUD.getX() - 2, CommissionHUD.getY() - 2,
+                targetWidth(Target.COMMISSIONS) + 4, targetHeight(Target.COMMISSIONS) + 4, 0xFF88AAFF);
         }
         if (isVisible(Target.FORGE)) {
             int lineY = ForgeDisplay.getY();
@@ -196,7 +221,9 @@ public class HudPositionScreen extends Screen {
         float amount = (float) scrollY * 0.05f;
         switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.setScale(PickaxeCooldownHUD.getScale() + amount);
+            case ROGUE_SWORD, TUBA -> timer(target).setScale(timer(target).getScale() + amount);
             case ROLLING -> { }
+            case MAYHEM -> { }
             case FORGE -> { }
             case COMMISSIONS -> CommissionHUD.setScale(CommissionHUD.getScale() + amount);
             case COMMISSION_STATS -> CommStatsHUD.setScale(CommStatsHUD.getScale() + amount);
@@ -222,26 +249,35 @@ public class HudPositionScreen extends Screen {
         Minecraft.getInstance().setScreen(parent);
     }
 
+    private static ItemCooldownTimer timer(Target target) {
+        return target == Target.TUBA ? ItemCooldownTimer.TUBA : ItemCooldownTimer.ROGUE_SWORD;
+    }
+
     private boolean hasVisibleHud() {
         return isVisible(Target.PICKAXE)
             || isVisible(Target.FORGE)
             || isVisible(Target.ROLLING)
+            || isVisible(Target.MAYHEM)
             || isVisible(Target.COMMISSIONS)
-            || isVisible(Target.COMMISSION_STATS);
+            || isVisible(Target.COMMISSION_STATS)
+            || isVisible(Target.ROGUE_SWORD)
+            || isVisible(Target.TUBA);
     }
 
     private boolean isVisible(Target target) {
         return switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.isEnabled();
             case ROLLING -> RollingMinerCooldown.isEnabled();
+            case MAYHEM -> MayhemHUD.isEnabled();
             case FORGE -> ForgeDisplay.isEnabled();
             case COMMISSIONS -> CommissionHUD.isEnabled();
             case COMMISSION_STATS -> CommTracker.isStatsEnabled();
+            case ROGUE_SWORD, TUBA -> timer(target).isEnabled();
         };
     }
 
     private Target targetAt(double mouseX, double mouseY) {
-        Target[] hitOrder = {Target.COMMISSION_STATS, Target.COMMISSIONS, Target.FORGE, Target.ROLLING, Target.PICKAXE};
+        Target[] hitOrder = {Target.COMMISSION_STATS, Target.COMMISSIONS, Target.FORGE, Target.MAYHEM, Target.ROLLING, Target.ROGUE_SWORD, Target.TUBA, Target.PICKAXE};
         for (Target target : hitOrder) {
             if (isVisible(target) && contains(mouseX, mouseY, targetX(target), targetY(target),
                 targetWidth(target), targetHeight(target))) {
@@ -255,9 +291,11 @@ public class HudPositionScreen extends Screen {
         return switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.getX();
             case ROLLING -> RollingMinerCooldown.getX();
+            case MAYHEM -> MayhemHUD.getX();
             case FORGE -> ForgeDisplay.getX();
             case COMMISSIONS -> CommissionHUD.getX();
             case COMMISSION_STATS -> CommStatsHUD.getX();
+            case ROGUE_SWORD, TUBA -> timer(target).getX();
         };
     }
 
@@ -265,9 +303,11 @@ public class HudPositionScreen extends Screen {
         return switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.getY();
             case ROLLING -> RollingMinerCooldown.getY();
+            case MAYHEM -> MayhemHUD.getY();
             case FORGE -> ForgeDisplay.getY();
             case COMMISSIONS -> CommissionHUD.getY();
             case COMMISSION_STATS -> CommStatsHUD.getY();
+            case ROGUE_SWORD, TUBA -> timer(target).getY();
         };
     }
 
@@ -275,9 +315,12 @@ public class HudPositionScreen extends Screen {
         return switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.getWidth();
             case ROLLING -> RollingMinerCooldown.getWidth();
+            case MAYHEM -> MayhemHUD.getWidth();
             case FORGE -> ForgeDisplay.getWidth();
-            case COMMISSIONS -> Math.max(120, CommissionHUD.getWidth());
+            case COMMISSIONS -> CommissionHUD.getDisplayStyle().isText()
+                ? Math.max(40, CommissionHUD.getWidth()) : Math.max(120, CommissionHUD.getWidth());
             case COMMISSION_STATS -> Math.max(60, CommStatsHUD.getWidth());
+            case ROGUE_SWORD, TUBA -> timer(target).getWidth();
         };
     }
 
@@ -285,9 +328,12 @@ public class HudPositionScreen extends Screen {
         return switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.getHeight();
             case ROLLING -> RollingMinerCooldown.getHeight();
+            case MAYHEM -> MayhemHUD.getHeight();
             case FORGE -> ForgeDisplay.getHeight();
-            case COMMISSIONS -> Math.max(60, CommissionHUD.getHeight());
+            case COMMISSIONS -> CommissionHUD.getDisplayStyle().isText()
+                ? Math.max(10, CommissionHUD.getHeight()) : Math.max(60, CommissionHUD.getHeight());
             case COMMISSION_STATS -> Math.max(14, CommStatsHUD.getHeight());
+            case ROGUE_SWORD, TUBA -> timer(target).getHeight();
         };
     }
 
@@ -295,9 +341,11 @@ public class HudPositionScreen extends Screen {
         switch (target) {
             case PICKAXE -> PickaxeCooldownHUD.setPosition(x, y);
             case ROLLING -> RollingMinerCooldown.setPosition(x, y);
+            case MAYHEM -> MayhemHUD.setPosition(x, y);
             case FORGE -> ForgeDisplay.setPosition(x, y);
             case COMMISSIONS -> CommissionHUD.setPosition(x, y);
             case COMMISSION_STATS -> CommStatsHUD.setPosition(x, y);
+            case ROGUE_SWORD, TUBA -> timer(target).setPosition(x, y);
         }
     }
 

@@ -65,11 +65,23 @@ public class MiningqolClient implements ClientModInitializer {
         } catch (Exception e) {
             LOGGER.error("[MiningQOL] Failed to init external ESP feed", e);
         }
+        net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry.register(
+            ctx -> new forfun.miningqol.client.shatter.NVGPipRenderer(ctx.bufferSource()));
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> {
+            if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) {
+                return;
+            }
+            net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register(
+                (s, click) -> !CommissionGui.handleMouseClick(s, click.x(), click.y(), click.button()));
+        });
         config.applyToGame();
         CommissionHUD.register();
         BlockOverlay.init();
         PickaxeCooldownHUD.register();
         RollingMinerCooldown.register();
+        ItemCooldownTimer.registerAll();
+        MayhemHUD.register();
+        forfun.miningqol.client.summary.ShaftSummary.init();
         ForgeDisplay.register();
         LobbyFinderHUD.register();
         OrderedWaypointManager.init();
@@ -78,6 +90,7 @@ public class MiningqolClient implements ClientModInitializer {
             OrderedWaypointManager.tick();
             while (abilitySwitchKey.consumeClick()) AbilitySwitchManager.toggle();
             RollingMinerCooldown.tick(client);
+            ItemCooldownTimer.tickAll(client);
             if (client.level != null && client.player != null) {
                 CorpseESP.tick();
                 ShaftESP.tick();
@@ -85,6 +98,10 @@ public class MiningqolClient implements ClientModInitializer {
                 CommandKeybindManager.tick(client);
                 LobbyFinder.tick();
                 ColdTracker.tick();
+                MayhemHUD.tick();
+                forfun.miningqol.client.summary.ShaftSummary.tick(client);
+                WispRadius.tick();
+                MineshaftPortal.tick();
                 FiletWarning.tick();
                 AbilitySwitchManager.tick();
                 EfficientMinerOverlay.tick();
@@ -98,6 +115,7 @@ public class MiningqolClient implements ClientModInitializer {
 
         ClientTickEvents.START_LEVEL_TICK.register(level -> LobbyFinder.onWorldChange());
 
+
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             if (overlay) {
                 return;   // action bar; nothing here reads it
@@ -105,6 +123,9 @@ public class MiningqolClient implements ClientModInitializer {
             String messageText = message.getString();
             RollingMinerCooldown.onGameMessage(messageText);
             PickaxeCooldownHUD.onGameMessage(messageText);
+            MayhemHUD.onGameMessage(messageText);
+            // ShaftSummary is fed from SystemChatMixin instead: it needs the lines other
+            // mods' chat filters cancel before this event fires.
             forfun.miningqol.client.party.MineshaftAutoParty.onGameMessage(messageText);
             forfun.miningqol.client.party.PartyAutoAccept.onGameMessage(messageText);
 
@@ -113,8 +134,8 @@ public class MiningqolClient implements ClientModInitializer {
                 CorpseESP.onCorpseClaimed();
             }
 
-            CommTracker.onChatMessage(messageText);
-            CommissionHUD.onCommissionComplete(messageText);
+            // CommTracker / CommissionHUD completions are read in SystemChatMixin, ahead of the
+            // chat filters (SkyHanni etc.) that can cancel the line before this event.
 
             if (CheatHooks.onGameMessage != null) {
                 CheatHooks.onGameMessage.accept(messageText);
@@ -145,6 +166,7 @@ public class MiningqolClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             CorpseESP.onWorldUnload();
             ShaftESP.onWorldUnload();
+            MineshaftPortal.clear();
             if (CheatHooks.onStopping != null) {
                 CheatHooks.onStopping.run();
             }
@@ -160,7 +182,7 @@ public class MiningqolClient implements ClientModInitializer {
                     // (Vexel's display() uses knit's TimeScheduler, which calls setScreen
                     // from a timer thread and trips fabric-screen-api — don't use it.)
                     net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
-                    client.schedule(() -> client.setScreen(new forfun.miningqol.client.gui.VexelMainScreen()));
+                    client.schedule(forfun.miningqol.client.shatter.ShatterUi::openConfiguredGui);
                     return 1;
                 }));
             dispatcher.register(ClientCommands.literal("commtrack")
@@ -285,6 +307,28 @@ public class MiningqolClient implements ClientModInitializer {
                 forfun.miningqol.client.party.MineshaftAutoParty.dumpDetection();
                 return 1;
             }));
+
+        dispatcher.register(ClientCommands.literal("shaftsummary")
+            .executes(context -> {
+                forfun.miningqol.client.summary.ShaftSummary.printStatus();
+                return 1;
+            })
+            .then(ClientCommands.literal("status").executes(context -> {
+                forfun.miningqol.client.summary.ShaftSummary.printStatus();
+                return 1;
+            }))
+            .then(ClientCommands.literal("test").executes(context -> {
+                forfun.miningqol.client.summary.ShaftSummary.printSample(net.minecraft.client.Minecraft.getInstance());
+                return 1;
+            }))
+            .then(ClientCommands.literal("debug").executes(context -> {
+                forfun.miningqol.client.summary.ShaftSummary.printDebug();
+                return 1;
+            }))
+            .then(ClientCommands.literal("party").executes(context -> {
+                forfun.miningqol.client.summary.ShaftSummary.sendLastToParty();
+                return 1;
+            })));
 
         dispatcher.register(ClientCommands.literal("getcold")
                 .executes(context -> {

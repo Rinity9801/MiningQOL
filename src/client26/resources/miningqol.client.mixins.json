@@ -14,10 +14,15 @@
     "RenderPipelinesInvoker",
     "RenderTypeInvoker",
     "ContainerScreenHideMixin",
+    "ChestScreenHideMixin",
+    "GuiHideMixin",
     "ContainerMenuSlotMixin",
     "ContainerClickMixin",
     "SoundEngineMixin",
-    "ParticleEngineMixin"
+    "ParticleEngineMixin",
+    "ChatComponentAccessor",
+    "MultiPlayerGameModeInvoker",
+    "SystemChatMixin"
   ],
   "injectors": {
     "defaultRequire": 1

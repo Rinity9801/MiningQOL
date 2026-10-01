@@ -1,0 +1,5 @@
+accessWidener v2 official
+
+# NanoVG bridge (ported from Shattered): bind Minecraft's GL framebuffer directly
+accessible class com/mojang/blaze3d/opengl/GlDevice
+accessible field com/mojang/blaze3d/systems/GpuDevice backend Lcom/mojang/blaze3d/systems/GpuDeviceBackend;

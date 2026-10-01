@@ -1,6 +1,5 @@
 package forfun.miningqol.client;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 import java.util.Locale;
@@ -9,7 +8,8 @@ import java.util.Locale;
  * Commission stats for the Commission HUD: total commissions completed (persisted
  * in the config, reset via /commtrack reset) and a session comms/hour rate.
  *
- * Completions are counted from the "Commission Complete!" chat message. Like the
+ * Completions are counted from Hypixel's "Commission Complete!" chat line, read in
+ * SystemChatMixin so chat-filter mods can't hide it first. Like the
  * collection tracker, the rate clock pauses instead of diluting: the gap between
  * two completions only counts up to MAX_GAP_MS, so AFK time doesn't sink the rate,
  * and the displayed rate stays frozen until the next completion.
@@ -33,9 +33,19 @@ public class CommTracker {
     public static long getTotalCompleted() { return totalCompleted; }
     public static void setTotalCompleted(long value) { totalCompleted = Math.max(0, value); }
 
-    public static void onChatMessage(String message) {
+    /**
+     * Whether a system line is Hypixel's own completion notice ("COMMISSION COMPLETE! Mithril
+     * Miner" / "Mithril Miner Commission Complete!"). Player, party and guild chat arrive as
+     * system lines too, but always as "name: text", so a colon before the phrase rules it out.
+     */
+    public static boolean isCompletionLine(String message) {
         String clean = message.replaceAll("§.", "").toLowerCase(Locale.ROOT);
-        if (!clean.contains("commission complete")) return;
+        int idx = clean.indexOf("commission complete");
+        return idx >= 0 && clean.lastIndexOf(':', idx) < 0;
+    }
+
+    public static void onChatMessage(String message) {
+        if (!isCompletionLine(message)) return;
 
         long now = System.currentTimeMillis();
         totalCompleted++;
@@ -66,10 +76,9 @@ public class CommTracker {
         sessionCompleted = 0;
         activeMillis = 0;
         lastCompletionAt = 0;
-        Minecraft client = Minecraft.getInstance();
-        if (client.player != null) {
-            MqoChat.log(Component.literal(
-                "§6[MQO] §aCommission tracker reset"));
-        }
+        // Persist now, so a crash before the next config save can't bring the old total back.
+        MiningqolClient.saveConfig();
+        // reply, not log: command output shows even with mod chat messages off.
+        MqoChat.reply(Component.literal("§6[MQO] §aCommission stats reset"));
     }
 }

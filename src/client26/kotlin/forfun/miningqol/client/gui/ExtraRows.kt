@@ -1,44 +1,7 @@
 package forfun.miningqol.client.gui
 
-import xyz.meowing.vexel.components.core.Rectangle
-
 /**
- * One feature card in the settings GUI. Either builds an inline detail panel
- * (detail != null; returns the y below its last control) or opens an external
- * screen when its card is clicked (open != null). [status] backs the ON/OFF
- * pill on the card, when the feature has a single meaningful enabled state.
- */
-class GuiFeature(
-    @JvmField val title: String,
-    @JvmField val description: String,
-    @JvmField val accent: Int,
-    @JvmField val detail: ((host: VexelMainScreen, wrapper: Rectangle, width: Float) -> Float)? = null,
-    @JvmField val open: (() -> Unit)? = null,
-    @JvmField val status: (() -> Boolean)? = null
-)
-
-class GuiCategory(
-    @JvmField val name: String,
-    @JvmField val features: List<GuiFeature>
-)
-
-/**
- * Extra sidebar categories contributed at runtime — the cheat source tree
- * registers its categories here (via CheatGui) so the shared VexelMainScreen
- * never references cheat classes.
- */
-object ExtraCategories {
-    @JvmField
-    val categories = mutableListOf<GuiCategory>()
-
-    @JvmStatic
-    fun add(category: GuiCategory) {
-        categories.add(category)
-    }
-}
-
-/**
- * Extra rows for the Misc feature, contributed at runtime by the cheat
+ * Extra rows for the Misc module, contributed at runtime by the cheat
  * source tree.
  */
 object ExtraMiscRows {

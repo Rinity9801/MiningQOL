@@ -18,6 +18,8 @@ import forfun.miningqol.client.ForgeDisplay;
 import forfun.miningqol.client.PickaxeCooldownHUD;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
+import forfun.miningqol.client.MayhemHUD;
+import forfun.miningqol.client.WispRadius;
 import forfun.miningqol.client.RollingMinerCooldown;
 import forfun.miningqol.client.MqoChat;
 import forfun.miningqol.client.ShaftESP;
@@ -42,6 +44,7 @@ public class MiningConfig {
     }
 
     public boolean commissionHudEnabled = true;
+    public boolean commissionHudHideWithF1 = false;
     public int commissionHudX = 10;
     public int commissionHudY = 90;
     /**
@@ -56,6 +59,13 @@ public class MiningConfig {
     public float commissionHudScale = 1.0f;
     public boolean commissionHudBackground = true;
     public String commissionHudLayout = "GRID";
+    public String commissionHudStyle = "PANEL";
+    public boolean commissionHudShowHeader = true;
+    public boolean commissionHudProgressColors = false;
+    public float[] commissionHeaderColor = {1.0f, 170.0f / 255.0f, 0.0f};
+    public float[] commissionNameColor = {1.0f, 1.0f, 1.0f};
+    public float[] commissionPercentColor = {1.0f, 1.0f, 85.0f / 255.0f};
+    public float[] commissionDoneColor = {85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
     public boolean commissionStatsEnabled = false;
     public boolean commissionShowOverMenus = true;
     public long commTrackTotal = 0;
@@ -93,6 +103,7 @@ public class MiningConfig {
     public boolean blockOverlayHideDuringEtherwarp = false;
 
     public boolean pickaxeCooldownEnabled = true;
+    public boolean pickaxeCooldownHideWithF1 = false;
     public int pickaxeCooldownX = 10;
     public int pickaxeCooldownY = 50;
     public int pickaxeCooldownAnchorModeX = -1;
@@ -128,6 +139,71 @@ public class MiningConfig {
     public float[] rollingCooldownValueColor = {1.0f, 85.0f / 255.0f, 85.0f / 255.0f};
     public float[] rollingReadyLabelColor = {85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
     public float[] rollingReadyValueColor = {0.0f, 170.0f / 255.0f, 0.0f};
+    /** Null until first saved, so each timer keeps its own default position. */
+    public forfun.miningqol.client.ItemCooldownTimer.Saved rogueSwordTimer = null;
+    public forfun.miningqol.client.ItemCooldownTimer.Saved tubaTimer = null;
+
+    public boolean mayhemHudEnabled = false;
+    public boolean mayhemHudHideWithF1 = false;
+    public boolean mayhemHudAlwaysShow = false;
+    public int mayhemHudX = 10;
+    public int mayhemHudY = 74;
+    public int mayhemHudAnchorModeX = -1;
+    public int mayhemHudAnchorOffX = 0;
+    public int mayhemHudAnchorModeY = -1;
+    public int mayhemHudAnchorOffY = 0;
+    public float[] mayhemLabelColor = {1.0f, 85.0f / 255.0f, 1.0f};
+    public float[] mayhemValueColor = {1.0f, 1.0f, 85.0f / 255.0f};
+    public float[] mayhemNoneColor = {170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
+
+    public boolean shaftSummaryEnabled = true;
+    public boolean shaftSummaryFrontLoaded = false;
+    public boolean shaftSummaryTrackAll = true;
+    public boolean shaftSummaryShowBuffs = false;
+    public boolean shaftSummaryTrackEfficiency = true;
+    public int shaftSummaryEfficiencyPause = 15;
+    public boolean shaftSummaryAutoSave = true;
+    public boolean shaftSummaryPrintToChat = true;
+    public boolean shaftSummaryPrintToParty = false;
+    public int shaftSummaryMaxSavedRuns = 100;
+    public java.util.List<String> shaftSummaryTypes = null;
+    public java.util.List<String> shaftSummarySavedTypes = null;
+    public java.util.List<String> shaftSummaryRanksBy = new java.util.ArrayList<>();
+    public int shaftSummaryGemMiningSpeed = 0;
+    public boolean shaftSummaryBlueCheese = false;
+    public boolean shaftSummaryValueGemsAsFlawless = true;
+    public boolean shaftSummarySellOffer = true;
+
+    /** Today's Sky Mall buff and when it expires, so a relog inside the same SkyBlock day keeps it. */
+    public String skyMallBuff = "";
+    public long skyMallBuffUntil = 0L;
+
+    public boolean wispRadiusEnabled = true;
+    public boolean wispRadiusEdgeOnly = false;
+    public boolean wispRadiusFloorBlocksOnly = true;
+    public float wispRadiusRadius = 30.0f;
+    public float wispRadiusAlpha = 0.35f;
+    public float[] wispRadiusColor = {0.45f, 0.85f, 1.0f};
+    public boolean mineshaftPortalEnabled = true;
+    public boolean mineshaftPortalTracer = true;
+    public float[] mineshaftPortalColor = {170f / 255f, 1.0f, 85f / 255f};
+    public float mineshaftPortalAlpha = 1.0f;
+    public float mineshaftPortalLineWidth = 1.5f;
+
+    public boolean commGuiEnabled = false;
+    public boolean commGuiShowProgress = true;
+    public float commGuiScale = 1.0f;
+    public float commGuiButtonSize = 24.0f;
+    public float[] commGuiAccentColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
+    public float[] commGuiDoneColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
+
+    public float shatterScale = 1.0f;
+    public boolean shatterAnimations = true;
+    public boolean shatterDescriptions = true;
+    public double shatterOpacity = 0.65;
+    public int shatterOutline = 0x99FFFFFF;
+    public double shatterOutlineWidth = 1.0;
+    public java.util.Map<String, int[]> shatterPanels = new java.util.HashMap<>();
 
     public boolean efficientMinerEnabled = false;
     public boolean useOldHeatmap = false;
@@ -136,6 +212,7 @@ public class MiningConfig {
     public java.util.Map<String, String> commandKeybinds = new java.util.HashMap<>();
 
     public boolean forgeDisplayEnabled = false;
+    public boolean forgeDisplayHideWithF1 = false;
     public boolean forgeDisplayShowEmpty = false;
     public boolean forgeDisplaySortByTime = true;
     public int forgeDisplayX = 10;
@@ -171,8 +248,6 @@ public class MiningConfig {
     /** Player name -> "CORPSE:COUNT" picks, e.g. "LAPIS:3". */
     public java.util.Map<String, java.util.List<String>> autoPartyCorpseSignups = new java.util.LinkedHashMap<>();
 
-    public int guiTheme = 0;
-    public int guiLayout = 0;
 
     public boolean chatLogsEnabled = true;
     public boolean critParticleDrop = false;
@@ -206,6 +281,12 @@ public class MiningConfig {
     public boolean commClaimAutoTrigger = false;
     public boolean commClaimWardrobeSwap = true;
     public boolean commClaimBatchMining = true;
+    /** Open commissions with the Royal Pigeon (true) or by calling Mismyla on the Abiphone (false). */
+    public boolean commClaimUsePigeon = false;
+    /** How long the pigeon is held before its right-click, in ms. */
+    public int commClaimPigeonHoldMs = 100;
+    /** How long the pigeon stays in hand after its right-click, in ms. */
+    public int commClaimPigeonReleaseMs = 25;
     public boolean commClaimBlockInput = true;
     public boolean commClaimHideGui = false;
     public String emptyStashMaterial = "COAL";
@@ -218,11 +299,11 @@ public class MiningConfig {
     public java.util.List<String> autoForgeRecordedCrafts = new java.util.ArrayList<>();
     /** Built-in Auto Forge crafts hidden from the picker, by label. */
     public java.util.List<String> autoForgeHiddenCrafts = new java.util.ArrayList<>();
+    /** Auto Fusion never restores its on state: it starts off each launch for safety. */
+    public int autoFusionClickDelay = 4;
     public boolean shaftJoinCdEnabled = true;
     public int shaftJoinCdSeconds = 30;
 
-    /** Whole settings-GUI opacity (0.3..1.0). */
-    public float guiOpacity = 0.8f;
 
     public boolean orderedWaypointsEnabled = true;
     public float orderedWaypointRange = 4.5f;
@@ -260,6 +341,7 @@ public class MiningConfig {
     public static MiningConfig load() {
         if (!CONFIG_FILE.exists()) {
             MiningConfig config = new MiningConfig();
+            config.ensureDefaults();
             config.save();
             return config;
         }
@@ -273,17 +355,35 @@ public class MiningConfig {
             return config;
         } catch (Exception e) {
             LOGGER.error("[MiningConfig] Failed to load config", e);
-            return new MiningConfig();
+            MiningConfig config = new MiningConfig();
+            config.ensureDefaults();
+            return config;
         }
     }
 
     private void ensureDefaults() {
+        if (skyMallBuff == null) skyMallBuff = "";
+        if (wispRadiusColor == null || wispRadiusColor.length != 3) wispRadiusColor = new float[]{0.45f, 0.85f, 1.0f};
+        if (mineshaftPortalColor == null || mineshaftPortalColor.length != 3) mineshaftPortalColor = new float[]{170f / 255f, 1.0f, 85f / 255f};
+        if (wispRadiusRadius < 1f || wispRadiusRadius > 64f) wispRadiusRadius = 30.0f;
+        if (wispRadiusAlpha < 0.05f || wispRadiusAlpha > 1f) wispRadiusAlpha = 0.35f;
+        if (shaftSummaryEfficiencyPause < 1 || shaftSummaryEfficiencyPause > 120) shaftSummaryEfficiencyPause = 15;
+        if (shaftSummaryMaxSavedRuns < 0 || shaftSummaryMaxSavedRuns > 1000) shaftSummaryMaxSavedRuns = 100;
+        // Null = never written by this build: Jeff's defaults (every type summarised, only Jasper saved).
+        if (shaftSummaryTypes == null) shaftSummaryTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.defaultSummaryKeys());
+        if (shaftSummarySavedTypes == null) shaftSummarySavedTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.defaultSavedKeys());
+        if (shaftSummaryRanksBy == null) shaftSummaryRanksBy = new java.util.ArrayList<>();
         if (commissionHudScale < 0.5f || commissionHudScale > 2.0f) {
             commissionHudScale = 1.0f;
         }
         if (commStatsHudScale < 0.5f || commStatsHudScale > 2.0f) {
             commStatsHudScale = 1.0f;
         }
+        if (commissionHudStyle == null) commissionHudStyle = "PANEL";
+        if (commissionHeaderColor == null || commissionHeaderColor.length < 3) commissionHeaderColor = new float[]{1.0f, 170.0f / 255.0f, 0.0f};
+        if (commissionNameColor == null || commissionNameColor.length < 3) commissionNameColor = new float[]{1.0f, 1.0f, 1.0f};
+        if (commissionPercentColor == null || commissionPercentColor.length < 3) commissionPercentColor = new float[]{1.0f, 1.0f, 85.0f / 255.0f};
+        if (commissionDoneColor == null || commissionDoneColor.length < 3) commissionDoneColor = new float[]{85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
         if (commissionHudLayout == null) {
             commissionHudLayout = "GRID";
         }
@@ -308,6 +408,12 @@ public class MiningConfig {
         if (rollingCooldownValueColor == null || rollingCooldownValueColor.length < 3) rollingCooldownValueColor = new float[]{1.0f, 85.0f / 255.0f, 85.0f / 255.0f};
         if (rollingReadyLabelColor == null || rollingReadyLabelColor.length < 3) rollingReadyLabelColor = new float[]{85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
         if (rollingReadyValueColor == null || rollingReadyValueColor.length < 3) rollingReadyValueColor = new float[]{0.0f, 170.0f / 255.0f, 0.0f};
+        if (mayhemLabelColor == null || mayhemLabelColor.length < 3) mayhemLabelColor = new float[]{1.0f, 85.0f / 255.0f, 1.0f};
+        if (mayhemValueColor == null || mayhemValueColor.length < 3) mayhemValueColor = new float[]{1.0f, 1.0f, 85.0f / 255.0f};
+        if (mayhemNoneColor == null || mayhemNoneColor.length < 3) mayhemNoneColor = new float[]{170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
+        if (commGuiAccentColor == null || commGuiAccentColor.length < 3) commGuiAccentColor = new float[]{122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
+        if (commGuiDoneColor == null || commGuiDoneColor.length < 3) commGuiDoneColor = new float[]{122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
+        if (shatterPanels == null) shatterPanels = new java.util.HashMap<>();
         if (orderedWaypointBlockOutlineColor == null) orderedWaypointBlockOutlineColor = new float[]{1f, 1f, 1f};
         if (emptyStashMaterial == null) emptyStashMaterial = "COAL";
         if (orderedWaypointLobbyCheckBlock == null) orderedWaypointLobbyCheckBlock = "minecraft:coal_ore";
@@ -340,8 +446,8 @@ public class MiningConfig {
     }
 
     public void applyToGame() {
-        forfun.miningqol.client.gui.SettingsUi.setGuiOpacity(guiOpacity);
         CommissionHUD.setEnabled(commissionHudEnabled);
+        CommissionHUD.setHideWithF1(commissionHudHideWithF1);
         CommissionHUD.setPosition(commissionHudX, commissionHudY);
         CommissionHUD.anchor().load(anchorMode(commissionHudAnchorModeX), commissionHudAnchorOffX, anchorMode(commissionHudAnchorModeY), commissionHudAnchorOffY);
         CommissionHUD.setScale(commissionHudScale);
@@ -351,6 +457,17 @@ public class MiningConfig {
         } catch (Exception e) {
             CommissionHUD.setLayoutMode(CommissionHUD.LayoutMode.GRID);
         }
+        try {
+            CommissionHUD.setDisplayStyle(CommissionHUD.DisplayStyle.valueOf(commissionHudStyle));
+        } catch (Exception e) {
+            CommissionHUD.setDisplayStyle(CommissionHUD.DisplayStyle.PANEL);
+        }
+        CommissionHUD.setShowHeader(commissionHudShowHeader);
+        CommissionHUD.setProgressColors(commissionHudProgressColors);
+        CommissionHUD.setHeaderColor(commissionHeaderColor[0], commissionHeaderColor[1], commissionHeaderColor[2]);
+        CommissionHUD.setNameColor(commissionNameColor[0], commissionNameColor[1], commissionNameColor[2]);
+        CommissionHUD.setPercentColor(commissionPercentColor[0], commissionPercentColor[1], commissionPercentColor[2]);
+        CommissionHUD.setDoneColor(commissionDoneColor[0], commissionDoneColor[1], commissionDoneColor[2]);
         CommTracker.setStatsEnabled(commissionStatsEnabled);
         CommissionHUD.setShowOverMenus(commissionShowOverMenus);
         CommTracker.setTotalCompleted(commTrackTotal);
@@ -395,6 +512,7 @@ public class MiningConfig {
         BlockOverlay.setHideDuringEtherwarp(blockOverlayHideDuringEtherwarp);
 
         PickaxeCooldownHUD.setEnabled(pickaxeCooldownEnabled);
+        PickaxeCooldownHUD.setHideWithF1(pickaxeCooldownHideWithF1);
         PickaxeCooldownHUD.setPosition(pickaxeCooldownX, pickaxeCooldownY);
         PickaxeCooldownHUD.anchor().load(anchorMode(pickaxeCooldownAnchorModeX), pickaxeCooldownAnchorOffX, anchorMode(pickaxeCooldownAnchorModeY), pickaxeCooldownAnchorOffY);
         PickaxeCooldownHUD.setScale(pickaxeCooldownScale);
@@ -417,15 +535,76 @@ public class MiningConfig {
         RollingMinerCooldown.setPosition(rollingMinerCooldownX, rollingMinerCooldownY);
         RollingMinerCooldown.anchor().load(anchorMode(rollingMinerCooldownAnchorModeX), rollingMinerCooldownAnchorOffX, anchorMode(rollingMinerCooldownAnchorModeY), rollingMinerCooldownAnchorOffY);
         RollingMinerCooldown.setEnabled(rollingMinerCooldownEnabled);
+        if (rogueSwordTimer != null) forfun.miningqol.client.ItemCooldownTimer.ROGUE_SWORD.load(rogueSwordTimer,
+            anchorMode(rogueSwordTimer.anchorModeX), anchorMode(rogueSwordTimer.anchorModeY));
+        if (tubaTimer != null) forfun.miningqol.client.ItemCooldownTimer.TUBA.load(tubaTimer,
+            anchorMode(tubaTimer.anchorModeX), anchorMode(tubaTimer.anchorModeY));
         RollingMinerCooldown.setCooldownLabelColor(rollingCooldownLabelColor[0], rollingCooldownLabelColor[1], rollingCooldownLabelColor[2]);
         RollingMinerCooldown.setCooldownValueColor(rollingCooldownValueColor[0], rollingCooldownValueColor[1], rollingCooldownValueColor[2]);
         RollingMinerCooldown.setReadyLabelColor(rollingReadyLabelColor[0], rollingReadyLabelColor[1], rollingReadyLabelColor[2]);
         RollingMinerCooldown.setReadyValueColor(rollingReadyValueColor[0], rollingReadyValueColor[1], rollingReadyValueColor[2]);
 
+        forfun.miningqol.client.summary.ShaftSummary.setEnabled(shaftSummaryEnabled);
+        forfun.miningqol.client.summary.ShaftSummary.setFrontLoaded(shaftSummaryFrontLoaded);
+        forfun.miningqol.client.summary.ShaftSummary.setTrackAllShaftSummaries(shaftSummaryTrackAll);
+        forfun.miningqol.client.summary.ShaftSummary.setShowBuffsInSummary(shaftSummaryShowBuffs);
+        forfun.miningqol.client.summary.ShaftSummary.setTrackEfficiencyInSummary(shaftSummaryTrackEfficiency);
+        forfun.miningqol.client.summary.ShaftSummary.setEfficiencyPauseSeconds(shaftSummaryEfficiencyPause);
+        forfun.miningqol.client.summary.ShaftSummary.setAutoSave(shaftSummaryAutoSave);
+        forfun.miningqol.client.summary.ShaftSummary.setPrintToChat(shaftSummaryPrintToChat);
+        forfun.miningqol.client.summary.ShaftSummary.setPrintToParty(shaftSummaryPrintToParty);
+        forfun.miningqol.client.summary.ShaftSummary.setMaxSavedRuns(shaftSummaryMaxSavedRuns);
+        forfun.miningqol.client.summary.ShaftSummary.setSummaryShaftTypes(shaftSummaryTypes);
+        forfun.miningqol.client.summary.ShaftSummary.setSavedShaftTypes(shaftSummarySavedTypes);
+        forfun.miningqol.client.summary.ShaftSummary.setRanksBy(shaftSummaryRanksBy);
+        forfun.miningqol.client.summary.ShaftSummary.setGemMiningSpeed(shaftSummaryGemMiningSpeed);
+        forfun.miningqol.client.summary.ShaftSummary.setBlueCheese(shaftSummaryBlueCheese);
+        forfun.miningqol.client.summary.ShaftSummary.setValueAsFlawless(shaftSummaryValueGemsAsFlawless);
+        forfun.miningqol.client.summary.ShaftSummary.setSellOffer(shaftSummarySellOffer);
+
+        forfun.miningqol.client.summary.SkyMallTracker.restore(skyMallBuff, skyMallBuffUntil);
+
+        WispRadius.setEnabled(wispRadiusEnabled);
+        WispRadius.setEdgeOnly(wispRadiusEdgeOnly);
+        WispRadius.setFloorBlocksOnly(wispRadiusFloorBlocksOnly);
+        WispRadius.setRadius(wispRadiusRadius);
+        WispRadius.setAlpha(wispRadiusAlpha);
+        WispRadius.setColor(wispRadiusColor[0], wispRadiusColor[1], wispRadiusColor[2]);
+        forfun.miningqol.client.MineshaftPortal.setEnabled(mineshaftPortalEnabled);
+        forfun.miningqol.client.MineshaftPortal.setTracer(mineshaftPortalTracer);
+        forfun.miningqol.client.MineshaftPortal.setColor(mineshaftPortalColor[0], mineshaftPortalColor[1], mineshaftPortalColor[2]);
+        forfun.miningqol.client.MineshaftPortal.setAlpha(mineshaftPortalAlpha);
+        forfun.miningqol.client.MineshaftPortal.setLineWidth(mineshaftPortalLineWidth);
+
+        MayhemHUD.setEnabled(mayhemHudEnabled);
+        MayhemHUD.setHideWithF1(mayhemHudHideWithF1);
+        MayhemHUD.setAlwaysShow(mayhemHudAlwaysShow);
+        MayhemHUD.setPosition(mayhemHudX, mayhemHudY);
+        MayhemHUD.anchor().load(anchorMode(mayhemHudAnchorModeX), mayhemHudAnchorOffX, anchorMode(mayhemHudAnchorModeY), mayhemHudAnchorOffY);
+        MayhemHUD.setLabelColor(mayhemLabelColor[0], mayhemLabelColor[1], mayhemLabelColor[2]);
+        MayhemHUD.setValueColor(mayhemValueColor[0], mayhemValueColor[1], mayhemValueColor[2]);
+        MayhemHUD.setNoneColor(mayhemNoneColor[0], mayhemNoneColor[1], mayhemNoneColor[2]);
+
+        forfun.miningqol.client.CommissionGui.setEnabled(commGuiEnabled);
+        forfun.miningqol.client.CommissionGui.setShowProgress(commGuiShowProgress);
+        forfun.miningqol.client.CommissionGui.setScale(commGuiScale);
+        forfun.miningqol.client.CommissionGui.setButtonSize(commGuiButtonSize);
+        forfun.miningqol.client.CommissionGui.setAccentColor(commGuiAccentColor[0], commGuiAccentColor[1], commGuiAccentColor[2]);
+        forfun.miningqol.client.CommissionGui.setDoneColor(commGuiDoneColor[0], commGuiDoneColor[1], commGuiDoneColor[2]);
+
+        forfun.miningqol.client.shatter.ShatterUi.setScale(shatterScale);
+        forfun.miningqol.client.shatter.ShatterUi.setAnimations(shatterAnimations);
+        forfun.miningqol.client.shatter.ShatterUi.setDescriptions(shatterDescriptions);
+        forfun.miningqol.client.shatter.ShatterUi.opacity.set(shatterOpacity);
+        forfun.miningqol.client.shatter.ShatterUi.outline.set(shatterOutline);
+        forfun.miningqol.client.shatter.ShatterUi.outlineWidth.set(shatterOutlineWidth);
+        forfun.miningqol.client.shatter.ShatterConfig.load(shatterPanels);
+
         EfficientMinerOverlay.setEnabled(efficientMinerEnabled);
         EfficientMinerOverlay.setUseOldHeatmap(useOldHeatmap);
 
         ForgeDisplay.setEnabled(forgeDisplayEnabled);
+        ForgeDisplay.setHideWithF1(forgeDisplayHideWithF1);
         ForgeDisplay.setShowEmpty(forgeDisplayShowEmpty);
         ForgeDisplay.setSortByTime(forgeDisplaySortByTime);
         ForgeDisplay.setPosition(forgeDisplayX, forgeDisplayY);
@@ -469,8 +648,6 @@ public class MiningConfig {
         }
         LobbyFinder.setTrackedBlocks(blocks);
 
-        forfun.miningqol.client.gui.SettingsUi.INSTANCE.applyTheme(guiTheme);
-        forfun.miningqol.client.gui.SettingsUi.INSTANCE.setLayout(guiLayout);
         MqoChat.setLogsEnabled(chatLogsEnabled);
         CritParticleDrop.setEnabled(critParticleDrop);
 
@@ -510,8 +687,8 @@ public class MiningConfig {
     }
 
     public void loadFromGame() {
-        guiOpacity = forfun.miningqol.client.gui.SettingsUi.getGuiOpacity();
         commissionHudEnabled = CommissionHUD.isEnabled();
+        commissionHudHideWithF1 = CommissionHUD.isHideWithF1();
         commissionHudX = CommissionHUD.getX();
         commissionHudY = CommissionHUD.getY();
         hudAnchorVersion = HUD_ANCHOR_VERSION;
@@ -522,6 +699,13 @@ public class MiningConfig {
         commissionHudScale = CommissionHUD.getScale();
         commissionHudBackground = CommissionHUD.isBackgroundEnabled();
         commissionHudLayout = CommissionHUD.getLayoutMode().name();
+        commissionHudStyle = CommissionHUD.getDisplayStyle().name();
+        commissionHudShowHeader = CommissionHUD.isShowHeader();
+        commissionHudProgressColors = CommissionHUD.isProgressColors();
+        commissionHeaderColor = CommissionHUD.getHeaderColor();
+        commissionNameColor = CommissionHUD.getNameColor();
+        commissionPercentColor = CommissionHUD.getPercentColor();
+        commissionDoneColor = CommissionHUD.getDoneColor();
         commissionStatsEnabled = CommTracker.isStatsEnabled();
         commissionShowOverMenus = CommissionHUD.isShowOverMenus();
         commTrackTotal = CommTracker.getTotalCompleted();
@@ -560,6 +744,7 @@ public class MiningConfig {
         blockOverlayHideDuringEtherwarp = BlockOverlay.isHideDuringEtherwarp();
 
         pickaxeCooldownEnabled = PickaxeCooldownHUD.isEnabled();
+        pickaxeCooldownHideWithF1 = PickaxeCooldownHUD.isHideWithF1();
         pickaxeCooldownX = PickaxeCooldownHUD.getX();
         pickaxeCooldownY = PickaxeCooldownHUD.getY();
         pickaxeCooldownAnchorModeX = PickaxeCooldownHUD.anchor().modeX();
@@ -584,6 +769,8 @@ public class MiningConfig {
 
         filetWarningEnabled = FiletWarning.isEnabled();
         rollingMinerCooldownEnabled = RollingMinerCooldown.isEnabled();
+        rogueSwordTimer = forfun.miningqol.client.ItemCooldownTimer.ROGUE_SWORD.save();
+        tubaTimer = forfun.miningqol.client.ItemCooldownTimer.TUBA.save();
         rollingMinerCooldownX = RollingMinerCooldown.getX();
         rollingMinerCooldownY = RollingMinerCooldown.getY();
         rollingMinerCooldownAnchorModeX = RollingMinerCooldown.anchor().modeX();
@@ -594,10 +781,72 @@ public class MiningConfig {
         rollingCooldownValueColor = RollingMinerCooldown.getCooldownValueColor();
         rollingReadyLabelColor = RollingMinerCooldown.getReadyLabelColor();
         rollingReadyValueColor = RollingMinerCooldown.getReadyValueColor();
+
+        shaftSummaryEnabled = forfun.miningqol.client.summary.ShaftSummary.isEnabled();
+        shaftSummaryFrontLoaded = forfun.miningqol.client.summary.ShaftSummary.isFrontLoaded();
+        shaftSummaryTrackAll = forfun.miningqol.client.summary.ShaftSummary.isTrackAllShaftSummaries();
+        shaftSummaryShowBuffs = forfun.miningqol.client.summary.ShaftSummary.isShowBuffsInSummary();
+        shaftSummaryTrackEfficiency = forfun.miningqol.client.summary.ShaftSummary.isTrackEfficiencyInSummary();
+        shaftSummaryEfficiencyPause = forfun.miningqol.client.summary.ShaftSummary.getEfficiencyPauseSeconds();
+        shaftSummaryAutoSave = forfun.miningqol.client.summary.ShaftSummary.isAutoSave();
+        shaftSummaryPrintToChat = forfun.miningqol.client.summary.ShaftSummary.isPrintToChat();
+        shaftSummaryPrintToParty = forfun.miningqol.client.summary.ShaftSummary.isPrintToParty();
+        shaftSummaryMaxSavedRuns = forfun.miningqol.client.summary.ShaftSummary.getMaxSavedRuns();
+        shaftSummaryTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getSummaryShaftTypes());
+        shaftSummarySavedTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getSavedShaftTypes());
+        shaftSummaryRanksBy = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getRanksBy());
+        shaftSummaryGemMiningSpeed = forfun.miningqol.client.summary.ShaftSummary.getGemMiningSpeed();
+        shaftSummaryBlueCheese = forfun.miningqol.client.summary.ShaftSummary.isBlueCheese();
+        shaftSummaryValueGemsAsFlawless = forfun.miningqol.client.summary.ShaftSummary.isValueAsFlawless();
+        shaftSummarySellOffer = forfun.miningqol.client.summary.ShaftSummary.isSellOffer();
+
+        skyMallBuff = forfun.miningqol.client.summary.SkyMallTracker.storedBuffName();
+        skyMallBuffUntil = forfun.miningqol.client.summary.SkyMallTracker.storedUntil();
+
+        wispRadiusEnabled = WispRadius.isEnabled();
+        wispRadiusEdgeOnly = WispRadius.isEdgeOnly();
+        wispRadiusFloorBlocksOnly = WispRadius.isFloorBlocksOnly();
+        wispRadiusRadius = WispRadius.getRadius();
+        wispRadiusAlpha = WispRadius.getAlpha();
+        wispRadiusColor = WispRadius.getColor().clone();
+        mineshaftPortalEnabled = forfun.miningqol.client.MineshaftPortal.isEnabled();
+        mineshaftPortalTracer = forfun.miningqol.client.MineshaftPortal.isTracer();
+        mineshaftPortalColor = forfun.miningqol.client.MineshaftPortal.getColor();
+        mineshaftPortalAlpha = forfun.miningqol.client.MineshaftPortal.getAlpha();
+        mineshaftPortalLineWidth = forfun.miningqol.client.MineshaftPortal.getLineWidth();
+
+        mayhemHudEnabled = MayhemHUD.isEnabled();
+        mayhemHudHideWithF1 = MayhemHUD.isHideWithF1();
+        mayhemHudAlwaysShow = MayhemHUD.isAlwaysShow();
+        mayhemHudX = MayhemHUD.getX();
+        mayhemHudY = MayhemHUD.getY();
+        mayhemHudAnchorModeX = MayhemHUD.anchor().modeX();
+        mayhemHudAnchorOffX = MayhemHUD.anchor().offX();
+        mayhemHudAnchorModeY = MayhemHUD.anchor().modeY();
+        mayhemHudAnchorOffY = MayhemHUD.anchor().offY();
+        mayhemLabelColor = MayhemHUD.getLabelColor();
+        mayhemValueColor = MayhemHUD.getValueColor();
+        mayhemNoneColor = MayhemHUD.getNoneColor();
+
+        commGuiEnabled = forfun.miningqol.client.CommissionGui.isEnabled();
+        commGuiShowProgress = forfun.miningqol.client.CommissionGui.isShowProgress();
+        commGuiScale = forfun.miningqol.client.CommissionGui.getScale();
+        commGuiButtonSize = forfun.miningqol.client.CommissionGui.getButtonSize();
+        commGuiAccentColor = forfun.miningqol.client.CommissionGui.getAccentColor();
+        commGuiDoneColor = forfun.miningqol.client.CommissionGui.getDoneColor();
+
+        shatterScale = forfun.miningqol.client.shatter.ShatterUi.scale;
+        shatterAnimations = forfun.miningqol.client.shatter.ShatterUi.animations();
+        shatterDescriptions = forfun.miningqol.client.shatter.ShatterUi.descriptions();
+        shatterOpacity = forfun.miningqol.client.shatter.ShatterUi.opacity.get();
+        shatterOutline = forfun.miningqol.client.shatter.ShatterUi.outline.get();
+        shatterOutlineWidth = forfun.miningqol.client.shatter.ShatterUi.outlineWidth.get();
+        shatterPanels = forfun.miningqol.client.shatter.ShatterConfig.store();
         efficientMinerEnabled = EfficientMinerOverlay.isEnabled();
         useOldHeatmap = EfficientMinerOverlay.isUsingOldHeatmap();
 
         forgeDisplayEnabled = ForgeDisplay.isEnabled();
+        forgeDisplayHideWithF1 = ForgeDisplay.isHideWithF1();
         forgeDisplayShowEmpty = ForgeDisplay.isShowEmpty();
         forgeDisplaySortByTime = ForgeDisplay.isSortByTime();
         forgeDisplayX = ForgeDisplay.getX();
@@ -638,8 +887,6 @@ public class MiningConfig {
             lobbyFinderBlocks.add(pos.getX() + "," + pos.getY() + "," + pos.getZ());
         }
 
-        guiTheme = forfun.miningqol.client.gui.SettingsUi.INSTANCE.getThemeIndex();
-        guiLayout = forfun.miningqol.client.gui.SettingsUi.INSTANCE.getLayoutIndex();
         chatLogsEnabled = MqoChat.isLogsEnabled();
         critParticleDrop = CritParticleDrop.isEnabled();
 
