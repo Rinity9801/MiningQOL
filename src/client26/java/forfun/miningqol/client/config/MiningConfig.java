@@ -184,6 +184,12 @@ public class MiningConfig {
     public float wispRadiusRadius = 30.0f;
     public float wispRadiusAlpha = 0.35f;
     public float[] wispRadiusColor = {0.45f, 0.85f, 1.0f};
+    public boolean customFogEnabled = false;
+    public float customFogStart = 8.0f;
+    public float customFogEnd = 48.0f;
+    public float[] customFogColor = {170f / 255f, 190f / 255f, 220f / 255f};
+    public float customFogAlpha = 1.0f;
+    public boolean customFogSky = true;
     public boolean mineshaftPortalEnabled = true;
     public boolean mineshaftPortalTracer = true;
     public float[] mineshaftPortalColor = {170f / 255f, 1.0f, 85f / 255f};
@@ -259,10 +265,14 @@ public class MiningConfig {
     // harmlessly ignored on legit)
     public int autoClickerMiningSlot = 0;
     public boolean autoClickerSecondDrill = false;
+    /** CoalClick: swap to the hotbar fishing rod and right-click it before the ability. */
+    public boolean autoClickerRodSwap = false;
     public int autoClickerSecondDrillSlot = 3;
     public boolean autoClickerHudEnabled = true;
     public int autoClickerMainDrillDelay = 3;
     public int autoClickerSecondDrillDelay = 3;
+    public boolean autoClickerCustomCooldown = false;
+    public int autoClickerCustomCooldownSeconds = 120;
     public int coldClickerMiningSlot = 0;
     public int coldClickerSecondDrillSlot = 3;
     public boolean coldClickerThirdDrillEnabled = false;
@@ -363,6 +373,7 @@ public class MiningConfig {
         if (skyMallBuff == null) skyMallBuff = "";
         if (wispRadiusColor == null || wispRadiusColor.length != 3) wispRadiusColor = new float[]{0.45f, 0.85f, 1.0f};
         if (mineshaftPortalColor == null || mineshaftPortalColor.length != 3) mineshaftPortalColor = new float[]{170f / 255f, 1.0f, 85f / 255f};
+        if (customFogColor == null || customFogColor.length != 3) customFogColor = new float[]{170f / 255f, 190f / 255f, 220f / 255f};
         if (wispRadiusRadius < 1f || wispRadiusRadius > 64f) wispRadiusRadius = 30.0f;
         if (wispRadiusAlpha < 0.05f || wispRadiusAlpha > 1f) wispRadiusAlpha = 0.35f;
         if (shaftSummaryEfficiencyPause < 1 || shaftSummaryEfficiencyPause > 120) shaftSummaryEfficiencyPause = 15;
@@ -568,6 +579,12 @@ public class MiningConfig {
         WispRadius.setRadius(wispRadiusRadius);
         WispRadius.setAlpha(wispRadiusAlpha);
         WispRadius.setColor(wispRadiusColor[0], wispRadiusColor[1], wispRadiusColor[2]);
+        forfun.miningqol.client.CustomFog.setEnabled(customFogEnabled);
+        forfun.miningqol.client.CustomFog.setStart(customFogStart);
+        forfun.miningqol.client.CustomFog.setEnd(customFogEnd);
+        forfun.miningqol.client.CustomFog.setColor(customFogColor[0], customFogColor[1], customFogColor[2]);
+        forfun.miningqol.client.CustomFog.setAlpha(customFogAlpha);
+        forfun.miningqol.client.CustomFog.setFogSky(customFogSky);
         forfun.miningqol.client.MineshaftPortal.setEnabled(mineshaftPortalEnabled);
         forfun.miningqol.client.MineshaftPortal.setTracer(mineshaftPortalTracer);
         forfun.miningqol.client.MineshaftPortal.setColor(mineshaftPortalColor[0], mineshaftPortalColor[1], mineshaftPortalColor[2]);
@@ -807,6 +824,12 @@ public class MiningConfig {
         wispRadiusRadius = WispRadius.getRadius();
         wispRadiusAlpha = WispRadius.getAlpha();
         wispRadiusColor = WispRadius.getColor().clone();
+        customFogEnabled = forfun.miningqol.client.CustomFog.isEnabled();
+        customFogStart = forfun.miningqol.client.CustomFog.getStart();
+        customFogEnd = forfun.miningqol.client.CustomFog.getEnd();
+        customFogColor = forfun.miningqol.client.CustomFog.getColor();
+        customFogAlpha = forfun.miningqol.client.CustomFog.getAlpha();
+        customFogSky = forfun.miningqol.client.CustomFog.isFogSky();
         mineshaftPortalEnabled = forfun.miningqol.client.MineshaftPortal.isEnabled();
         mineshaftPortalTracer = forfun.miningqol.client.MineshaftPortal.isTracer();
         mineshaftPortalColor = forfun.miningqol.client.MineshaftPortal.getColor();

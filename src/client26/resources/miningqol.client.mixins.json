@@ -22,6 +22,8 @@
     "ParticleEngineMixin",
     "ChatComponentAccessor",
     "MultiPlayerGameModeInvoker",
+    "FogRendererMixin",
+    "LevelRendererSkyMixin",
     "SystemChatMixin"
   ],
   "injectors": {

@@ -2,6 +2,8 @@ package forfun.miningqol.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.FishingRodItem;
+import net.minecraft.world.item.ItemStack;
 
 public class AutoClickerManager {
     private static boolean enabled = false;
@@ -10,11 +12,25 @@ public class AutoClickerManager {
     private static int sequenceTickCounter = 0;
     private static boolean firstEnable = true;
     private static int expectedSlot = 0;
+    /** Swap to the hotbar fishing rod and right-click it before the drill's ability. */
+    private static boolean enableRodSwap = false;
     private static boolean enableSecondDrill = false;
     private static int secondDrillSlot = 3;
     private static int mainDrillDelay = 3;
     private static int secondDrillDelay = 3;
     private static boolean wasOnCooldown = true;
+    /**
+     * Custom Cooldown: fire the ability {@link #customCooldownSeconds} after its last use, timed
+     * locally instead of from the tab list — like the Pickaxe Cooldown option. The last use comes
+     * from Hypixel's "You used your … Pickaxe Ability!" line and is remembered whether CoalClick
+     * is on or off, so toggling it never forgets (or restarts) the cooldown.
+     */
+    private static boolean customCooldownEnabled = false;
+    private static int customCooldownSeconds = 120;
+    private static final java.util.regex.Pattern ABILITY_USED =
+        java.util.regex.Pattern.compile("You used your (.+?) Pickaxe Ability!");
+    /** When the pickaxe ability was last used, by anyone; 0 = not seen this session. */
+    private static long lastAbilityUseAt = 0;
 
     // Internal timer for triggering (ported from commit 722e1c5 "when to use ability"):
     // capture the cooldown duration when it starts and count ticks up to it (+1s buffer)
@@ -32,6 +48,20 @@ public class AutoClickerManager {
     private static final boolean DEBUG = false;
     private static int activationCount = 0;
 
+    /** Every chat line: notes a pickaxe ability use, even while CoalClick is off. */
+    public static void onChatMessage(String message) {
+        if (message != null && ABILITY_USED.matcher(message).find()) {
+            lastAbilityUseAt = System.currentTimeMillis();
+        }
+    }
+
+    /** Custom Cooldown: seconds until the remembered cooldown runs out (0 = ready). */
+    private static double customRemainingSeconds() {
+        if (lastAbilityUseAt == 0) return 0;
+        long remaining = lastAbilityUseAt + customCooldownSeconds * 1000L - System.currentTimeMillis();
+        return Math.max(0, remaining / 1000.0);
+    }
+
     public static void toggle() {
         enabled = !enabled;
         if (!enabled) {
@@ -46,6 +76,14 @@ public class AutoClickerManager {
                 client.options.keyAttack.setDown(false);
                 client.options.keyUse.setDown(false);
             }
+        } else if (customCooldownEnabled) {
+            // The remembered cooldown decides; tick fires once it has run out.
+            inSequence = false;
+            sequenceStep = 0;
+            sequenceTickCounter = 0;
+            timerActive = false;
+            waitingForCooldownStart = false;
+            firstEnable = false;
         } else {
             // Check if ability is currently ready
             boolean abilityIsReady = !PickaxeCooldownHUD.isOnCooldown();
@@ -81,6 +119,7 @@ public class AutoClickerManager {
     }
 
     public static double getRemainingSeconds() {
+        if (customCooldownEnabled) return customRemainingSeconds();
         if (firstEnable) {
             return 0;
         }
@@ -93,12 +132,36 @@ public class AutoClickerManager {
         return PickaxeCooldownHUD.getInterpolatedCooldown();
     }
 
+    public static boolean isCustomCooldownEnabled() {
+        return customCooldownEnabled;
+    }
+
+    public static void setCustomCooldownEnabled(boolean value) {
+        customCooldownEnabled = value;
+    }
+
+    public static int getCustomCooldownSeconds() {
+        return customCooldownSeconds;
+    }
+
+    public static void setCustomCooldownSeconds(int seconds) {
+        customCooldownSeconds = Math.max(1, Math.min(600, seconds));
+    }
+
     public static void setMiningSlot(int slot) {
         expectedSlot = slot;
     }
 
     public static int getMiningSlot() {
         return expectedSlot;
+    }
+
+    public static void setEnableRodSwap(boolean value) {
+        enableRodSwap = value;
+    }
+
+    public static boolean isRodSwapEnabled() {
+        return enableRodSwap;
     }
 
     public static void setEnableSecondDrill(boolean value) {
@@ -131,6 +194,15 @@ public class AutoClickerManager {
 
     public static int getSecondDrillDelay() {
         return secondDrillDelay;
+    }
+
+    private static int findFishingRodSlot(Minecraft client) {
+        if (client.player == null) return -1;
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = client.player.getInventory().getItem(i);
+            if (stack.getItem() instanceof FishingRodItem) return i;
+        }
+        return -1;
     }
 
     private static int getSelectedSlot(Minecraft client) {
@@ -169,8 +241,16 @@ public class AutoClickerManager {
         long currentTime = System.currentTimeMillis();
         boolean canStartNewSequence = (currentTime - lastSequenceEndTime) >= MIN_SEQUENCE_INTERVAL_MS;
 
-        // After sequence ends, we wait for a NEW cooldown to start before tracking again
-        if (waitingForCooldownStart) {
+        if (customCooldownEnabled) {
+            // Fire once the remembered cooldown is over.
+            if (enabled && !inSequence && canStartNewSequence && customRemainingSeconds() <= 0) {
+                debug(client, "Custom cooldown fire | lastUse=" + lastAbilityUseAt);
+                inSequence = true;
+                sequenceStep = 0;
+                sequenceTickCounter = 0;
+            }
+        } else if (waitingForCooldownStart) {
+            // After sequence ends, we wait for a NEW cooldown to start before tracking again
             if (currentlyOnCooldown && scoreboardCooldown > 10.0) {
                 // New cooldown started, begin tracking
                 waitingForCooldownStart = false;
@@ -189,7 +269,7 @@ public class AutoClickerManager {
         }
 
         // When cooldown starts, capture the duration and start our internal timer
-        if (currentlyOnCooldown && !wasOnCooldown && !timerActive && canStartNewSequence) {
+        if (!customCooldownEnabled && currentlyOnCooldown && !wasOnCooldown && !timerActive && canStartNewSequence) {
             targetCooldownTicks = (int) (scoreboardCooldown * 20) + 20; // Add 1 second buffer
             internalTickCounter = 0;
             timerActive = true;
@@ -231,7 +311,9 @@ public class AutoClickerManager {
         sequenceTickCounter++;
 
         // Sequence:
-        // 0: Start
+        // 0: Switch to rod (or skip if no rod swap / no rod)
+        // 1: Wait 2 ticks for rod switch
+        // 2: Right click rod (2 ticks)
         // 3: Switch to main drill
         // 4: Wait mainDrillDelay ticks
         // 5: If second drill: switch to second drill; else: right click main drill
@@ -244,13 +326,34 @@ public class AutoClickerManager {
             case 0:
                 activationCount++;
                 debug(client, "Activation #" + activationCount + " START | held=" + heldItemName(client)
-                        + " miningSlot=" + expectedSlot
-                        + " 2ndDrill=" + enableSecondDrill + "(" + secondDrillSlot + ")"
+                        + " miningSlot=" + expectedSlot + " rodSlot=" + findFishingRodSlot(client)
+                        + " rodSwap=" + enableRodSwap + " 2ndDrill=" + enableSecondDrill + "(" + secondDrillSlot + ")"
                         + " ready=" + (!PickaxeCooldownHUD.isOnCooldown()));
-                // Steps 1-2 used to swap to a fishing rod and right-click it. That trick no
-                // longer does anything, so the sequence starts at the drill.
-                sequenceStep = 3;
+                int rodSlot = enableRodSwap ? findFishingRodSlot(client) : -1;
+                if (rodSlot != -1) {
+                    setSelectedSlot(client, rodSlot);
+                    sequenceStep = 1;
+                } else {
+                    sequenceStep = 3; // Rod swap off, or no rod in the hotbar: straight to the drill
+                }
                 sequenceTickCounter = 0;
+                break;
+
+            case 1: // Wait before rod right click
+                if (sequenceTickCounter >= 2) {
+                    sequenceStep = 2;
+                    sequenceTickCounter = 0;
+                }
+                break;
+
+            case 2: // Right click rod
+                if (sequenceTickCounter == 1) debug(client, "  -> right-click ROD | held=" + heldItemName(client));
+                client.options.keyUse.setDown(true);
+                if (sequenceTickCounter >= 2) {
+                    client.options.keyUse.setDown(false);
+                    sequenceStep = 3;
+                    sequenceTickCounter = 0;
+                }
                 break;
 
             case 3: // Switch to main drill
@@ -316,7 +419,10 @@ public class AutoClickerManager {
                 sequenceTickCounter = 0;
                 lastSequenceEndTime = System.currentTimeMillis();
                 timerActive = false;
-                waitingForCooldownStart = true; // Wait for next cooldown cycle
+                // Custom Cooldown: count from this click, in case a chat filter hides Hypixel's
+                // "used your ability" line; when that line does arrive it refines the time.
+                if (customCooldownEnabled) lastAbilityUseAt = lastSequenceEndTime;
+                waitingForCooldownStart = !customCooldownEnabled;
                 break;
         }
     }

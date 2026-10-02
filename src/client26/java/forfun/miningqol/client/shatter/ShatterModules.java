@@ -91,6 +91,20 @@ public final class ShatterModules {
             .add(new BoolSetting("Old Heatmap Colors", "Use the legacy 8-colour heatmap palette", false)
                 .bind(EfficientMinerOverlay::isUsingOldHeatmap, EfficientMinerOverlay::setUseOldHeatmap)));
 
+        Modules.register(new Module("Custom Fog", "Your own fog distance and colour (water, lava and powder snow keep theirs)", general,
+            forfun.miningqol.client.CustomFog::isEnabled, forfun.miningqol.client.CustomFog::setEnabled)
+            .add(new SliderSetting("Start", "Distance in blocks where the fog begins", 8, 0, 256, 1, " blocks")
+                .bind(() -> (double) forfun.miningqol.client.CustomFog.getStart(),
+                    v -> forfun.miningqol.client.CustomFog.setStart(v.floatValue())))
+            .add(new SliderSetting("End", "Distance in blocks where the fog is at full strength", 48, 1, 512, 1, " blocks")
+                .bind(() -> (double) forfun.miningqol.client.CustomFog.getEnd(),
+                    v -> forfun.miningqol.client.CustomFog.setEnd(v.floatValue())))
+            .add(ColorSetting.ofRgb("Colour", "Fog colour; its opacity is how strong the fog is at its end",
+                forfun.miningqol.client.CustomFog::getColor, forfun.miningqol.client.CustomFog::setColor,
+                forfun.miningqol.client.CustomFog::getAlpha, forfun.miningqol.client.CustomFog::setAlpha))
+            .add(new BoolSetting("Fog the Sky", "The sky, sun, moon and stars become the fog colour, and clouds fade into it", true)
+                .bind(forfun.miningqol.client.CustomFog::isFogSky, forfun.miningqol.client.CustomFog::setFogSky)));
+
         Modules.register(new Module("Block Overlay", "Custom targeted block highlight", general,
             BlockOverlay::isEnabled, BlockOverlay::setEnabled)
             .add(new ModeSetting("Mode", "Overlay style", BlockOverlay.getMode().getDisplayName(), overlayModeNames())

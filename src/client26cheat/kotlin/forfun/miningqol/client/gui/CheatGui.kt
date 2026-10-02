@@ -85,6 +85,8 @@ object CheatGui {
                 { AutoClickerManager.isEnabled() }, { AutoClickerManager.setEnabled(it) })
                 .add(slider("Mining Slot", "Hotbar slot of the drill", 1.0, 9.0, 1.0, "",
                     { (AutoClickerManager.getMiningSlot() + 1).toDouble() }, { AutoClickerManager.setMiningSlot(it.toInt() - 1) }))
+                .add(bool("Rod Swap", "Swap to your hotbar fishing rod and right-click it before the ability",
+                    { AutoClickerManager.isRodSwapEnabled() }, { AutoClickerManager.setEnableRodSwap(it) }))
                 .add(bool("Second Drill", "Rotate a second drill into the cycle",
                     { AutoClickerManager.isSecondDrillEnabled() }, { AutoClickerManager.setEnableSecondDrill(it) }))
                 .add(slider("Second Drill Slot", "", 1.0, 9.0, 1.0, "",
@@ -93,6 +95,10 @@ object CheatGui {
                     { AutoClickerManager.getMainDrillDelay().toDouble() }, { AutoClickerManager.setMainDrillDelay(it.toInt()) }))
                 .add(slider("Second Drill Delay", "", 1.0, 10.0, 1.0, " ticks",
                     { AutoClickerManager.getSecondDrillDelay().toDouble() }, { AutoClickerManager.setSecondDrillDelay(it.toInt()) }))
+                .add(bool("Custom Cooldown", "Use the ability every Custom Seconds on a local timer instead of reading the tab list",
+                    { AutoClickerManager.isCustomCooldownEnabled() }, { AutoClickerManager.setCustomCooldownEnabled(it) }))
+                .add(slider("Custom Seconds", "Used when Custom Cooldown is on", 1.0, 600.0, 1.0, "s",
+                    { AutoClickerManager.getCustomCooldownSeconds().toDouble() }, { AutoClickerManager.setCustomCooldownSeconds(it.toInt()) }))
                 .add(bool("HUD", "Show the CoalClick status HUD",
                     { AutoClickerHUD.isEnabled() }, { AutoClickerHUD.setEnabled(it) }))
 

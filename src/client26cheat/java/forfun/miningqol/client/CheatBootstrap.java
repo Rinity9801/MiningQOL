@@ -183,6 +183,7 @@ public final class CheatBootstrap {
                 CommClaimManager.onCommissionComplete(messageText);
             }
             EmptyStashManager.onChatMessage(messageText);
+            AutoClickerManager.onChatMessage(messageText);
             AutoForgeManager.onChatMessage(messageText);
             ShaftJoinCdManager.onChatMessage(messageText);
             forfun.miningqol.client.hotm.AutoHotmManager.onChatMessage(messageText);
@@ -222,10 +223,13 @@ public final class CheatBootstrap {
             if (config == null) return;
             // Never restore enabled state for clickers - always start disabled for safety
             AutoClickerManager.setMiningSlot(config.autoClickerMiningSlot);
+            AutoClickerManager.setEnableRodSwap(config.autoClickerRodSwap);
             AutoClickerManager.setEnableSecondDrill(config.autoClickerSecondDrill);
             AutoClickerManager.setSecondDrillSlot(config.autoClickerSecondDrillSlot);
             AutoClickerManager.setMainDrillDelay(config.autoClickerMainDrillDelay);
             AutoClickerManager.setSecondDrillDelay(config.autoClickerSecondDrillDelay);
+            AutoClickerManager.setCustomCooldownEnabled(config.autoClickerCustomCooldown);
+            AutoClickerManager.setCustomCooldownSeconds(config.autoClickerCustomCooldownSeconds);
             AutoClickerHUD.setEnabled(config.autoClickerHudEnabled);
 
             AutoForgeManager.importRecordedCrafts(config.autoForgeRecordedCrafts);
@@ -274,10 +278,13 @@ public final class CheatBootstrap {
             MiningConfig config = MiningqolClient.getConfig();
             if (config == null) return;
             config.autoClickerMiningSlot = AutoClickerManager.getMiningSlot();
+            config.autoClickerRodSwap = AutoClickerManager.isRodSwapEnabled();
             config.autoClickerSecondDrill = AutoClickerManager.isSecondDrillEnabled();
             config.autoClickerSecondDrillSlot = AutoClickerManager.getSecondDrillSlot();
             config.autoClickerMainDrillDelay = AutoClickerManager.getMainDrillDelay();
             config.autoClickerSecondDrillDelay = AutoClickerManager.getSecondDrillDelay();
+            config.autoClickerCustomCooldown = AutoClickerManager.isCustomCooldownEnabled();
+            config.autoClickerCustomCooldownSeconds = AutoClickerManager.getCustomCooldownSeconds();
             config.autoClickerHudEnabled = AutoClickerHUD.isEnabled();
 
             config.autoForgeRecordedCrafts = AutoForgeManager.exportRecordedCrafts();
