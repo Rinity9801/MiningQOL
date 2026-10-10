@@ -207,6 +207,19 @@ public final class CommissionGui {
         // floats over the bare world like Odin's terminals.
         r.rect(panelX * f, panelY * f, panelW * f, panelH * f, 0xF01C1C1C, 12f * u);
 
+        // Lifetime total (Current Comms / /commtrack set, plus completions since), centred
+        // just above the panel. Hidden until there is a count to show.
+        long total = CommTracker.getTotalCompleted();
+        if (total > 0) {
+            String label = String.format(Locale.US, "Commissions: %,d", total);
+            float size = 9f * u;
+            float tw = r.textWidth(label, size, font);
+            float tx = (panelX + panelW / 2f) * f - tw / 2f;
+            float ty = panelY * f - size - 5f * u;
+            r.text(label, tx + Math.max(1f, u), ty + Math.max(1f, u), size, 0xE0101018, font);
+            r.text(label, tx, ty, size, 0xFFF3F4F6, font);
+        }
+
         for (int i = 0; i < cells.size(); i++) {
             Cell cell = cells.get(i);
             float x = panelX + pad + i * (slot + gap);

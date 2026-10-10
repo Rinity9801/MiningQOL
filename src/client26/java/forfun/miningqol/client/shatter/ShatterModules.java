@@ -202,6 +202,8 @@ public final class ShatterModules {
                 .bind(CommissionHUD::isShowOverMenus, CommissionHUD::setShowOverMenus))
             .add(new BoolSetting("Commission Stats", "Total completed + comms/hour", false)
                 .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled))
+            .add(new StringSetting("Current Comms", "Your lifetime commissions — completions add to it", "", "e.g. 1234")
+                .bind(CommTracker::getTotalInput, CommTracker::setTotalInput))
             .add(new BoolSetting("Show Header", "Lead the text styles with \"Commissions:\"", true)
                 .bind(CommissionHUD::isShowHeader, CommissionHUD::setShowHeader))
             .add(new BoolSetting("Progress Colors", "Percent coloured by progress tier", false)
@@ -340,8 +342,25 @@ public final class ShatterModules {
                 .bind(() -> (double) WispRadius.getAlpha(), v -> WispRadius.setAlpha(v.floatValue())))
             .add(ColorSetting.ofRgb("Color", "", WispRadius::getColor, WispRadius::setColor)));
 
-        Modules.register(new Module("Rolling Miner", "20-second HUD timer after double drops", huds,
+        Modules.register(new Module("Rolling Miner", "HUD timer after double drops", huds,
             RollingMinerCooldown::isEnabled, RollingMinerCooldown::setEnabled)
+            .add(new BoolSetting("Hide with F1", "Hide when the vanilla HUD is hidden", false)
+                .bind(RollingMinerCooldown::isHideWithF1, RollingMinerCooldown::setHideWithF1))
+            .add(new ModeSetting("Text Align", "Where the line sits in the HUD box", "Left", "Left", "Center", "Right")
+                .bind(() -> List.of("Left", "Center", "Right").get(RollingMinerCooldown.getTextAlign()),
+                    v -> RollingMinerCooldown.setTextAlign(List.of("Left", "Center", "Right").indexOf(v))))
+            .add(new BoolSetting("Seconds Suffix", "Off shows a bare number instead of 20s", true)
+                .bind(RollingMinerCooldown::isSecondsSuffix, RollingMinerCooldown::setSecondsSuffix))
+            .add(new BoolSetting("Cooldown Only", "Hide the \"Rolling Miner:\" label", false)
+                .bind(RollingMinerCooldown::isCooldownOnly, RollingMinerCooldown::setCooldownOnly))
+            .add(new SliderSetting("Cooldown Seconds", "How long the timer runs after double drops", 20, 1, 120, 1, "s")
+                .bind(() -> (double) RollingMinerCooldown.getCooldownSeconds(),
+                    v -> RollingMinerCooldown.setCooldownSeconds(v.intValue())))
+            .add(new BoolSetting("Ready Title", "Flash a title as it comes off cooldown", false)
+                .bind(RollingMinerCooldown::isTitleEnabled, RollingMinerCooldown::setTitleEnabled))
+            .add(new SliderSetting("Title Threshold", "Seconds left when the title starts", 3, 0, 30, 1, "s")
+                .bind(() -> (double) RollingMinerCooldown.getTitleThreshold(),
+                    v -> RollingMinerCooldown.setTitleThreshold(v.intValue())))
             .add(ColorSetting.ofRgb("Cooldown Label", "", RollingMinerCooldown::getCooldownLabelColor, RollingMinerCooldown::setCooldownLabelColor))
             .add(ColorSetting.ofRgb("Cooldown Value", "", RollingMinerCooldown::getCooldownValueColor, RollingMinerCooldown::setCooldownValueColor))
             .add(ColorSetting.ofRgb("Ready Label", "", RollingMinerCooldown::getReadyLabelColor, RollingMinerCooldown::setReadyLabelColor))

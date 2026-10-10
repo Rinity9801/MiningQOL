@@ -110,7 +110,7 @@ public class PickaxeCooldownHUD {
             return;
         }
 
-        if (currentTime - lastUpdate < 500) return;
+        if (currentTime - lastUpdate < 100) return; // read the tab promptly so Ready isn't late
         lastUpdate = currentTime;
 
         ClientPacketListener connection = client.getConnection();
@@ -277,6 +277,19 @@ public class PickaxeCooldownHUD {
         double elapsedSeconds = elapsedMs / 1000.0;
         double interpolated = lastKnownCooldownSeconds - elapsedSeconds;
         return Math.max(0, interpolated);
+    }
+
+    /**
+     * Seconds until the ability can actually be used, from the interpolated countdown. The tab
+     * list rounds down ("5s" covers 5.0-5.99s left), so its countdown reaches 0 up to a second
+     * before the ability is back; one second is added for that. The custom cooldown is timed
+     * from the use itself and needs no slack. 0 once the tab list prints the ability as ready.
+     */
+    public static double getSecondsUntilReady() {
+        if (!isOnCooldown || lastCooldownUpdateTime <= 0) return 0;
+        double elapsedSeconds = (System.currentTimeMillis() - lastCooldownUpdateTime) / 1000.0;
+        double slack = customCooldownEnabled ? 0 : 1;
+        return Math.max(0, lastKnownCooldownSeconds + slack - elapsedSeconds);
     }
 
     public static boolean isOnCooldown() {

@@ -5,6 +5,7 @@ import forfun.miningqol.client.ShaftESP;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.scores.DisplaySlot;
 import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerTeam;
@@ -12,6 +13,7 @@ import net.minecraft.world.scores.Scoreboard;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -31,8 +33,9 @@ import java.util.regex.Pattern;
  * {@code TOPA_2}, …), the tab list for corpse counts, and the ESP for a Littlefoot. A
  * player is warped when any of their sign-ups matches. The first is invited with
  * {@code /party <name>} and the rest with {@code /p invite <name>}, capped at
- * {@link #MAX_INVITES}; two seconds after the first person joins the party is warped.
- * If nobody has joined within the configured disband timeout the party is disbanded,
+ * {@link #MAX_INVITES}. The party is warped once everyone invited has joined (after the
+ * warp delay), or — when somebody joined but not everyone — once the invites have had the
+ * disband timeout to be accepted. If nobody has joined by then the party is disbanded,
  * player who is offline or has invites blocked cannot wedge the whole thing.
  */
 public final class MineshaftAutoParty {
@@ -61,6 +64,9 @@ public final class MineshaftAutoParty {
     /** "Bob joined the party." — rank prefixes sit in brackets, so they cannot be captured. */
     private static final Pattern JOINED =
         Pattern.compile("([A-Za-z0-9_]{1,16}) joined the party");
+    /** "The party invite to [MVP+] Bob has expired" — that player is no longer waited for. */
+    private static final Pattern INVITE_EXPIRED =
+        Pattern.compile("The party invite to (?:\\[[^\\]]+\\] )?([A-Za-z0-9_]{1,16}) has expired");
 
     private enum Stage { IDLE, WAITING_JOIN, WARP_PENDING, DISBAND_PENDING }
 
@@ -137,6 +143,10 @@ public final class MineshaftAutoParty {
     private static boolean debugChat;
     /** Everyone invited for the current shaft, so a top-up cannot double-invite. */
     private static final Set<String> roster = new LinkedHashSet<>();
+    /** Roster members (lower-cased) who joined, or whose invite expired: nobody to wait for. */
+    private static final Set<String> settled = new java.util.HashSet<>();
+    /** When the latest invite went out; the warp waits up to the disband timeout from it. */
+    private static long lastInviteAt;
     /**
      * Highest corpse count seen so far in the current shaft, cleared on leaving it.
      *
@@ -261,12 +271,14 @@ public final class MineshaftAutoParty {
         pendingInvites.clear();
         roster.clear();
         roster.addAll(targets);
+        settled.clear();
         // /party takes every name at once, so the whole group goes out in one command
         // rather than a first invite plus follow-ups that Hypixel's throttle can drop.
         send(client, "party " + String.join(" ", targets));
 
         stage = Stage.WAITING_JOIN;
         stageStartedAt = System.currentTimeMillis();
+        lastInviteAt = stageStartedAt;
         nextInviteAt = stageStartedAt + INVITE_INTERVAL_MS;
         MqoChat.reply("§6[Auto Party] §f" + reason + " §7→ §f" + String.join("§7, §f", targets));
     }
@@ -279,6 +291,7 @@ public final class MineshaftAutoParty {
             send(client, "p invite " + invitee);
             MqoChat.reply("§6[Auto Party] §7Invited §f" + invitee);
             nextInviteAt = now + INVITE_INTERVAL_MS;
+            lastInviteAt = now;
         }
 
         switch (stage) {
@@ -295,8 +308,11 @@ public final class MineshaftAutoParty {
                 }
             }
             case WARP_PENDING -> {
-                // Never warp with invites still queued, or the stragglers miss the trip.
-                if (pendingInvites.isEmpty() && now >= actionAt) {
+                // Never warp with invites still queued, or the stragglers miss the trip. A late
+                // top-up invite sent after the last join gets its own full window to accept.
+                long warpAt = waitingOn().isEmpty() ? actionAt
+                    : Math.max(actionAt, lastInviteAt + disbandSeconds * 1000L);
+                if (pendingInvites.isEmpty() && now >= warpAt) {
                     send(client, "p warp");
                     if (disbandAfterWarp) {
                         // Same quiet period as the warp, so the disband is only reached
@@ -325,6 +341,7 @@ public final class MineshaftAutoParty {
         stage = Stage.IDLE;
         pendingInvites.clear();
         roster.clear();
+        settled.clear();
         partyEndedAt = now;
     }
 
@@ -370,17 +387,57 @@ public final class MineshaftAutoParty {
         // accepts just after the trip went out gets taken along instead of disbanded on.
         if (stage != Stage.WAITING_JOIN && stage != Stage.WARP_PENDING
             && stage != Stage.DISBAND_PENDING) return;
+
+        Matcher expired = INVITE_EXPIRED.matcher(clean);
+        if (expired.find()) {
+            settled.add(expired.group(1).toLowerCase(Locale.ROOT));
+            // The last one we were holding the warp for gave up: go now.
+            if (stage == Stage.WARP_PENDING && everyoneSettled()) {
+                actionAt = Math.min(actionAt, System.currentTimeMillis() + (long) (warpDelaySeconds * 1000f));
+            }
+            return;
+        }
         if (!clean.contains("joined the party")) return;
 
         Matcher joiner = JOINED.matcher(clean);
         String name = joiner.find() ? joiner.group(1) : null;
+        if (name != null) settled.add(name.toLowerCase(Locale.ROOT));
 
+        long now = System.currentTimeMillis();
         boolean afterWarp = stage == Stage.DISBAND_PENDING;
         stage = Stage.WARP_PENDING;
-        actionAt = System.currentTimeMillis() + (long) (warpDelaySeconds * 1000f);
-        MqoChat.reply("§6[Auto Party] §f" + (name == null ? "Someone" : name)
-            + " §7joined — warping in " + formatSeconds(warpDelaySeconds) + "s"
-            + (afterWarp ? " §7(late, warping again)" : ""));
+        actionAt = now + (long) (warpDelaySeconds * 1000f);
+        // Hold for the rest of the invitees, but only as long as their invites were given to
+        // be accepted; one who never answers can't keep the others waiting past that.
+        List<String> waitingOn = waitingOn();
+        if (!afterWarp && !waitingOn.isEmpty()) {
+            actionAt = Math.max(actionAt, lastInviteAt + disbandSeconds * 1000L);
+        }
+        String who = name == null ? "Someone" : name;
+        if (afterWarp) {
+            MqoChat.reply("§6[Auto Party] §f" + who + " §7joined — warping in "
+                + formatSeconds(warpDelaySeconds) + "s §7(late, warping again)");
+        } else if (waitingOn.isEmpty()) {
+            MqoChat.reply("§6[Auto Party] §f" + who + " §7joined — everyone's in, warping in "
+                + formatSeconds(warpDelaySeconds) + "s");
+        } else {
+            long waitMs = Math.max(0, actionAt - now);
+            MqoChat.reply("§6[Auto Party] §f" + who + " §7joined — waiting for §f"
+                + String.join("§7, §f", waitingOn) + " §7(warping in " + formatSeconds(Math.round(waitMs / 1000f)) + "s at most)");
+        }
+    }
+
+    /** Roster members who have neither joined nor had their invite expire. */
+    private static List<String> waitingOn() {
+        List<String> out = new ArrayList<>();
+        for (String name : roster) {
+            if (!settled.contains(name.toLowerCase(Locale.ROOT))) out.add(name);
+        }
+        return out;
+    }
+
+    private static boolean everyoneSettled() {
+        return waitingOn().isEmpty() && pendingInvites.isEmpty();
     }
 
     /**
@@ -413,6 +470,7 @@ public final class MineshaftAutoParty {
         shaftCorpsePeak.clear();
         pendingInvites.clear();
         roster.clear();
+        settled.clear();
         lastSeenType = null;
         typeStableScans = 0;
     }
@@ -496,10 +554,23 @@ public final class MineshaftAutoParty {
     }
 
     /** Tab list entries, formatting stripped, blanks dropped. */
+    /**
+     * The order the vanilla tab list draws entries in (PlayerTabOverlay's comparator).
+     * {@code getListedOnlinePlayers()} is hash-ordered, and the corpse scan reads lines
+     * relative to the "Frozen Corpses:" header, so the order has to match the screen.
+     */
+    private static final Comparator<PlayerInfo> TAB_ORDER = Comparator
+        .comparingInt((PlayerInfo info) -> -info.getTabListOrder())
+        .thenComparingInt(info -> info.getGameMode() == GameType.SPECTATOR ? 1 : 0)
+        .thenComparing(info -> info.getTeam() != null ? info.getTeam().getName() : "")
+        .thenComparing(info -> info.getProfile().name(), String::compareToIgnoreCase);
+
     public static List<String> tabLines(Minecraft client) {
         List<String> lines = new ArrayList<>();
         if (client.getConnection() == null) return lines;
-        for (PlayerInfo info : client.getConnection().getListedOnlinePlayers()) {
+        List<PlayerInfo> entries = new ArrayList<>(client.getConnection().getListedOnlinePlayers());
+        entries.sort(TAB_ORDER);
+        for (PlayerInfo info : entries) {
             Component display = info.getTabListDisplayName();
             if (display == null) continue;
             String clean = display.getString().replaceAll("§.", "").trim();
@@ -553,7 +624,9 @@ public final class MineshaftAutoParty {
             String upper = line.toUpperCase(Locale.ROOT);
             // The "Frozen Corpses:" header shows the section has rendered, whether or not
             // this shaft actually holds any.
-            if (upper.contains("CORPSE")) {
+            // Only the header itself — the "Corpse Looter" commission line also says CORPSE,
+            // and opening the section there counted the commissions under it as corpses.
+            if (upper.startsWith("FROZEN CORPSES")) {
                 sawCorpseSection = true;
                 inCorpseSection = true;
                 continue;   // the header itself is not an entry

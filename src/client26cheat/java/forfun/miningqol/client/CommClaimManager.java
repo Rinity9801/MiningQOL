@@ -208,6 +208,15 @@ public class CommClaimManager {
     private static int guiWaitDelay = 10; // Seconds a menu gets to appear before giving up
     private static boolean autoTrigger = false; // Auto-trigger on commission complete message
     private static boolean wardrobeSwap = true; // Enable wardrobe/loadout armor swapping
+    private static boolean noSwapInShaft = false; // in a shaft, claim without any loadout swap
+    /** The loadout Hypixel last reported equipped, from chat; -1 until one is seen. */
+    private static int equippedLoadout = -1;
+    private static final java.util.regex.Pattern LOADOUT_EQUIPPED =
+        java.util.regex.Pattern.compile("^(?:You equipped Loadout (\\d+)!|Loadout (\\d+) is already equipped!)$");
+    /** Per run, decided in start(): swap to the claim loadout first / swap back afterwards, and to which. */
+    private static boolean swapToClaim = true;
+    private static boolean swapBack = true;
+    private static int returnLoadout = 2;
     private static boolean batchMining = true;  // true: wait until ALL mining commissions are done;
                                                 // false: claim as soon as ANY commission is done
     private static boolean blockInput = true;   // while running, swallow the player's clicks/keys
@@ -280,17 +289,25 @@ public class CommClaimManager {
         }
 
         running = true;
+        // Already wearing the claim loadout: nothing to swap either way. Otherwise go back
+        // to whatever was on before; the Return Loadout slider only covers an unknown one.
+        boolean swaps = wardrobeSwap && !(noSwapInShaft && hasMineshaftScoreboard(client));
+        swapToClaim = swaps && equippedLoadout != batPersonSlot;
+        returnLoadout = equippedLoadout > 0 ? equippedLoadout : divanSlot;
+        swapBack = swapToClaim && returnLoadout != batPersonSlot;
         // The pigeon opens the menu on the spot, so any loadout swap has to come first;
         // Mismyla takes a while to answer, so her call goes out before the swap.
-        phase = !usePigeon ? State.CALL_MISMYLA : wardrobeSwap ? State.OPEN_CLAIM_LOADOUT : State.USE_PIGEON;
+        phase = !usePigeon ? State.CALL_MISMYLA : swapToClaim ? State.OPEN_CLAIM_LOADOUT : State.USE_PIGEON;
         // A beat before the first command so the sidebar can catch up with a location
         // change that happened in the same moment as the trigger.
         readyAt = System.currentTimeMillis() + 500L;
         timeoutAt = 0L;
         claimAttempts = 0;
 
-        LOGGER.info("[CommClaim] Starting commission claim sequence (loadoutSwap={}, pigeon={})", wardrobeSwap, usePigeon);
-        MqoChat.log(Component.literal("\u00A76[CommClaim] \u00A7aStarting commission claim..."));
+        LOGGER.info("[CommClaim] Starting commission claim sequence (equipped={}, toClaim={}, back={} -> {}, pigeon={})",
+            equippedLoadout, swapToClaim, swapBack, returnLoadout, usePigeon);
+        MqoChat.log(Component.literal("\u00A76[CommClaim] \u00A7aStarting commission claim"
+            + (wardrobeSwap && !swapToClaim ? " (no loadout swap)..." : "...")));
     }
 
     public static void stop() {
@@ -476,7 +493,7 @@ public class CommClaimManager {
                 }
                 client.player.connection.sendCommand("call mismyla");
                 client.player.getInventory().setSelectedSlot(Math.max(0, Math.min(8, refinedToolSlot)));
-                if (wardrobeSwap) {
+                if (swapToClaim) {
                     advance(State.OPEN_CLAIM_LOADOUT);
                 } else {
                     waitForCommissions();
@@ -536,7 +553,7 @@ public class CommClaimManager {
             }
             case CLOSE_COMMISSIONS -> {
                 if (client.screen != null && isCommissionsOpen(client)) client.screen.onClose();
-                if (wardrobeSwap) {
+                if (swapBack) {
                     advanceIn(State.OPEN_RETURN_LOADOUT, COMMISSION_CLOSE_DELAY_MS);
                 } else {
                     advance(State.DONE);
@@ -548,8 +565,8 @@ public class CommClaimManager {
                 timeoutAt = now + menuTimeoutMs();
             }
             case WAIT_RETURN_LOADOUT -> {
-                if (isLoadoutOpen(client) && isLoadoutSlotReady(client, divanSlot)) {
-                    if (!clickLoadoutSlot(client, divanSlot)) {
+                if (isLoadoutOpen(client) && isLoadoutSlotReady(client, returnLoadout)) {
+                    if (!clickLoadoutSlot(client, returnLoadout)) {
                         fail("Could not select the return loadout.");
                         return;
                     }
@@ -811,6 +828,22 @@ public class CommClaimManager {
 
     public static void setWardrobeSwap(boolean enabled) {
         wardrobeSwap = enabled;
+    }
+
+    public static boolean isNoSwapInShaft() {
+        return noSwapInShaft;
+    }
+
+    public static void setNoSwapInShaft(boolean enabled) {
+        noSwapInShaft = enabled;
+    }
+
+    /** Follows "You equipped Loadout 2!" / "Loadout 2 is already equipped!", whoever swapped. */
+    public static void onChatMessage(String message) {
+        java.util.regex.Matcher m = LOADOUT_EQUIPPED.matcher(message.replaceAll("\u00A7.", "").trim());
+        if (m.matches()) {
+            equippedLoadout = Integer.parseInt(m.group(1) != null ? m.group(1) : m.group(2));
+        }
     }
 
     public static boolean isBatchMining() {

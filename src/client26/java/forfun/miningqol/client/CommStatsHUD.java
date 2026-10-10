@@ -108,6 +108,8 @@ public class CommStatsHUD {
         }
         y += titleStep;
 
+        // Lifetime total: the player's own count from the menu or /commtrack set, plus
+        // every completion seen since.
         maxW = Math.max(maxW, labelValue(r, font, "Total: ", String.format(Locale.US, "%,d", CommTracker.getTotalCompleted()),
             x, y, size, COLOR_TOTAL, u));
         y += rowStep;

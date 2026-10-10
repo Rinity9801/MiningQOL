@@ -34,6 +34,38 @@ public class CommTracker {
     public static void setTotalCompleted(long value) { totalCompleted = Math.max(0, value); }
 
     /**
+     * What is in the menu's "Current Comms" box while it is being typed in. The box is
+     * written on every keystroke, so a cleared box or "12," has to read back as typed
+     * rather than snapping to the stored number mid-edit.
+     */
+    private static String totalInput = null;
+
+    /** The menu box: the player's own lifetime count, which completions then add to. */
+    public static String getTotalInput() {
+        if (totalInput != null && (totalInput.isEmpty() || parseCount(totalInput) == totalCompleted)) {
+            return totalInput;
+        }
+        return String.valueOf(totalCompleted);
+    }
+
+    public static void setTotalInput(String text) {
+        totalInput = text;
+        long parsed = parseCount(text);
+        if (parsed >= 0) totalCompleted = parsed;
+    }
+
+    /** Digits of "12,345" / "12 345"; -1 when there are none (an empty box keeps the total). */
+    private static long parseCount(String text) {
+        String digits = text == null ? "" : text.replaceAll("[^0-9]", "");
+        if (digits.isEmpty()) return -1;
+        try {
+            return Long.parseLong(digits);
+        } catch (NumberFormatException tooLong) {
+            return -1;
+        }
+    }
+
+    /**
      * Whether a system line is Hypixel's own completion notice ("COMMISSION COMPLETE! Mithril
      * Miner" / "Mithril Miner Commission Complete!"). Player, party and guild chat arrive as
      * system lines too, but always as "name: text", so a colon before the phrase rules it out.
@@ -49,6 +81,7 @@ public class CommTracker {
 
         long now = System.currentTimeMillis();
         totalCompleted++;
+        totalInput = null;
         sessionCompleted++;
         if (lastCompletionAt > 0) {
             activeMillis += Math.min(now - lastCompletionAt, MAX_GAP_MS);
@@ -73,6 +106,7 @@ public class CommTracker {
     /** /commtrack reset — clears the persisted total and the session rate. */
     public static void reset() {
         totalCompleted = 0;
+        totalInput = null;
         sessionCompleted = 0;
         activeMillis = 0;
         lastCompletionAt = 0;

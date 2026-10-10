@@ -10,7 +10,6 @@ public class AutoClickerManager {
     private static boolean inSequence = false;
     private static int sequenceStep = 0;
     private static int sequenceTickCounter = 0;
-    private static boolean firstEnable = true;
     private static int expectedSlot = 0;
     /** Swap to the hotbar fishing rod and right-click it before the drill's ability. */
     private static boolean enableRodSwap = false;
@@ -18,7 +17,6 @@ public class AutoClickerManager {
     private static int secondDrillSlot = 3;
     private static int mainDrillDelay = 3;
     private static int secondDrillDelay = 3;
-    private static boolean wasOnCooldown = true;
     /**
      * Custom Cooldown: fire the ability {@link #customCooldownSeconds} after its last use, timed
      * locally instead of from the tab list — like the Pickaxe Cooldown option. The last use comes
@@ -32,17 +30,12 @@ public class AutoClickerManager {
     /** When the pickaxe ability was last used, by anyone; 0 = not seen this session. */
     private static long lastAbilityUseAt = 0;
 
-    // Internal timer for triggering (ported from commit 722e1c5 "when to use ability"):
-    // capture the cooldown duration when it starts and count ticks up to it (+1s buffer)
-    // so we fire when the ability is actually ready, never early.
-    private static int internalTickCounter = 0;
-    private static int targetCooldownTicks = 0;
-    private static boolean timerActive = false;
-    private static boolean waitingForCooldownStart = false; // Wait for next cooldown cycle
-
     // Prevent double triggering
     private static long lastSequenceEndTime = 0;
     private static final long MIN_SEQUENCE_INTERVAL_MS = 5000; // 5 seconds minimum between sequences
+    /** Gap instead, when the last activation drew no "You used your … Pickaxe Ability!" line. */
+    private static final long MISSED_RETRY_INTERVAL_MS = 1500;
+    private static long lastSequenceStartTime = 0;
 
     // TEMPORARY debug logging to diagnose intermittent ("3rd cycle") activation misses
     private static final boolean DEBUG = false;
@@ -55,6 +48,15 @@ public class AutoClickerManager {
         }
     }
 
+    /**
+     * Ready once the interpolated countdown says the ability is back — not
+     * {@link PickaxeCooldownHUD#isOnCooldown()}, which only clears when the tab list prints the
+     * ability as available, so a late or missing line would keep CoalClick from ever firing.
+     */
+    private static boolean hudSaysReady() {
+        return PickaxeCooldownHUD.getSecondsUntilReady() <= 0;
+    }
+
     /** Custom Cooldown: seconds until the remembered cooldown runs out (0 = ready). */
     private static double customRemainingSeconds() {
         if (lastAbilityUseAt == 0) return 0;
@@ -64,48 +66,17 @@ public class AutoClickerManager {
 
     public static void toggle() {
         enabled = !enabled;
+        inSequence = false;
+        sequenceStep = 0;
+        sequenceTickCounter = 0;
         if (!enabled) {
-            inSequence = false;
-            sequenceStep = 0;
-            sequenceTickCounter = 0;
-            timerActive = false;
-            waitingForCooldownStart = false;
-
             Minecraft client = Minecraft.getInstance();
             if (client != null) {
                 client.options.keyAttack.setDown(false);
                 client.options.keyUse.setDown(false);
             }
-        } else if (customCooldownEnabled) {
-            // The remembered cooldown decides; tick fires once it has run out.
-            inSequence = false;
-            sequenceStep = 0;
-            sequenceTickCounter = 0;
-            timerActive = false;
-            waitingForCooldownStart = false;
-            firstEnable = false;
-        } else {
-            // Check if ability is currently ready
-            boolean abilityIsReady = !PickaxeCooldownHUD.isOnCooldown();
-            double currentCooldown = PickaxeCooldownHUD.getCurrentCooldown();
-
-            if (firstEnable || abilityIsReady) {
-                // If first enable OR ability is ready, trigger immediately
-                inSequence = true;
-                sequenceStep = 0;
-                sequenceTickCounter = 0;
-                firstEnable = false;
-                waitingForCooldownStart = false;
-                timerActive = false;
-            } else if (currentCooldown > 0) {
-                // Ability is on cooldown, start tracking it
-                targetCooldownTicks = (int) (currentCooldown * 20) + 20; // Add 1 second buffer
-                internalTickCounter = 0;
-                timerActive = true;
-                waitingForCooldownStart = false;
-            }
-            wasOnCooldown = PickaxeCooldownHUD.isOnCooldown();
         }
+        // Turned on: tick fires as soon as the ability reads ready.
     }
 
     public static void setEnabled(boolean value) {
@@ -120,16 +91,7 @@ public class AutoClickerManager {
 
     public static double getRemainingSeconds() {
         if (customCooldownEnabled) return customRemainingSeconds();
-        if (firstEnable) {
-            return 0;
-        }
-        // Use internal timer when active
-        if (timerActive && targetCooldownTicks > 0) {
-            int remainingTicks = targetCooldownTicks - internalTickCounter;
-            return Math.max(0, remainingTicks / 20.0);
-        }
-        // Fall back to scoreboard when timer not active
-        return PickaxeCooldownHUD.getInterpolatedCooldown();
+        return PickaxeCooldownHUD.getSecondsUntilReady();
     }
 
     public static boolean isCustomCooldownEnabled() {
@@ -233,65 +195,26 @@ public class AutoClickerManager {
             return;
         }
 
-        // Get scoreboard cooldown info
-        boolean currentlyOnCooldown = PickaxeCooldownHUD.isOnCooldown();
-        double scoreboardCooldown = PickaxeCooldownHUD.getCurrentCooldown();
-
-        // Check if enough time has passed since last sequence
+        // An activation that drew no "used your ability" line fired early or didn't register, so
+        // it may go again sooner; a real use puts the ability on cooldown and Ready stays false.
         long currentTime = System.currentTimeMillis();
-        boolean canStartNewSequence = (currentTime - lastSequenceEndTime) >= MIN_SEQUENCE_INTERVAL_MS;
+        boolean lastShotLanded = lastAbilityUseAt >= lastSequenceStartTime;
+        long minGap = lastShotLanded ? MIN_SEQUENCE_INTERVAL_MS : MISSED_RETRY_INTERVAL_MS;
+        // The gap also gives the tab list time to show the new cooldown after a use, so the
+        // interpolated reading isn't still 0 from before it.
+        boolean canStartNewSequence = (currentTime - lastSequenceEndTime) >= minGap;
 
-        if (customCooldownEnabled) {
-            // Fire once the remembered cooldown is over.
-            if (enabled && !inSequence && canStartNewSequence && customRemainingSeconds() <= 0) {
-                debug(client, "Custom cooldown fire | lastUse=" + lastAbilityUseAt);
-                inSequence = true;
-                sequenceStep = 0;
-                sequenceTickCounter = 0;
-            }
-        } else if (waitingForCooldownStart) {
-            // After sequence ends, we wait for a NEW cooldown to start before tracking again
-            if (currentlyOnCooldown && scoreboardCooldown > 10.0) {
-                // New cooldown started, begin tracking
-                waitingForCooldownStart = false;
-                targetCooldownTicks = (int) (scoreboardCooldown * 20) + 20; // Add 1 second buffer
-                internalTickCounter = 0;
-                timerActive = true;
-            }
-            wasOnCooldown = currentlyOnCooldown;
-
-            // Still allow mining while waiting for next cooldown
-            if (enabled) {
-                int currentSlot = getSelectedSlot(client);
-                client.options.keyAttack.setDown(currentSlot == expectedSlot);
-            }
-            return;
+        // Custom Cooldown times from the last use; otherwise the interpolated countdown the
+        // Pickaxe Cooldown HUD shows decides, firing the moment it reads Ready.
+        boolean ready = customCooldownEnabled ? customRemainingSeconds() <= 0 : hudSaysReady();
+        // Not from inside a menu (chat included): the right-click would only hit the GUI.
+        boolean inGui = client.screen != null;
+        if (enabled && !inSequence && canStartNewSequence && ready && !inGui) {
+            debug(client, "Fire | custom=" + customCooldownEnabled + " lastUse=" + lastAbilityUseAt);
+            inSequence = true;
+            sequenceStep = 0;
+            sequenceTickCounter = 0;
         }
-
-        // When cooldown starts, capture the duration and start our internal timer
-        if (!customCooldownEnabled && currentlyOnCooldown && !wasOnCooldown && !timerActive && canStartNewSequence) {
-            targetCooldownTicks = (int) (scoreboardCooldown * 20) + 20; // Add 1 second buffer
-            internalTickCounter = 0;
-            timerActive = true;
-        }
-
-        // Update internal timer
-        if (timerActive && !inSequence) {
-            internalTickCounter++;
-        }
-
-        // Trigger based on our internal timer (fires ~1s after the cooldown ends, never early)
-        if (!inSequence && enabled && timerActive && canStartNewSequence) {
-            if (internalTickCounter >= targetCooldownTicks) {
-                debug(client, "Timer fire | targetTicks=" + targetCooldownTicks + " counter=" + internalTickCounter);
-                inSequence = true;
-                sequenceStep = 0;
-                sequenceTickCounter = 0;
-                timerActive = false;
-            }
-        }
-
-        wasOnCooldown = currentlyOnCooldown;
 
         if (!enabled) {
             return;
@@ -299,7 +222,15 @@ public class AutoClickerManager {
 
         int currentSlot = getSelectedSlot(client);
 
-        if (inSequence) {
+        if (inSequence && inGui) {
+            // A menu opened mid-swap: drop the activation and go back to the drill. It fires
+            // again once the menu closes, as the ability still reads ready.
+            client.options.keyUse.setDown(false);
+            setSelectedSlot(client, expectedSlot);
+            inSequence = false;
+            sequenceStep = 0;
+            sequenceTickCounter = 0;
+        } else if (inSequence) {
             client.options.keyAttack.setDown(false);
             handleManiacMinerSequence(client);
         } else {
@@ -325,6 +256,7 @@ public class AutoClickerManager {
         switch (sequenceStep) {
             case 0:
                 activationCount++;
+                lastSequenceStartTime = System.currentTimeMillis();
                 debug(client, "Activation #" + activationCount + " START | held=" + heldItemName(client)
                         + " miningSlot=" + expectedSlot + " rodSlot=" + findFishingRodSlot(client)
                         + " rodSwap=" + enableRodSwap + " 2ndDrill=" + enableSecondDrill + "(" + secondDrillSlot + ")"
@@ -333,6 +265,10 @@ public class AutoClickerManager {
                 if (rodSlot != -1) {
                     setSelectedSlot(client, rodSlot);
                     sequenceStep = 1;
+                } else if (enableSecondDrill) {
+                    sequenceStep = 5; // Straight to the second drill
+                } else if (getSelectedSlot(client) == expectedSlot) {
+                    sequenceStep = 50; // Already holding the drill: no swap to wait out
                 } else {
                     sequenceStep = 3; // Rod swap off, or no rod in the hotbar: straight to the drill
                 }
@@ -351,7 +287,9 @@ public class AutoClickerManager {
                 client.options.keyUse.setDown(true);
                 if (sequenceTickCounter >= 2) {
                     client.options.keyUse.setDown(false);
-                    sequenceStep = 3;
+                    // The second drill has its own swap delay; passing through the main drill
+                    // first only added mainDrillDelay ticks without clicking it.
+                    sequenceStep = enableSecondDrill ? 5 : 3;
                     sequenceTickCounter = 0;
                 }
                 break;
@@ -418,11 +356,9 @@ public class AutoClickerManager {
                 sequenceStep = 0;
                 sequenceTickCounter = 0;
                 lastSequenceEndTime = System.currentTimeMillis();
-                timerActive = false;
                 // Custom Cooldown: count from this click, in case a chat filter hides Hypixel's
                 // "used your ability" line; when that line does arrive it refines the time.
                 if (customCooldownEnabled) lastAbilityUseAt = lastSequenceEndTime;
-                waitingForCooldownStart = !customCooldownEnabled;
                 break;
         }
     }

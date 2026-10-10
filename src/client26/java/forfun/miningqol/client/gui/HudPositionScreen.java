@@ -61,7 +61,8 @@ public class HudPositionScreen extends Screen {
                 targetWidth(Target.PICKAXE) + 4, targetHeight(Target.PICKAXE) + 4, 0xFF7FA8DB);
         }
         if (isVisible(Target.ROLLING)) {
-            ctx.text(font, RollingMinerCooldown.getPreviewText(), RollingMinerCooldown.getX(), RollingMinerCooldown.getY(),
+            Component rollingLine = RollingMinerCooldown.getPreviewText();
+            ctx.text(font, rollingLine, RollingMinerCooldown.alignedX(rollingLine), RollingMinerCooldown.getY(),
                 0xFFFFFFFF, true);
             ctx.outline(RollingMinerCooldown.getX() - 2, RollingMinerCooldown.getY() - 2,
                 targetWidth(Target.ROLLING) + 4, targetHeight(Target.ROLLING) + 4, 0xFF7FDB8A);

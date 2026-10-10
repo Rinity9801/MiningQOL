@@ -190,7 +190,17 @@ public class MiningqolClient implements ClientModInitializer {
                     .executes(context -> {
                         CommTracker.reset();
                         return 1;
-                    })));
+                    }))
+                .then(ClientCommands.literal("set")
+                    .then(ClientCommands.argument("total", IntegerArgumentType.integer(0))
+                        .executes(context -> {
+                            int total = IntegerArgumentType.getInteger(context, "total");
+                            CommTracker.setTotalCompleted(total);
+                            saveConfig();
+                            MqoChat.reply(Component.literal(String.format(java.util.Locale.US,
+                                "§6[MQO] §aCommission total set to §f%,d", total)));
+                            return 1;
+                        }))));
             dispatcher.register(ClientCommands.literal("commhuddebug")
                 .executes(context -> {
                     CommissionHUD.debugDump();

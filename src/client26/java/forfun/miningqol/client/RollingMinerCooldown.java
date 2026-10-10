@@ -15,11 +15,21 @@ public final class RollingMinerCooldown {
     private static final Identifier HUD_ID =
         Identifier.fromNamespaceAndPath("miningqol", "rolling_miner_cooldown_hud");
     private static final String TRIGGER_MESSAGE = "rolling miner granted you double drops!";
-    private static final long COOLDOWN_MILLIS = 20_000L;
 
     private static boolean registered;
     private static boolean enabled;
     private static long cooldownEndsAt;
+    // Same display options as the Pickaxe Cooldown HUD.
+    private static boolean hideWithF1 = false;
+    private static int textAlign = 0; // 0 left, 1 center, 2 right
+    private static boolean secondsSuffix = true;
+    private static boolean cooldownOnly = false;
+    /** Rolling Miner is always timed locally from its chat line; this is how long it lasts. */
+    private static int cooldownSeconds = 20;
+    private static boolean titleEnabled = false;
+    private static int titleThreshold = 3;
+    private static long lastTitleSetTime = 0;
+    private static int lastTitleCooldown = -1;
     private static final HudAnchor ANCHOR = new HudAnchor(10, 62, RollingMinerCooldown::getWidth, RollingMinerCooldown::getHeight);
     private static final float[] cooldownLabelColor = {1.0f, 170.0f / 255.0f, 0.0f};
     private static final float[] cooldownValueColor = {1.0f, 85.0f / 255.0f, 85.0f / 255.0f};
@@ -40,7 +50,8 @@ public final class RollingMinerCooldown {
 
     public static void onGameMessage(String message) {
         if (enabled && message.toLowerCase(Locale.ROOT).contains(TRIGGER_MESSAGE)) {
-            cooldownEndsAt = System.currentTimeMillis() + COOLDOWN_MILLIS;
+            cooldownEndsAt = System.currentTimeMillis() + cooldownSeconds * 1000L;
+            lastTitleCooldown = -1;
         }
     }
 
@@ -62,19 +73,56 @@ public final class RollingMinerCooldown {
 
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
+        if (hideWithF1 && client.options.hideGui) return;
 
         int secondsLeft = secondsLeft();
         boolean ready = secondsLeft <= 0;
 
-        context.text(
-            client.font,
-            formatText(ready ? "✔ Ready" : secondsLeft + "s", ready),
-            ANCHOR.x(),
-            ANCHOR.y(),
-            0xFFFFFFFF,
-            true
-        );
+        if (titleEnabled && !ready && secondsLeft <= titleThreshold) {
+            long now = System.currentTimeMillis();
+            if (lastTitleCooldown != secondsLeft || now - lastTitleSetTime > 500) {
+                client.gui.setTimes(0, 15, 3);
+                client.gui.setTitle(Component.literal(""));
+                client.gui.setSubtitle(formatText(secs(secondsLeft), false, true));
+                lastTitleSetTime = now;
+                lastTitleCooldown = secondsLeft;
+            }
+        } else {
+            lastTitleCooldown = -1;
+        }
+
+        Component line = formatText(ready ? "✔ Ready" : secs(secondsLeft), ready, false);
+        context.text(client.font, line, alignedX(line), ANCHOR.y(), 0xFFFFFFFF, true);
     }
+
+    /** Left edge for [text] once alignment is applied, within the widest line's box. */
+    public static int alignedX(Component text) {
+        Minecraft client = Minecraft.getInstance();
+        if (client.font == null || textAlign == 0) return ANCHOR.x();
+        int slack = getWidth() - client.font.width(text);
+        return ANCHOR.x() + (textAlign == 1 ? slack / 2 : slack);
+    }
+
+    public static boolean isHideWithF1() { return hideWithF1; }
+    public static void setHideWithF1(boolean value) { hideWithF1 = value; }
+
+    public static int getTextAlign() { return textAlign; }
+    public static void setTextAlign(int value) { textAlign = Math.max(0, Math.min(2, value)); }
+
+    public static boolean isSecondsSuffix() { return secondsSuffix; }
+    public static void setSecondsSuffix(boolean value) { secondsSuffix = value; }
+
+    public static boolean isCooldownOnly() { return cooldownOnly; }
+    public static void setCooldownOnly(boolean value) { cooldownOnly = value; }
+
+    public static int getCooldownSeconds() { return cooldownSeconds; }
+    public static void setCooldownSeconds(int seconds) { cooldownSeconds = Math.max(1, Math.min(120, seconds)); }
+
+    public static boolean isTitleEnabled() { return titleEnabled; }
+    public static void setTitleEnabled(boolean value) { titleEnabled = value; }
+
+    public static int getTitleThreshold() { return titleThreshold; }
+    public static void setTitleThreshold(int threshold) { titleThreshold = threshold; }
 
     public static boolean isEnabled() {
         return enabled;
@@ -102,11 +150,13 @@ public final class RollingMinerCooldown {
         return ANCHOR.y();
     }
 
-    /** Measured from the text actually drawn, so the mover box hugs it. */
+    /** Width of the widest line this HUD can draw, so alignment and the mover box agree. */
     public static int getWidth() {
         Minecraft client = Minecraft.getInstance();
         if (client.font == null) return 120;
-        return Math.max(12, client.font.width(getPreviewText()));
+        int ready = client.font.width(formatText("✔ Ready", true, false));
+        int counting = client.font.width(formatText(secs(Math.max(10, cooldownSeconds)), false, false));
+        return Math.max(12, Math.max(ready, counting));
     }
 
     public static int getHeight() {
@@ -147,15 +197,23 @@ public final class RollingMinerCooldown {
     }
 
     public static Component getPreviewText() {
-        return formatText("✔ Ready", true);
+        return formatText("✔ Ready", true, false);
     }
 
-    private static Component formatText(String value, boolean ready) {
+    private static Component formatText(String value, boolean ready, boolean boldValue) {
         float[] labelColor = ready ? readyLabelColor : cooldownLabelColor;
         float[] valueColor = ready ? readyValueColor : cooldownValueColor;
+        MutableComponent valueText = Component.literal(value)
+            .setStyle(Style.EMPTY.withColor(toRgb(valueColor)).withBold(boldValue));
+        if (cooldownOnly) return valueText;
         MutableComponent text = Component.literal("Rolling Miner: ")
             .setStyle(Style.EMPTY.withColor(toRgb(labelColor)));
-        return text.append(Component.literal(value).setStyle(Style.EMPTY.withColor(toRgb(valueColor))));
+        return text.append(valueText);
+    }
+
+    /** Formats a second count for display, honouring [secondsSuffix]. */
+    private static String secs(int value) {
+        return secondsSuffix ? value + "s" : String.valueOf(value);
     }
 
     private static int toRgb(float[] color) {

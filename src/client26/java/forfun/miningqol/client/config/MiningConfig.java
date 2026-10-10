@@ -135,6 +135,13 @@ public class MiningConfig {
     public int rollingMinerCooldownAnchorOffX = 0;
     public int rollingMinerCooldownAnchorModeY = -1;
     public int rollingMinerCooldownAnchorOffY = 0;
+    public boolean rollingMinerHideWithF1 = false;
+    public int rollingMinerTextAlign = 0;
+    public boolean rollingMinerSecondsSuffix = true;
+    public boolean rollingMinerCooldownOnly = false;
+    public int rollingMinerCooldownSeconds = 20;
+    public boolean rollingMinerTitleEnabled = false;
+    public int rollingMinerTitleThreshold = 3;
     public float[] rollingCooldownLabelColor = {1.0f, 170.0f / 255.0f, 0.0f};
     public float[] rollingCooldownValueColor = {1.0f, 85.0f / 255.0f, 85.0f / 255.0f};
     public float[] rollingReadyLabelColor = {85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
@@ -290,6 +297,8 @@ public class MiningConfig {
     public int commClaimGuiWaitDelay = 10;
     public boolean commClaimAutoTrigger = false;
     public boolean commClaimWardrobeSwap = true;
+    /** Skip the loadout swaps when claiming from inside a mineshaft. */
+    public boolean commClaimNoSwapInShaft = false;
     public boolean commClaimBatchMining = true;
     /** Open commissions with the Royal Pigeon (true) or by calling Mismyla on the Abiphone (false). */
     public boolean commClaimUsePigeon = false;
@@ -544,6 +553,13 @@ public class MiningConfig {
         RollingMinerCooldown.setPosition(rollingMinerCooldownX, rollingMinerCooldownY);
         RollingMinerCooldown.anchor().load(anchorMode(rollingMinerCooldownAnchorModeX), rollingMinerCooldownAnchorOffX, anchorMode(rollingMinerCooldownAnchorModeY), rollingMinerCooldownAnchorOffY);
         RollingMinerCooldown.setEnabled(rollingMinerCooldownEnabled);
+        RollingMinerCooldown.setHideWithF1(rollingMinerHideWithF1);
+        RollingMinerCooldown.setTextAlign(rollingMinerTextAlign);
+        RollingMinerCooldown.setSecondsSuffix(rollingMinerSecondsSuffix);
+        RollingMinerCooldown.setCooldownOnly(rollingMinerCooldownOnly);
+        RollingMinerCooldown.setCooldownSeconds(rollingMinerCooldownSeconds);
+        RollingMinerCooldown.setTitleEnabled(rollingMinerTitleEnabled);
+        RollingMinerCooldown.setTitleThreshold(rollingMinerTitleThreshold);
         if (rogueSwordTimer != null) forfun.miningqol.client.ItemCooldownTimer.ROGUE_SWORD.load(rogueSwordTimer,
             anchorMode(rogueSwordTimer.anchorModeX), anchorMode(rogueSwordTimer.anchorModeY));
         if (tubaTimer != null) forfun.miningqol.client.ItemCooldownTimer.TUBA.load(tubaTimer,
@@ -784,6 +800,13 @@ public class MiningConfig {
 
         filetWarningEnabled = FiletWarning.isEnabled();
         rollingMinerCooldownEnabled = RollingMinerCooldown.isEnabled();
+        rollingMinerHideWithF1 = RollingMinerCooldown.isHideWithF1();
+        rollingMinerTextAlign = RollingMinerCooldown.getTextAlign();
+        rollingMinerSecondsSuffix = RollingMinerCooldown.isSecondsSuffix();
+        rollingMinerCooldownOnly = RollingMinerCooldown.isCooldownOnly();
+        rollingMinerCooldownSeconds = RollingMinerCooldown.getCooldownSeconds();
+        rollingMinerTitleEnabled = RollingMinerCooldown.isTitleEnabled();
+        rollingMinerTitleThreshold = RollingMinerCooldown.getTitleThreshold();
         rogueSwordTimer = forfun.miningqol.client.ItemCooldownTimer.ROGUE_SWORD.save();
         tubaTimer = forfun.miningqol.client.ItemCooldownTimer.TUBA.save();
         rollingMinerCooldownX = RollingMinerCooldown.getX();

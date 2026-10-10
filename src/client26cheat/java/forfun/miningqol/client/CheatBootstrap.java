@@ -182,6 +182,7 @@ public final class CheatBootstrap {
             if (messageText.toLowerCase().contains("commission complete")) {
                 CommClaimManager.onCommissionComplete(messageText);
             }
+            CommClaimManager.onChatMessage(messageText);
             EmptyStashManager.onChatMessage(messageText);
             AutoClickerManager.onChatMessage(messageText);
             AutoForgeManager.onChatMessage(messageText);
@@ -254,6 +255,7 @@ public final class CheatBootstrap {
             CommClaimManager.setGuiWaitDelay(config.commClaimGuiWaitDelay);
             CommClaimManager.setAutoTrigger(config.commClaimAutoTrigger);
             CommClaimManager.setWardrobeSwap(config.commClaimWardrobeSwap);
+            CommClaimManager.setNoSwapInShaft(config.commClaimNoSwapInShaft);
             CommClaimManager.setBatchMining(config.commClaimBatchMining);
             CommClaimManager.setBlockInput(config.commClaimBlockInput);
             CommClaimManager.setHideGui(config.commClaimHideGui);
@@ -309,6 +311,7 @@ public final class CheatBootstrap {
             config.commClaimGuiWaitDelay = CommClaimManager.getGuiWaitDelay();
             config.commClaimAutoTrigger = CommClaimManager.isAutoTrigger();
             config.commClaimWardrobeSwap = CommClaimManager.isWardrobeSwap();
+            config.commClaimNoSwapInShaft = CommClaimManager.isNoSwapInShaft();
             config.commClaimBatchMining = CommClaimManager.isBatchMining();
             config.commClaimBlockInput = CommClaimManager.isBlockInput();
             config.commClaimHideGui = CommClaimManager.isHideGui();
