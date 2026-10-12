@@ -29,6 +29,16 @@ public final class CommissionGui {
     private static float scale = 1.0f;
     private static float buttonSize = 24f;
     private static boolean showProgress = true;
+    /** Commission total + session count above the menu, custom GUI or Hypixel's own. */
+    private static boolean statsInMenu = true;
+    /**
+     * The menu stats line sits centred above whichever menu is open until it is dragged in the
+     * HUD editor; after that it stays where it was put, like any other HUD.
+     */
+    private static boolean statsMoved = false;
+    private static int statsW = 120;
+    private static int statsH = 10;
+    private static final HudAnchor STATS_ANCHOR = new HudAnchor(0, 0, () -> statsW, () -> statsH);
     private static final float[] accentColor = {122f / 255f, 162f / 255f, 247f / 255f};
     /** Colour of a completed (claimable) commission's square. */
     private static final float[] doneColor = {122f / 255f, 162f / 255f, 247f / 255f};
@@ -87,6 +97,120 @@ public final class CommissionGui {
 
     public static void setShowProgress(boolean value) {
         showProgress = value;
+    }
+
+    public static boolean isStatsInMenu() {
+        return statsInMenu;
+    }
+
+    public static void setStatsInMenu(boolean value) {
+        statsInMenu = value;
+    }
+
+    /** A secondary toggle: only while the Commission Stats module itself is on. */
+    private static boolean showStatsLine() {
+        return statsInMenu && CommTracker.isModuleEnabled();
+    }
+
+    /** Whether the HUD editor should offer the menu stats line. */
+    public static boolean isStatsLineShown() {
+        return showStatsLine();
+    }
+
+    public static boolean isStatsMoved() { return statsMoved; }
+
+    /** False puts the line back to its automatic spot above the menu. */
+    public static void setStatsMoved(boolean value) { statsMoved = value; }
+
+    public static HudAnchor statsAnchor() { return STATS_ANCHOR; }
+
+    /** From the HUD editor: from now on the line stays here. */
+    public static void setStatsPosition(int x, int y) {
+        statsMoved = true;
+        STATS_ANCHOR.set(x, y);
+    }
+
+    /** Top-left in gui units; until moved, where it lands above a full-size (6-row) menu. */
+    public static int getStatsX() {
+        if (statsMoved) return STATS_ANCHOR.x();
+        return (Minecraft.getInstance().getWindow().getGuiScaledWidth() - statsW) / 2;
+    }
+
+    public static int getStatsY() {
+        if (statsMoved) return STATS_ANCHOR.y();
+        return (Minecraft.getInstance().getWindow().getGuiScaledHeight() - 222) / 2 - statsH - 4;
+    }
+
+    public static int getStatsWidth() { return statsW; }
+    public static int getStatsHeight() { return statsH; }
+
+    /**
+     * Draws the stats line: at its saved spot once moved, otherwise centred on {@code autoCentreX}
+     * at {@code autoY} (NVG pixels). Records its size for the editor's drag box.
+     */
+    private static void drawStatsLine(xyz.meowing.vexel.api.RenderAPI r, xyz.meowing.vexel.api.style.Font font,
+                                      float f, float size, float autoCentreX, float autoY, float u) {
+        String label = statsLabel();
+        float tw = r.textWidth(label, size, font);
+        statsW = Math.max(1, Math.round(tw / f));
+        statsH = Math.max(1, Math.round(size / f) + 1);
+        if (statsMoved) {
+            centredLabel(r, font, label, STATS_ANCHOR.x() * f + tw / 2f, STATS_ANCHOR.y() * f, size, u);
+        } else {
+            centredLabel(r, font, label, autoCentreX, autoY, size, u);
+        }
+    }
+
+    /** Preview + frame in the HUD editor, which has no menu open to sit above. */
+    private static void renderStatsPreview(Minecraft mc) {
+        xyz.meowing.vexel.api.RenderAPI r = xyz.meowing.vexel.Vexel.getRenderer();
+        xyz.meowing.vexel.api.style.Font font = xyz.meowing.vexel.Vexel.getDefaultFont();
+        float f = (float) mc.getWindow().getScreenWidth() / Math.max(1, mc.getWindow().getGuiScaledWidth());
+        float size = 9f * f;
+        float x = getStatsX() * f;
+        float y = getStatsY() * f;
+        String label = statsLabel();
+        float tw = r.textWidth(label, size, font);
+        statsW = Math.max(1, Math.round(tw / f));
+        statsH = Math.max(1, Math.round(size / f) + 1);
+        centredLabel(r, font, label, x + tw / 2f, y, size, f);
+        r.hollowRect(x - 2f * f, y - 2f * f, tw + 4f * f, statsH * f + 4f * f, Math.max(1f, f), 0xFF88AAFF, 3f * f);
+    }
+
+    private static String statsLabel() {
+        return String.format(Locale.US, "Total: %,d  |  Session: %,d",
+            CommTracker.getTotalCompleted(), CommTracker.getSessionCompleted());
+    }
+
+    /** One shadowed, centred line of text in NVG pixels. */
+    private static void centredLabel(xyz.meowing.vexel.api.RenderAPI r, xyz.meowing.vexel.api.style.Font font,
+                                     String label, float centreX, float y, float size, float u) {
+        float tw = r.textWidth(label, size, font);
+        float x = centreX - tw / 2f;
+        float o = Math.max(1f, u);
+        r.text(label, x + o, y + o, size, 0xE0101018, font);
+        r.text(label, x, y, size, 0xFFF3F4F6, font);
+    }
+
+    /**
+     * The stats line over Hypixel's own Commissions menu, for when the custom GUI is off.
+     * Vexel draws after the whole frame, so this sits on top of the dimmed backdrop. The
+     * chest's position follows vanilla's centring (176 wide, 114 + 18 per row tall).
+     */
+    private static void renderVanillaMenuStats(Minecraft mc) {
+        if (!showStatsLine() || !(mc.screen instanceof net.minecraft.client.gui.screens.inventory.ContainerScreen chest)
+                || !CommissionHUD.isCommissionMenuOpen(mc)) {
+            return;
+        }
+        xyz.meowing.vexel.api.RenderAPI r = xyz.meowing.vexel.Vexel.getRenderer();
+        xyz.meowing.vexel.api.style.Font font = xyz.meowing.vexel.Vexel.getDefaultFont();
+        float f = (float) mc.getWindow().getScreenWidth() / Math.max(1, mc.getWindow().getGuiScaledWidth());
+        int guiW = mc.getWindow().getGuiScaledWidth();
+        int guiH = mc.getWindow().getGuiScaledHeight();
+        int imageHeight = 114 + chest.getMenu().getRowCount() * 18;
+        int topPos = (guiH - imageHeight) / 2;
+        float size = 9f * f;
+        drawStatsLine(r, font, f, size, guiW / 2f * f, topPos * f - size - 4f * f, f);
     }
 
     public static float[] getAccentColor() {
@@ -162,8 +286,12 @@ public final class CommissionGui {
     /** Called every frame from CommissionHUD's Vexel render hook (inside beginFrame/endFrame). */
     public static void renderNvg() {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen && showStatsLine()) {
+            renderStatsPreview(mc);
+        }
         if (!isActive() || !(mc.screen instanceof AbstractContainerScreen<?> container)) {
             slotBoxes.clear();
+            if (mc.player != null) renderVanillaMenuStats(mc);
             return;
         }
         slotBoxes.clear();
@@ -207,17 +335,11 @@ public final class CommissionGui {
         // floats over the bare world like Odin's terminals.
         r.rect(panelX * f, panelY * f, panelW * f, panelH * f, 0xF01C1C1C, 12f * u);
 
-        // Lifetime total (Current Comms / /commtrack set, plus completions since), centred
-        // just above the panel. Hidden until there is a count to show.
-        long total = CommTracker.getTotalCompleted();
-        if (total > 0) {
-            String label = String.format(Locale.US, "Commissions: %,d", total);
+        // Lifetime total (Current Comms / /commtrack set, plus completions since) and this
+        // session's count, centred just above the panel.
+        if (showStatsLine()) {
             float size = 9f * u;
-            float tw = r.textWidth(label, size, font);
-            float tx = (panelX + panelW / 2f) * f - tw / 2f;
-            float ty = panelY * f - size - 5f * u;
-            r.text(label, tx + Math.max(1f, u), ty + Math.max(1f, u), size, 0xE0101018, font);
-            r.text(label, tx, ty, size, 0xFFF3F4F6, font);
+            drawStatsLine(r, font, f, size, (panelX + panelW / 2f) * f, panelY * f - size - 5f * u, u);
         }
 
         for (int i = 0; i < cells.size(); i++) {

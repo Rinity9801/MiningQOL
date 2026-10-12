@@ -200,10 +200,6 @@ public final class ShatterModules {
                         ? CommissionHUD.LayoutMode.COLUMN : CommissionHUD.LayoutMode.GRID)))
             .add(new BoolSetting("Show Over Menus", "Keep the panel on top of Hypixel menus", true)
                 .bind(CommissionHUD::isShowOverMenus, CommissionHUD::setShowOverMenus))
-            .add(new BoolSetting("Commission Stats", "Total completed + comms/hour", false)
-                .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled))
-            .add(new StringSetting("Current Comms", "Your lifetime commissions — completions add to it", "", "e.g. 1234")
-                .bind(CommTracker::getTotalInput, CommTracker::setTotalInput))
             .add(new BoolSetting("Show Header", "Lead the text styles with \"Commissions:\"", true)
                 .bind(CommissionHUD::isShowHeader, CommissionHUD::setShowHeader))
             .add(new BoolSetting("Progress Colors", "Percent coloured by progress tier", false)
@@ -212,6 +208,19 @@ public final class ShatterModules {
             .add(ColorSetting.ofRgb("Name Color", "Text styles only", CommissionHUD::getNameColor, CommissionHUD::setNameColor))
             .add(ColorSetting.ofRgb("Percent Color", "Text styles only", CommissionHUD::getPercentColor, CommissionHUD::setPercentColor))
             .add(ColorSetting.ofRgb("Done Color", "Text styles only", CommissionHUD::getDoneColor, CommissionHUD::setDoneColor)));
+
+        // Its own module so the count is easy to find: the toggle is the stats HUD, the box is
+        // where your lifetime total goes, and the menu line is a secondary toggle under it.
+        Modules.register(new Module("Commission Stats", "Total, comms/hour and session count", huds,
+            CommTracker::isModuleEnabled, CommTracker::setModuleEnabled)
+            .add(new StringSetting("Current Comms", "Commissions you've done — completions add to it", "", "e.g. 1234")
+                .bind(CommTracker::getTotalInput, CommTracker::setTotalInput))
+            .add(new BoolSetting("Stats HUD", "On-screen Total / Comms/hr / Session panel", false)
+                .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled))
+            .add(new BoolSetting("Stats in Menu", "Total + session above the commissions menu", true)
+                .bind(CommissionGui::isStatsInMenu, CommissionGui::setStatsInMenu))
+            .add(new ActionSetting("Reset Menu Line", "Put the menu line back above the menu", false,
+                () -> CommissionGui.setStatsMoved(false))));
 
         Modules.register(new Module("Comm Menu GUI", "Odin-style commissions menu replacement", huds,
             CommissionGui::isEnabled, CommissionGui::setEnabled)

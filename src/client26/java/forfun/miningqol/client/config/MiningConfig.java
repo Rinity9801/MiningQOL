@@ -67,6 +67,8 @@ public class MiningConfig {
     public float[] commissionPercentColor = {1.0f, 1.0f, 85.0f / 255.0f};
     public float[] commissionDoneColor = {85.0f / 255.0f, 1.0f, 85.0f / 255.0f};
     public boolean commissionStatsEnabled = false;
+    /** The Commission Stats module; null in configs from before it existed. */
+    public Boolean commStatsModuleEnabled = null;
     public boolean commissionShowOverMenus = true;
     public long commTrackTotal = 0;
     public int commStatsHudX = 10;
@@ -205,6 +207,14 @@ public class MiningConfig {
 
     public boolean commGuiEnabled = false;
     public boolean commGuiShowProgress = true;
+    public boolean commGuiStatsInMenu = true;
+    public boolean commMenuStatsMoved = false;
+    public int commMenuStatsX = 0;
+    public int commMenuStatsY = 0;
+    public int commMenuStatsAnchorModeX = -1;
+    public int commMenuStatsAnchorOffX = 0;
+    public int commMenuStatsAnchorModeY = -1;
+    public int commMenuStatsAnchorOffY = 0;
     public float commGuiScale = 1.0f;
     public float commGuiButtonSize = 24.0f;
     public float[] commGuiAccentColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
@@ -298,7 +308,6 @@ public class MiningConfig {
     public boolean commClaimAutoTrigger = false;
     public boolean commClaimWardrobeSwap = true;
     /** Skip the loadout swaps when claiming from inside a mineshaft. */
-    public boolean commClaimNoSwapInShaft = false;
     public boolean commClaimBatchMining = true;
     /** Open commissions with the Royal Pigeon (true) or by calling Mismyla on the Abiphone (false). */
     public boolean commClaimUsePigeon = false;
@@ -487,6 +496,8 @@ public class MiningConfig {
         CommissionHUD.setPercentColor(commissionPercentColor[0], commissionPercentColor[1], commissionPercentColor[2]);
         CommissionHUD.setDoneColor(commissionDoneColor[0], commissionDoneColor[1], commissionDoneColor[2]);
         CommTracker.setStatsEnabled(commissionStatsEnabled);
+        // Older configs had one switch for the stats HUD; whoever had it on keeps seeing it.
+        CommTracker.setModuleEnabled(commStatsModuleEnabled != null ? commStatsModuleEnabled : commissionStatsEnabled);
         CommissionHUD.setShowOverMenus(commissionShowOverMenus);
         CommTracker.setTotalCompleted(commTrackTotal);
         CommStatsHUD.setPosition(commStatsHudX, commStatsHudY);
@@ -618,6 +629,12 @@ public class MiningConfig {
 
         forfun.miningqol.client.CommissionGui.setEnabled(commGuiEnabled);
         forfun.miningqol.client.CommissionGui.setShowProgress(commGuiShowProgress);
+        forfun.miningqol.client.CommissionGui.setStatsInMenu(commGuiStatsInMenu);
+        if (commMenuStatsMoved) {
+            forfun.miningqol.client.CommissionGui.setStatsPosition(commMenuStatsX, commMenuStatsY);
+            forfun.miningqol.client.CommissionGui.statsAnchor().load(anchorMode(commMenuStatsAnchorModeX), commMenuStatsAnchorOffX,
+                anchorMode(commMenuStatsAnchorModeY), commMenuStatsAnchorOffY);
+        }
         forfun.miningqol.client.CommissionGui.setScale(commGuiScale);
         forfun.miningqol.client.CommissionGui.setButtonSize(commGuiButtonSize);
         forfun.miningqol.client.CommissionGui.setAccentColor(commGuiAccentColor[0], commGuiAccentColor[1], commGuiAccentColor[2]);
@@ -738,6 +755,7 @@ public class MiningConfig {
         commissionPercentColor = CommissionHUD.getPercentColor();
         commissionDoneColor = CommissionHUD.getDoneColor();
         commissionStatsEnabled = CommTracker.isStatsEnabled();
+        commStatsModuleEnabled = CommTracker.isModuleEnabled();
         commissionShowOverMenus = CommissionHUD.isShowOverMenus();
         commTrackTotal = CommTracker.getTotalCompleted();
         commStatsHudX = CommStatsHUD.getX();
@@ -874,6 +892,16 @@ public class MiningConfig {
 
         commGuiEnabled = forfun.miningqol.client.CommissionGui.isEnabled();
         commGuiShowProgress = forfun.miningqol.client.CommissionGui.isShowProgress();
+        commGuiStatsInMenu = forfun.miningqol.client.CommissionGui.isStatsInMenu();
+        commMenuStatsMoved = forfun.miningqol.client.CommissionGui.isStatsMoved();
+        if (commMenuStatsMoved) {
+            commMenuStatsX = forfun.miningqol.client.CommissionGui.getStatsX();
+            commMenuStatsY = forfun.miningqol.client.CommissionGui.getStatsY();
+            commMenuStatsAnchorModeX = forfun.miningqol.client.CommissionGui.statsAnchor().modeX();
+            commMenuStatsAnchorOffX = forfun.miningqol.client.CommissionGui.statsAnchor().offX();
+            commMenuStatsAnchorModeY = forfun.miningqol.client.CommissionGui.statsAnchor().modeY();
+            commMenuStatsAnchorOffY = forfun.miningqol.client.CommissionGui.statsAnchor().offY();
+        }
         commGuiScale = forfun.miningqol.client.CommissionGui.getScale();
         commGuiButtonSize = forfun.miningqol.client.CommissionGui.getButtonSize();
         commGuiAccentColor = forfun.miningqol.client.CommissionGui.getAccentColor();

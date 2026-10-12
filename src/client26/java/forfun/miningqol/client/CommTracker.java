@@ -17,6 +17,9 @@ import java.util.Locale;
 public class CommTracker {
     private static final long MAX_GAP_MS = 15 * 60 * 1000;
 
+    /** The Commission Stats module itself; the HUD and the menu line are toggles under it. */
+    private static boolean moduleEnabled = false;
+    /** The Total / Comms/hr / Session panel (the "Stats HUD" sub-toggle). */
     private static boolean statsEnabled = false;
     private static long totalCompleted = 0;
 
@@ -27,8 +30,14 @@ public class CommTracker {
 
     private CommTracker() {}
 
+    public static boolean isModuleEnabled() { return moduleEnabled; }
+    public static void setModuleEnabled(boolean value) { moduleEnabled = value; }
+
     public static boolean isStatsEnabled() { return statsEnabled; }
     public static void setStatsEnabled(boolean value) { statsEnabled = value; }
+
+    /** Whether the stats panel draws: the module is on and its Stats HUD toggle too. */
+    public static boolean isHudShown() { return moduleEnabled && statsEnabled; }
 
     public static long getTotalCompleted() { return totalCompleted; }
     public static void setTotalCompleted(long value) { totalCompleted = Math.max(0, value); }

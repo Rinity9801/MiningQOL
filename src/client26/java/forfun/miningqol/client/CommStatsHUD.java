@@ -9,7 +9,7 @@ import java.util.Locale;
  * tracker HUD: shadowed text lines (no backdrop), a white title with a red
  * "(paused)" tag when the rate clock is idle, and gray labels with colored
  * values. Rendered from CommissionHUD's Vexel NanoVG hook; visible in the same
- * areas, gated on the Commission Stats toggle (CommTracker.isStatsEnabled()).
+ * areas, gated on the Commission Stats module and its Stats HUD toggle (CommTracker.isHudShown()).
  */
 public class CommStatsHUD {
     private static final long DATA_REFRESH_INTERVAL_MS = 200L;
@@ -61,9 +61,9 @@ public class CommStatsHUD {
 
         boolean editor = mc.screen instanceof forfun.miningqol.client.gui.CommStatsHudPositionScreen
             || (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen
-                && CommTracker.isStatsEnabled());
+                && CommTracker.isHudShown());
         if (!editor) {
-            if (!CommTracker.isStatsEnabled()) {
+            if (!CommTracker.isHudShown()) {
                 return;
             }
             // Shares the commission HUD's "Hide with F1" toggle — the two draw together.

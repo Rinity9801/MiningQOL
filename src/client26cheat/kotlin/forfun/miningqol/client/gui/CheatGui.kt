@@ -139,8 +139,6 @@ object CheatGui {
                         { v -> CommClaimManager.setUsePigeon(v == "Royal Pigeon") }))
                 .add(bool("Loadout Swap", "Swap loadouts around the claim via /loadout",
                     { CommClaimManager.isWardrobeSwap() }, { CommClaimManager.setWardrobeSwap(it) }))
-                .add(bool("No Swap In Shaft", "Just claim, no loadout swap, while in a mineshaft",
-                    { CommClaimManager.isNoSwapInShaft() }, { CommClaimManager.setNoSwapInShaft(it) }))
                 .add(bool("Batch Mining", "Wait for ALL comms before claiming",
                     { CommClaimManager.isBatchMining() }, { CommClaimManager.setBatchMining(it) }))
                 .add(bool("Block Input", "Ignore your clicks/keys while a claim runs",
@@ -149,7 +147,7 @@ object CheatGui {
                     { CommClaimManager.isHideGui() }, { CommClaimManager.setHideGui(it) }))
                 .add(slider("Claim Loadout", "", 1.0, 12.0, 1.0, "",
                     { CommClaimManager.getBatPersonSlot().toDouble() }, { CommClaimManager.setBatPersonSlot(it.toInt()) }))
-                .add(slider("Return Loadout", "Used only until the mod has seen which loadout you wear", 1.0, 12.0, 1.0, "",
+                .add(slider("Return Loadout", "", 1.0, 12.0, 1.0, "",
                     { CommClaimManager.getDivanSlot().toDouble() }, { CommClaimManager.setDivanSlot(it.toInt()) }))
                 .add(slider("Mining Tool Slot", "", 1.0, 9.0, 1.0, "",
                     { (CommClaimManager.getRefinedToolSlot() + 1).toDouble() }, { CommClaimManager.setRefinedToolSlot(it.toInt() - 1) }))
