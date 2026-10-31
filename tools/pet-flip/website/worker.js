@@ -6,11 +6,15 @@
 // No external API calls, no cron, no rate-limit exposure.
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
     if (url.pathname === '/api/flips') {
       const payload = (await env.PETFLIPS.get('payload')) || '{"pets":[],"scanned":0,"total":0,"updated":null}';
+      // Traffic-healed freshness: CF cron silently stopped firing on 2026-09-05, so any
+      // visit that finds the payload stale (>16 min) re-dispatches the scan itself —
+      // throttled through KV so a burst of visitors sends one dispatch, not dozens.
+      ctx.waitUntil(healIfStale(env, payload));
       return new Response(payload, {
         headers: {
           'content-type': 'application/json',
@@ -30,23 +34,53 @@ export default {
   // Actions read+write): `wrangler secret put GH_PAT`. No-ops until it's set.
   async scheduled(event, env, ctx) {
     if (!env.GH_PAT) return;
-    const r = await fetch(
-      'https://api.github.com/repos/Rinity9801/pet-flip-tracker/actions/workflows/scan.yml/dispatches',
-      {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${env.GH_PAT}`,
-          accept: 'application/vnd.github+json',
-          'user-agent': 'pet-flip-tracker-cron',
-          'x-github-api-version': '2022-11-28',
-        },
-        body: JSON.stringify({ ref: 'main' }),
-      }
-    );
-    // 204 = dispatched. Anything else is worth a log line (visible via `wrangler tail`).
-    if (r.status !== 204) console.log(`scan dispatch failed: HTTP ${r.status} ${await r.text()}`);
+    await dispatchScan(env, 'cron');
   },
 };
+
+/** Stale payload on a visit: dispatch a scan, at most once per 10 minutes. */
+async function healIfStale(env, payload) {
+  if (!env.GH_PAT) return;
+  let updated = null;
+  try {
+    updated = JSON.parse(payload).updated;
+  } catch (e) { /* unreadable payload: treat as stale */ }
+  const age = updated ? Date.now() - Date.parse(updated) : Infinity;
+  if (age < 16 * 60 * 1000) return;
+
+  const last = Number(await env.PETFLIPS.get('healDispatchedAt')) || 0;
+  if (Date.now() - last < 10 * 60 * 1000) return;
+  await env.PETFLIPS.put('healDispatchedAt', String(Date.now()), { expirationTtl: 3600 });
+  await dispatchScan(env, 'stale-visit');
+}
+
+async function dispatchScan(env, why) {
+  const gh = (path, init = {}) => fetch(`https://api.github.com/repos/Rinity9801/pet-flip-tracker/actions/workflows/scan.yml${path}`, {
+    ...init,
+    headers: {
+      authorization: `Bearer ${env.GH_PAT}`,
+      accept: 'application/vnd.github+json',
+      'user-agent': 'pet-flip-tracker-cron',
+      'x-github-api-version': '2022-11-28',
+    },
+  });
+  const dispatch = () => gh('/dispatches', { method: 'POST', body: JSON.stringify({ ref: 'main' }) });
+
+  let r = await dispatch();
+  if (r.status !== 204) {
+    // GitHub auto-disables scheduled workflows after 60 days without repo commits
+    // (state "disabled_inactivity"), which also rejects dispatches — this went stale
+    // 2026-09-03 exactly that way. Re-enable and retry, so the trigger heals itself.
+    await r.text(); // drain
+    const enable = await gh('/enable', { method: 'PUT' });
+    const retry = await dispatch();
+    if (retry.status !== 204) {
+      console.log(`scan dispatch (${why}) failed: HTTP ${retry.status} (enable: ${enable.status}) ${await retry.text()}`);
+    } else {
+      console.log(`scan workflow was disabled (enable: ${enable.status}); re-enabled and dispatched (${why})`);
+    }
+  }
+}
 
 /******** Web page ********/
 const PAGE_HTML = `<!doctype html>
@@ -78,7 +112,7 @@ const PAGE_HTML = `<!doctype html>
   tr.best td { background: #18301d; }
   .star { color: #ffd24a; }
   .tier { font-size: 11px; padding: 1px 6px; border-radius: 4px; background: #2a2a36; color: #c7b3ff; }
-  select.rarity { background: #2a2a36; color: #c7b3ff; border: 1px solid #3a3a48; border-radius: 4px; font-size: 11px; padding: 2px 4px; text-transform: capitalize; cursor: pointer; }
+  select.rarity, select#basis { background: #2a2a36; color: #c7b3ff; border: 1px solid #3a3a48; border-radius: 4px; font-size: 11px; padding: 2px 4px; text-transform: capitalize; cursor: pointer; }
   a { color: #8fd0ff; text-decoration: none; }
   a:hover { text-decoration: underline; }
   .levels { background: #0f0f14; }
@@ -87,6 +121,8 @@ const PAGE_HTML = `<!doctype html>
   .hidden { display: none; }
   .pos { color: #6fcf7f; } .neg { color: #e07a7a; }
   .err { color: #e07a7a; }
+  .note { color: #b9bfcc; font-size: 12px; padding: 6px 0 8px; white-space: normal; text-align: left; }
+  .kat { font-size: 11px; color: #e0b46a; }
 </style>
 </head>
 <body>
@@ -95,7 +131,13 @@ const PAGE_HTML = `<!doctype html>
   <span class="muted" id="updated"></span>
   <input class="search" id="search" placeholder="filter pets…">
   <button id="refresh">Refresh</button>
-  <span class="muted">All pets · best buy level &amp; resell, by coins per XP (after AH tax).</span>
+  <label class="muted" title="Skip Kat's wait with Kat Flowers (1 day) / Bouquets (5 days) and count their cost"><input type="checkbox" id="rush"> Rush Kat with flowers</label>
+  <label class="muted" title="Coins per Mining XP you earn, not per pet XP: mining pets (⛏) level much faster than the rest. Wisps only level by feeding, so they're hidden here.">Grinding by <select id="basis">
+    <option value="equipped">mining, pet equipped</option>
+    <option value="share">mining, pet share</option>
+    <option value="pet">raw pet XP</option>
+  </select></label>
+  <span class="muted">All pets · best buy level &amp; resell, by coins per XP (after AH tax). Includes Kat rarity upgrades and Golden Dragons made at Lvl 1.</span>
 </header>
 <main>
   <div id="banner" class="banner">Loading…</div>
@@ -109,6 +151,22 @@ const PAGE_HTML = `<!doctype html>
 </main>
 <script>
 let DATA = null, sortKey = 'perxp', sortDir = -1, filter = '';
+let rush = false, basis = 'equipped';
+try { rush = localStorage.getItem('rushKat') === '1'; basis = localStorage.getItem('xpBasis') || basis; } catch (e) {}
+// Pet XP earned per 1 Mining XP, measured in-game (equipped, and levelled through pet share).
+const BASES = {
+  equipped: { mining: 99769 / 47272.5, other: 0.7298 },
+  share: { mining: 39 / 131.6, other: 0.1644 },
+};
+const xpName = () => BASES[basis] ? 'Mining XP' : 'XP';
+const minesFast = p => p.skill === 'MINING' || p.skill === 'ALL';
+// Pet XP per XP on the chosen basis: 1 for raw pet XP, 0 for wisps (they only level by feeding).
+function xpRate(p) {
+  const b = BASES[basis];
+  if (!b) return 1;
+  if (p.skill === 'GABAGOOL') return 0;
+  return minesFast(p) ? b.mining : b.other;
+}
 const picked = {}; // tag -> chosen rarity (overrides the pet's default)
 const fmt0 = n => n == null ? '' : Math.round(n).toLocaleString();
 const fmt2 = n => n == null ? '' : Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -120,7 +178,52 @@ const liqCell = n => { if (n == null) return '<span class="muted">–</span>'; c
 // The rarities map + the currently-shown flip for a pet (defaults to its best rarity).
 const raritiesOf = p => p.rarities || { [p.tier]: { tier: p.tier, sell: p.sell, sellNet: p.sellNet, best: p.best, levels: p.levels, perXp: p.perXp } };
 const activeTier = p => picked[p.tag] && raritiesOf(p)[picked[p.tag]] ? picked[p.tag] : (p.defaultTier || p.tier);
-const view = p => raritiesOf(p)[activeTier(p)];
+// With "Rush Kat" on, a Kat option pays for flowers/bouquets too: every buy row's profit drops by
+// the same amount, so coins/XP and even the best buy level are recomputed here.
+function eff(v) {
+  const rc = rush && v && v.upgrade && v.upgrade.rush ? v.upgrade.rush.cost : 0;
+  if (!rc) return v;
+  const levels = v.levels.map(l => Object.assign({}, l, { profit: l.profit - rc, perXp: l.xp > 0 ? (l.profit - rc) / l.xp : null }));
+  let best = null;
+  for (const l of levels) if (l.perXp !== null && (best === null || l.perXp > best.perXp)) best = l;
+  if (!best) return v;
+  return Object.assign({}, v, { levels, best, perXp: best.perXp, rushed: true });
+}
+// Restates a flip per Mining XP: the same coins, over the Mining XP that earns that much pet XP.
+function rebase(v, r) {
+  if (r === 1) return v;
+  const conv = l => Object.assign({}, l, { xp: l.xp / r, perXp: l.perXp === null ? null : l.perXp * r });
+  return Object.assign({}, v, { levels: v.levels.map(conv), best: conv(v.best), perXp: v.perXp * r });
+}
+const view = p => rebase(eff(raritiesOf(p)[activeTier(p)]), xpRate(p));
+const petName = p => p.name + (minesFast(p) ? ' <span class="kat">⛏</span>' : '');
+// Option keys can be "EPIC", "EPIC>LEGENDARY" (Kat upgrade) or "LEGENDARY@100"; the scanner sends a label for the composite ones.
+const optLabel = (p, t) => (raritiesOf(p)[t] && raritiesOf(p)[t].label) || (t || '').toLowerCase();
+const buyLink = (row, text) => row.crafted ? '<span class="kat">⚒ craft</span>' : auc(row.uuid, text);
+const hrs = h => h >= 48 ? (h / 24).toFixed(h % 24 ? 1 : 0) + 'd' : h + 'h';
+// Kat upgrade / Lvl 1 craft cost, spelled out under the level table.
+function costNote(v) {
+  const c = v.upgrade || v.craft;
+  if (!c) return '';
+  const mats = (c.materials || []).map(m => m.amount + '× ' + m.id.toLowerCase().replace(/_/g, ' ') + ' (' + compact(m.unit * m.amount) + ')');
+  const parts = [];
+  if (c.coins) parts.push(compact(c.coins) + ' coins');
+  parts.push(...mats);
+  let s = (v.upgrade ? 'Kat upgrade ' + v.upgrade.from.toLowerCase() + ' → ' + v.upgrade.to.toLowerCase() + ': '
+    : 'Golden Dragon made at Lvl 1: ') + parts.join(' + ') + ' = <b>' + compact(c.total) + '</b>';
+  if (v.upgrade && v.upgrade.hours) s += ' · takes ' + hrs(v.upgrade.hours) + (v.upgrade.steps > 1 ? ' over ' + v.upgrade.steps + ' upgrades' : '');
+  const r = v.upgrade && v.upgrade.rush;
+  if (r && r.days) {
+    const items = [];
+    if (r.bouquets) items.push(r.bouquets + '× Kat Bouquet');
+    if (r.flowers) items.push(r.flowers + '× Kat Flower');
+    s += '<br>Skip the ' + r.days + '-day wait: ' + items.join(' + ') + ' = <b>' + compact(r.cost) + '</b>'
+      + (v.rushed ? ' <span class="kat">(included)</span>' : ' <span class="muted">(tick "Rush Kat" to include)</span>');
+  }
+  if (c.unpriced && c.unpriced.length) s += ' · not priced (counted as 0): ' + c.unpriced.map(x => x.toLowerCase().replace(/_/g, ' ')).join(', ');
+  if (v.upgrade) s += ' · profit includes the upgrade cost';
+  return '<div class="note">' + s + '</div>';
+}
 
 async function load() {
   const btn = document.getElementById('refresh');
@@ -138,18 +241,16 @@ async function load() {
 }
 
 function sortedPets() {
-  let pets = DATA.pets.slice();
+  let pets = DATA.pets.filter(p => xpRate(p) > 0);
   if (filter) pets = pets.filter(p => p.name.toLowerCase().includes(filter));
-  if (sortKey !== 'rank') {
-    pets.sort((a, b) => {
-      const get = p => { const v = view(p); return ({ name: p.name, tier: activeTier(p), listings: p.listings,
-        buy: v.best.level, price: v.best.price, sell: v.sell.level, net: v.sellNet, xp: v.best.xp,
-        profit: v.best.profit, perxp: v.perXp, liq: (v.sell.soldWeek ?? -1) }[sortKey]); };
-      const av = get(a), bv = get(b);
-      if (typeof av === 'string') return sortDir * av.localeCompare(bv);
-      return sortDir * (av - bv);
-    });
-  }
+  pets.sort((a, b) => {
+    const get = p => { const v = view(p); return ({ rank: v.perXp, name: p.name, tier: activeTier(p), listings: p.listings,
+      buy: v.best.level, price: v.best.price, sell: v.sell.level, net: v.sellNet, xp: v.best.xp,
+      profit: v.best.profit, perxp: v.perXp, liq: (v.sell.soldWeek ?? -1) }[sortKey]); };
+    const av = get(a), bv = get(b);
+    if (typeof av === 'string') return sortDir * av.localeCompare(bv);
+    return sortDir * (av - bv);
+  });
   return pets;
 }
 
@@ -157,36 +258,36 @@ function sortedPets() {
 function rowCells(p, i) {
   const v = view(p);
   return '<td>' + p.listings + '</td>' +
-    '<td>' + v.best.level + '</td><td>' + fmt0(v.best.price) + '</td>' +
+    '<td>' + v.best.level + '</td><td>' + fmt0(v.best.price) + (v.upgrade ? '<br><span class="kat">+ ' + compact(v.upgrade.total) + ' Kat</span>' : '') + '</td>' +
     '<td>' + v.sell.level + '</td><td>' + fmt0(v.sellNet) + '</td>' +
     '<td>' + fmt0(v.best.xp) + '</td>' +
     '<td class="' + (v.best.profit >= 0 ? 'pos' : 'neg') + '">' + fmt0(v.best.profit) + '</td>' +
     '<td><b>' + fmt2(v.perXp) + '</b></td>' +
     '<td>' + liqCell(v.sell.soldWeek) + '</td>' +
-    '<td>' + auc(v.best.uuid, 'buy ↗') + '</td>';
+    '<td>' + buyLink(v.best, 'buy ↗') + '</td>';
 }
 
 function raritySelect(p) {
   const tiers = Object.keys(raritiesOf(p));
-  if (tiers.length <= 1) return '<span class="tier">' + (activeTier(p) || '').toLowerCase() + '</span>';
+  if (tiers.length <= 1) return '<span class="tier">' + optLabel(p, activeTier(p)) + '</span>';
   const cur = activeTier(p);
-  const opts = tiers.sort((a, b) => raritiesOf(p)[b].perXp - raritiesOf(p)[a].perXp)
-    .map(t => '<option value="' + t + '"' + (t === cur ? ' selected' : '') + '>' + t.toLowerCase() + '</option>').join('');
+  const opts = tiers.sort((a, b) => eff(raritiesOf(p)[b]).perXp - eff(raritiesOf(p)[a]).perXp)
+    .map(t => '<option value="' + t + '"' + (t === cur ? ' selected' : '') + '>' + optLabel(p, t) + '</option>').join('');
   return '<select class="rarity" data-tag="' + p.tag + '">' + opts + '</select>';
 }
 
 function detailHtml(p) {
   const v = view(p);
-  let inner = '<td></td><td colspan="12"><table><thead><tr>' +
-    '<th>Buy Lvl</th><th>Cheapest</th><th>XP to Grind</th><th>Profit</th><th>Coins/XP</th><th>Sold/7d</th><th></th></tr></thead><tbody>';
+  let inner = '<td></td><td colspan="12">' + costNote(v) + '<table><thead><tr>' +
+    '<th>Buy Lvl</th><th>Cheapest</th><th>' + xpName() + ' to Grind</th><th>Profit</th><th>Coins/' + xpName() + '</th><th>Sold/7d</th><th></th></tr></thead><tbody>';
   v.levels.forEach(l => {
     inner += '<tr>' +
-      '<td>' + (l.level === v.best.level ? '<span class="star">★</span> ' : '') + l.level + '</td>' +
+      '<td>' + (l === v.best || (l.level === v.best.level && !!l.crafted === !!v.best.crafted) ? '<span class="star">★</span> ' : '') + l.level + (l.crafted ? ' <span class="kat">made</span>' : '') + '</td>' +
       '<td>' + fmt0(l.price) + '</td><td>' + fmt0(l.xp) + '</td>' +
       '<td class="' + (l.profit >= 0 ? 'pos' : 'neg') + '">' + fmt0(l.profit) + '</td>' +
       '<td>' + fmt2(l.perXp) + '</td>' +
       '<td>' + liqCell(l.soldWeek) + '</td>' +
-      '<td>' + auc(l.uuid, 'open ↗') + '</td></tr>';
+      '<td>' + buyLink(l, 'open ↗') + '</td></tr>';
   });
   return inner + '</tbody></table></td>';
 }
@@ -196,6 +297,8 @@ function render() {
   document.getElementById('progress').textContent =
     'Scanned ' + DATA.scanned + ' / ' + DATA.total + ' pets'
     + (DATA.lastFullSweep ? ' · last full sweep ' + new Date(DATA.lastFullSweep).toLocaleTimeString() : ' · first sweep in progress…');
+  document.querySelector('th[data-k="xp"]').textContent = xpName() + ' to Grind';
+  document.querySelector('th[data-k="perxp"]').textContent = 'Coins/' + xpName();
 
   const list = sortedPets();
   const top = list[0];
@@ -204,9 +307,11 @@ function render() {
     banner.innerHTML = '<span class="muted">No flips computed yet — the first scan is still running, check back in a minute.</span>';
   } else if (top) {
     const v = view(top);
-    banner.innerHTML = '<span class="star">★</span> <b>Buy ' + top.name + '</b> (' + activeTier(top).toLowerCase() + ') at Lvl ' + v.best.level +
-      ' for ' + compact(v.best.price) + ' → grind to Lvl ' + v.sell.level +
-      ' = <b>' + fmt2(v.perXp) + ' coins/XP</b> &nbsp; ' + auc(v.best.uuid, 'open auction ↗');
+    const how = v.best.crafted ? '<b>Make ' + top.name + '</b> at Lvl 1 for ' + compact(v.best.price)
+      : '<b>Buy ' + top.name + '</b> (' + optLabel(top, activeTier(top)) + ') at Lvl ' + v.best.level + ' for ' + compact(v.best.price)
+        + (v.upgrade ? ' + ' + compact(v.upgrade.total) + ' Kat upgrade' : '');
+    banner.innerHTML = '<span class="star">★</span> ' + how + ' → grind to Lvl ' + v.sell.level +
+      ' = <b>' + fmt2(v.perXp) + ' coins/' + xpName() + '</b> &nbsp; ' + buyLink(v.best, 'open auction ↗');
   }
 
   const rows = document.getElementById('rows');
@@ -217,7 +322,7 @@ function render() {
     tr.dataset.tag = p.tag;
     tr.innerHTML =
       '<td>' + (i === 0 ? '<span class="star">★</span>1' : i + 1) + '</td>' +
-      '<td>' + p.name + '</td>' +
+      '<td>' + petName(p) + '</td>' +
       '<td>' + raritySelect(p) + '</td>' +
       rowCells(p, i);
     rows.appendChild(tr);
@@ -244,7 +349,7 @@ document.getElementById('rows').addEventListener('change', e => {
   const tr = rows.querySelector('tr.pet[data-tag="' + tag + '"]');
   const det = rows.querySelector('tr[data-det="' + tag + '"]');
   const i = [...rows.querySelectorAll('tr.pet')].indexOf(tr);
-  tr.innerHTML = '<td>' + (i === 0 ? '<span class="star">★</span>1' : i + 1) + '</td><td>' + p.name + '</td><td>' + raritySelect(p) + '</td>' + rowCells(p, i);
+  tr.innerHTML = '<td>' + (i === 0 ? '<span class="star">★</span>1' : i + 1) + '</td><td>' + petName(p) + '</td><td>' + raritySelect(p) + '</td>' + rowCells(p, i);
   det.innerHTML = detailHtml(p);
 });
 
@@ -255,6 +360,20 @@ document.querySelectorAll('th[data-k]').forEach(th => th.addEventListener('click
 }));
 document.getElementById('search').addEventListener('input', e => { filter = e.target.value.toLowerCase(); render(); });
 document.getElementById('refresh').addEventListener('click', load);
+const rushBox = document.getElementById('rush');
+rushBox.checked = rush;
+rushBox.addEventListener('change', () => {
+  rush = rushBox.checked;
+  try { localStorage.setItem('rushKat', rush ? '1' : '0'); } catch (e) {}
+  if (DATA) render();
+});
+const basisBox = document.getElementById('basis');
+basisBox.value = basis;
+basisBox.addEventListener('change', () => {
+  basis = basisBox.value;
+  try { localStorage.setItem('xpBasis', basis); } catch (e) {}
+  if (DATA) render();
+});
 load();
 setInterval(load, 60000);
 </script>

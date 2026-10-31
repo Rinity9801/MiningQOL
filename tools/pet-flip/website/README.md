@@ -10,6 +10,7 @@ applies Hypixel AH tax, ranks the pets, and caches the result for ~3 minutes.
 - A **recommendation banner**: which pet to buy, at what level, for how much, and the coins/XP.
 - A **ranked table** (best coins/XP first) with buy level, prices, net-after-tax, XP to grind, profit, and a direct **buy ↗** link.
 - **Click any pet row** to expand its per-level breakdown (the `★` marks the recommended buy level).
+- A **Grinding by** picker that restates coins/XP per Mining XP (pet equipped or pet share), so mining pets (`⛏`) rank by what you actually earn. The rates are measured in-game and live in `BASES`.
 - A **Refresh** button.
 
 ## Deploy
