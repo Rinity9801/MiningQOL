@@ -66,7 +66,7 @@ public class MiningqolClient implements ClientModInitializer {
             LOGGER.error("[MiningQOL] Failed to init external ESP feed", e);
         }
         net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry.register(
-            ctx -> new forfun.miningqol.client.shatter.NVGPipRenderer(ctx.bufferSource()));
+            ctx -> new forfun.miningqol.client.shatter.NVGPipRenderer());
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) {
                 return;
@@ -77,8 +77,10 @@ public class MiningqolClient implements ClientModInitializer {
         config.applyToGame();
         CommissionHUD.register();
         BlockOverlay.init();
+        WorldRenderHook.init();
         PickaxeCooldownHUD.register();
         RollingMinerCooldown.register();
+        CommCountHUD.register();
         ItemCooldownTimer.registerAll();
         MayhemHUD.register();
         forfun.miningqol.client.summary.ShaftSummary.init();
@@ -466,6 +468,11 @@ public class MiningqolClient implements ClientModInitializer {
                         OrderedWaypointManager.listRoutes();
                         return 1;
                     }))
+                .then(ClientCommands.literal("convert")
+                    .executes(context -> {
+                        OrderedWaypointManager.convertRoutes();
+                        return 1;
+                    }))
                 .then(ClientCommands.literal("info")
                     .executes(context -> {
                         OrderedWaypointManager.info();
@@ -480,7 +487,12 @@ public class MiningqolClient implements ClientModInitializer {
                     .executes(context -> {
                         OrderedWaypointManager.export();
                         return 1;
-                    })));
+                    })
+                    .then(ClientCommands.literal("text")
+                        .executes(context -> {
+                            OrderedWaypointManager.exportTextToClipboard();
+                            return 1;
+                        }))));
         });
     }
 

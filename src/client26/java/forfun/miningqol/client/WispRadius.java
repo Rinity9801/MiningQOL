@@ -3,7 +3,7 @@ package forfun.miningqol.client;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import forfun.miningqol.client.utils.render.WorldBuffers;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
@@ -14,7 +14,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -245,14 +244,15 @@ public final class WispRadius {
         return false;
     }
 
-    public static void render(CameraRenderState cameraState, Matrix4fc viewMatrix) {
+    public static void render(CameraRenderState cameraState) {
         if (!enabled || spots.isEmpty()) return;
         Minecraft client = Minecraft.getInstance();
         if (client.level == null) return;
 
         Vec3 cam = cameraState.pos;
-        MultiBufferSource.BufferSource buffers = client.renderBuffers().bufferSource();
-        Matrix4f pose = new Matrix4f(viewMatrix);
+        WorldBuffers buffers = WorldBuffers.get();
+        // Camera-relative: the 26.2 feature pass applies the view rotation itself.
+        Matrix4f pose = new Matrix4f();
         VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackground());
         int r = (int) (color[0] * 255);
         int g = (int) (color[1] * 255);

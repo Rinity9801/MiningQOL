@@ -1,8 +1,8 @@
 package forfun.miningqol.client.utils.render;
 
+import com.mojang.blaze3d.PrimitiveTopology;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import forfun.miningqol.mixin.client.RenderPipelinesInvoker;
 import forfun.miningqol.mixin.client.RenderTypeInvoker;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -28,7 +28,8 @@ public final class BlockOverlayRenderTypes {
     private static RenderPipeline registerFilled(String path, boolean phase) {
         RenderPipeline.Builder builder = RenderPipeline.builder(RenderPipelinesInvoker.miningqol$getDebugFilledSnippet())
             .withLocation(id(path))
-            .withVertexFormat(DefaultVertexFormat.POSITION_COLOR, VertexFormat.Mode.TRIANGLES);
+            .withVertexBinding(0, DefaultVertexFormat.POSITION_COLOR)
+            .withPrimitiveTopology(PrimitiveTopology.TRIANGLES);
         if (phase) builder.withDepthStencilState(Optional.empty());
         return RenderPipelinesInvoker.miningqol$register(builder.build());
     }

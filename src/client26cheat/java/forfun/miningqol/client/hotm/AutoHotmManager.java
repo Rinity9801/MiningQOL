@@ -158,11 +158,11 @@ public class AutoHotmManager {
 
             case STATE_CHECK_RESET:
                 if (tickCounter >= tickDelay) {
-                    if (client.screen instanceof ContainerScreen screen) {
+                    if (client.gui.screen() instanceof ContainerScreen screen) {
                         var menu = screen.getMenu();
                         var resetItem = menu.slots.get(RESET_SLOT).getItem();
                         // If reset slot is NOT black glass pane, tree needs resetting
-                        if (resetItem.getItem() != Items.BLACK_STAINED_GLASS_PANE) {
+                        if (resetItem.getItem() != Items.STAINED_GLASS_PANE.pick(net.minecraft.world.item.DyeColor.BLACK)) {
                             state = STATE_RESET_CLICK;
                         } else {
                             // Tree is already reset, go straight to actions
@@ -296,7 +296,7 @@ public class AutoHotmManager {
                     maxRetries++;
 
                     // Check if maxed (diamond) or got "already purchased" message
-                    if (client.screen instanceof ContainerScreen screen) {
+                    if (client.gui.screen() instanceof ContainerScreen screen) {
                         var item = screen.getMenu().slots.get(act.slot).getItem();
                         if (item.getItem() == Items.DIAMOND) {
                             actionIndex++;
@@ -359,8 +359,8 @@ public class AutoHotmManager {
                 break;
 
             case STATE_DONE:
-                if (client.screen != null) {
-                    client.screen.onClose();
+                if (client.gui.screen() != null) {
+                    client.gui.screen().onClose();
                 }
                 MqoChat.log(Component.literal("\u00A76[MQO] \u00A7aAuto-HOTM complete!"));
                 running = false;
@@ -449,7 +449,7 @@ public class AutoHotmManager {
     }
 
     private static void clickSlot(Minecraft client, int slot, int button, ContainerInput actionType) {
-        if (client.screen instanceof ContainerScreen screen) {
+        if (client.gui.screen() instanceof ContainerScreen screen) {
             var menu = screen.getMenu();
             if (slot < menu.slots.size()) {
                 client.gameMode.handleContainerInput(menu.containerId, slot, button, actionType, client.player);
@@ -458,7 +458,7 @@ public class AutoHotmManager {
     }
 
     private static boolean isHotmGuiOpen(Minecraft client) {
-        if (!(client.screen instanceof ContainerScreen screen)) return false;
+        if (!(client.gui.screen() instanceof ContainerScreen screen)) return false;
         return screen.getTitle().getString().contains("Heart of the Mountain");
     }
 }

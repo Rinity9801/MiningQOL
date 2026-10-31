@@ -535,7 +535,7 @@ public class CommClaimManager {
                 }
             }
             case CLOSE_COMMISSIONS -> {
-                if (client.screen != null && isCommissionsOpen(client)) client.screen.onClose();
+                if (client.gui.screen() != null && isCommissionsOpen(client)) client.gui.screen().onClose();
                 if (wardrobeSwap) {
                     advanceIn(State.OPEN_RETURN_LOADOUT, COMMISSION_CLOSE_DELAY_MS);
                 } else {
@@ -677,8 +677,8 @@ public class CommClaimManager {
     }
 
     private static void closeIfOpen(Minecraft client, boolean loadout) {
-        if (client.screen == null) return;
-        if (loadout ? isLoadoutOpen(client) : isCommissionsOpen(client)) client.screen.onClose();
+        if (client.gui.screen() == null) return;
+        if (loadout ? isLoadoutOpen(client) : isCommissionsOpen(client)) client.gui.screen().onClose();
     }
 
     /**
@@ -692,12 +692,12 @@ public class CommClaimManager {
     }
 
     private static boolean isLoadoutOpen(Minecraft client) {
-        return client.screen instanceof ContainerScreen screen
+        return client.gui.screen() instanceof ContainerScreen screen
             && screen.getTitle().getString().toLowerCase(Locale.ROOT).contains("loadout");
     }
 
     private static boolean isCommissionsOpen(Minecraft client) {
-        return client.screen instanceof ContainerScreen screen
+        return client.gui.screen() instanceof ContainerScreen screen
             && screen.getTitle().getString().toLowerCase(Locale.ROOT).contains("commission");
     }
 
@@ -708,13 +708,13 @@ public class CommClaimManager {
     }
 
     private static boolean isLoadoutSlotReady(Minecraft client, int loadout) {
-        if (!(client.screen instanceof ContainerScreen screen)) return false;
+        if (!(client.gui.screen() instanceof ContainerScreen screen)) return false;
         int slot = loadoutSlotIndex(loadout);
         return slot < screen.getMenu().slots.size() && !screen.getMenu().getSlot(slot).getItem().isEmpty();
     }
 
     private static boolean clickLoadoutSlot(Minecraft client, int loadout) {
-        if (!(client.screen instanceof ContainerScreen screen)
+        if (!(client.gui.screen() instanceof ContainerScreen screen)
             || client.gameMode == null || client.player == null) return false;
         int slot = loadoutSlotIndex(loadout);
         if (slot < 0 || slot >= screen.getMenu().slots.size()) return false;
@@ -730,7 +730,7 @@ public class CommClaimManager {
 
     /** Clicks the first completed commission in the open menu, then lets the delay pace rescans. */
     private static boolean clickCompletedCommission(Minecraft client) {
-        if (!(client.screen instanceof ContainerScreen screen)
+        if (!(client.gui.screen() instanceof ContainerScreen screen)
             || client.gameMode == null || client.player == null) return false;
         int limit = containerSlotCount(screen);
         for (int slot = 0; slot < limit; slot++) {

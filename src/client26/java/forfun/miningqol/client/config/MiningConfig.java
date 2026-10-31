@@ -16,6 +16,7 @@ import forfun.miningqol.client.FiletWarning;
 import forfun.miningqol.client.LobbyFinder;
 import forfun.miningqol.client.ForgeDisplay;
 import forfun.miningqol.client.PickaxeCooldownHUD;
+import forfun.miningqol.client.CommCountHUD;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
 import forfun.miningqol.client.MayhemHUD;
@@ -207,14 +208,19 @@ public class MiningConfig {
 
     public boolean commGuiEnabled = false;
     public boolean commGuiShowProgress = true;
-    public boolean commGuiStatsInMenu = true;
-    public boolean commMenuStatsMoved = false;
-    public int commMenuStatsX = 0;
-    public int commMenuStatsY = 0;
-    public int commMenuStatsAnchorModeX = -1;
-    public int commMenuStatsAnchorOffX = 0;
-    public int commMenuStatsAnchorModeY = -1;
-    public int commMenuStatsAnchorOffY = 0;
+    public boolean commCountEnabled = false;
+    public int commCountX = 10;
+    public int commCountY = 74;
+    public int commCountAnchorModeX = -1;
+    public int commCountAnchorOffX = 0;
+    public int commCountAnchorModeY = -1;
+    public int commCountAnchorOffY = 0;
+    public boolean commCountHideWithF1 = false;
+    public int commCountTextAlign = 0;
+    public boolean commCountShowSession = true;
+    public boolean commCountNumberOnly = false;
+    public float[] commCountLabelColor = {1.0f, 170.0f / 255.0f, 0.0f};
+    public float[] commCountValueColor = {1.0f, 1.0f, 1.0f};
     public float commGuiScale = 1.0f;
     public float commGuiButtonSize = 24.0f;
     public float[] commGuiAccentColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
@@ -357,6 +363,8 @@ public class MiningConfig {
     public float orderedWaypointBlockOutlineThickness = 1.5f;
     /** Tint the outlined blocks as well as edging them. */
     public boolean orderedWaypointBlockOutlineFill = true;
+    public boolean orderedWaypointBlockOutlineVisibleOnly = true;
+    public boolean orderedWaypointBlockOutlineCurrent = false;
     /** Cheat builds: auto right-click when sneaking + aiming at an etherwarp-marked waypoint. */
     public boolean orderedWaypointEtherwarpClick = true;
     /** /mqo skip walks past waypoints whose lobby-check block is gone. */
@@ -629,11 +637,18 @@ public class MiningConfig {
 
         forfun.miningqol.client.CommissionGui.setEnabled(commGuiEnabled);
         forfun.miningqol.client.CommissionGui.setShowProgress(commGuiShowProgress);
-        forfun.miningqol.client.CommissionGui.setStatsInMenu(commGuiStatsInMenu);
-        if (commMenuStatsMoved) {
-            forfun.miningqol.client.CommissionGui.setStatsPosition(commMenuStatsX, commMenuStatsY);
-            forfun.miningqol.client.CommissionGui.statsAnchor().load(anchorMode(commMenuStatsAnchorModeX), commMenuStatsAnchorOffX,
-                anchorMode(commMenuStatsAnchorModeY), commMenuStatsAnchorOffY);
+        CommCountHUD.setEnabled(commCountEnabled);
+        CommCountHUD.setPosition(commCountX, commCountY);
+        CommCountHUD.anchor().load(anchorMode(commCountAnchorModeX), commCountAnchorOffX, anchorMode(commCountAnchorModeY), commCountAnchorOffY);
+        CommCountHUD.setHideWithF1(commCountHideWithF1);
+        CommCountHUD.setTextAlign(commCountTextAlign);
+        CommCountHUD.setShowSession(commCountShowSession);
+        CommCountHUD.setNumberOnly(commCountNumberOnly);
+        if (commCountLabelColor != null && commCountLabelColor.length >= 3) {
+            CommCountHUD.setLabelColor(commCountLabelColor[0], commCountLabelColor[1], commCountLabelColor[2]);
+        }
+        if (commCountValueColor != null && commCountValueColor.length >= 3) {
+            CommCountHUD.setValueColor(commCountValueColor[0], commCountValueColor[1], commCountValueColor[2]);
         }
         forfun.miningqol.client.CommissionGui.setScale(commGuiScale);
         forfun.miningqol.client.CommissionGui.setButtonSize(commGuiButtonSize);
@@ -730,6 +745,8 @@ public class MiningConfig {
         OrderedWaypointManager.setBlockOutlineAlpha(orderedWaypointBlockOutlineAlpha);
         OrderedWaypointManager.setBlockOutlineThickness(orderedWaypointBlockOutlineThickness);
         OrderedWaypointManager.setBlockOutlineFill(orderedWaypointBlockOutlineFill);
+        OrderedWaypointManager.setBlockOutlineVisibleOnly(orderedWaypointBlockOutlineVisibleOnly);
+        OrderedWaypointManager.setBlockOutlineCurrent(orderedWaypointBlockOutlineCurrent);
         OrderedWaypointManager.setSkipObstructed(orderedWaypointSkipObstructed);
         OrderedWaypointManager.setObstructedThreshold(orderedWaypointObstructedThreshold);
     }
@@ -892,16 +909,19 @@ public class MiningConfig {
 
         commGuiEnabled = forfun.miningqol.client.CommissionGui.isEnabled();
         commGuiShowProgress = forfun.miningqol.client.CommissionGui.isShowProgress();
-        commGuiStatsInMenu = forfun.miningqol.client.CommissionGui.isStatsInMenu();
-        commMenuStatsMoved = forfun.miningqol.client.CommissionGui.isStatsMoved();
-        if (commMenuStatsMoved) {
-            commMenuStatsX = forfun.miningqol.client.CommissionGui.getStatsX();
-            commMenuStatsY = forfun.miningqol.client.CommissionGui.getStatsY();
-            commMenuStatsAnchorModeX = forfun.miningqol.client.CommissionGui.statsAnchor().modeX();
-            commMenuStatsAnchorOffX = forfun.miningqol.client.CommissionGui.statsAnchor().offX();
-            commMenuStatsAnchorModeY = forfun.miningqol.client.CommissionGui.statsAnchor().modeY();
-            commMenuStatsAnchorOffY = forfun.miningqol.client.CommissionGui.statsAnchor().offY();
-        }
+        commCountEnabled = CommCountHUD.isEnabled();
+        commCountX = CommCountHUD.getX();
+        commCountY = CommCountHUD.getY();
+        commCountAnchorModeX = CommCountHUD.anchor().modeX();
+        commCountAnchorOffX = CommCountHUD.anchor().offX();
+        commCountAnchorModeY = CommCountHUD.anchor().modeY();
+        commCountAnchorOffY = CommCountHUD.anchor().offY();
+        commCountHideWithF1 = CommCountHUD.isHideWithF1();
+        commCountTextAlign = CommCountHUD.getTextAlign();
+        commCountShowSession = CommCountHUD.isShowSession();
+        commCountNumberOnly = CommCountHUD.isNumberOnly();
+        commCountLabelColor = CommCountHUD.getLabelColor();
+        commCountValueColor = CommCountHUD.getValueColor();
         commGuiScale = forfun.miningqol.client.CommissionGui.getScale();
         commGuiButtonSize = forfun.miningqol.client.CommissionGui.getButtonSize();
         commGuiAccentColor = forfun.miningqol.client.CommissionGui.getAccentColor();
@@ -993,6 +1013,8 @@ public class MiningConfig {
         orderedWaypointBlockOutlineAlpha = OrderedWaypointManager.getBlockOutlineAlpha();
         orderedWaypointBlockOutlineThickness = OrderedWaypointManager.getBlockOutlineThickness();
         orderedWaypointBlockOutlineFill = OrderedWaypointManager.isBlockOutlineFill();
+        orderedWaypointBlockOutlineVisibleOnly = OrderedWaypointManager.isBlockOutlineVisibleOnly();
+        orderedWaypointBlockOutlineCurrent = OrderedWaypointManager.isBlockOutlineCurrent();
         orderedWaypointSkipObstructed = OrderedWaypointManager.isSkipObstructed();
         orderedWaypointObstructedThreshold = OrderedWaypointManager.getObstructedThreshold();
     }

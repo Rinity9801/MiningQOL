@@ -296,7 +296,7 @@ public final class SkyMallTracker {
     // ---- Heart of the Mountain menu ----
 
     private static void scanMenu(Minecraft client, long now) {
-        Screen screen = client.screen;
+        Screen screen = client.gui.screen();
         if (!(screen instanceof AbstractContainerScreen<?> container)) return;
         if (now - lastMenuScanMs < MENU_SCAN_INTERVAL_MS) return;
         String title = container.getTitle().getString().replaceAll("§.", "");

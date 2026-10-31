@@ -103,7 +103,7 @@ public class AbilitySwitchManager {
                 break;
 
             case STATE_CLICK_SLOT:
-                if (client.screen instanceof ContainerScreen screen) {
+                if (client.gui.screen() instanceof ContainerScreen screen) {
                     var menu = screen.getMenu();
                     if (SLOT_CHECK < menu.slots.size()) {
                         ItemStack stack = menu.slots.get(SLOT_CHECK).getItem();
@@ -143,8 +143,8 @@ public class AbilitySwitchManager {
                 break;
 
             case STATE_CLOSE_GUI:
-                if (client.screen != null) {
-                    client.screen.onClose();
+                if (client.gui.screen() != null) {
+                    client.gui.screen().onClose();
                 }
                 state = STATE_DONE;
                 tickCounter = 0;
@@ -160,7 +160,7 @@ public class AbilitySwitchManager {
     }
 
     private static boolean isHotmOpen(Minecraft client) {
-        if (!(client.screen instanceof ContainerScreen screen)) return false;
+        if (!(client.gui.screen() instanceof ContainerScreen screen)) return false;
         String title = screen.getTitle().getString();
         return title.contains("Heart of the Mountain");
     }

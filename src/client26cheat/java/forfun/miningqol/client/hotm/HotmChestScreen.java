@@ -68,7 +68,7 @@ public class HotmChestScreen extends Screen {
     public static void open() {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        client.schedule(() -> client.setScreen(new HotmChestScreen()));
+        client.schedule(() -> client.gui.setScreen(new HotmChestScreen()));
     }
 
     /**
@@ -239,7 +239,7 @@ public class HotmChestScreen extends Screen {
                 case "apply" -> {
                     Minecraft client = Minecraft.getInstance();
                     client.schedule(() -> {
-                        client.setScreen(null);
+                        client.gui.setScreen(null);
                         HotmManager.apply();
                     });
                 }

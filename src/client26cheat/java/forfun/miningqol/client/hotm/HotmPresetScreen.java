@@ -53,7 +53,7 @@ public class HotmPresetScreen extends Screen {
             ? presetNames.subList(0, MAX_PRESETS)
             : presetNames;
         List<String> namesCopy = List.copyOf(shown);
-        client.schedule(() -> client.setScreen(new HotmPresetScreen(namesCopy)));
+        client.schedule(() -> client.gui.setScreen(new HotmPresetScreen(namesCopy)));
     }
 
     /**
@@ -154,7 +154,7 @@ public class HotmPresetScreen extends Screen {
             if (click.button() == 1) {
                 // Right click = load and apply
                 client.schedule(() -> {
-                    client.setScreen(null);
+                    client.gui.setScreen(null);
                     HotmManager.apply();
                 });
             } else {

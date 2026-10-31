@@ -54,7 +54,7 @@ public final class EtherwarpClickManager {
             return;
         }
 
-        if (!enabled || client.player == null || client.level == null || client.screen != null) return;
+        if (!enabled || client.player == null || client.level == null || client.gui.screen() != null) return;
         if (!OrderedWaypointManager.isEnabled()) return;
         if (!client.player.isShiftKeyDown()) return;
 

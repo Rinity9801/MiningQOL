@@ -5,7 +5,7 @@ import forfun.miningqol.client.utils.render.SeeThroughBoxRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import forfun.miningqol.client.utils.render.WorldBuffers;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
@@ -26,7 +26,6 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -219,7 +218,7 @@ public class CorpseESP {
         }
     }
 
-    public static void render(CameraRenderState cameraState, Matrix4fc viewMatrix) {
+    public static void render(CameraRenderState cameraState) {
         // External mode hands rendering to the overlay app — drawing here too would
         // double up every box. Gated on a live overlay so closing the overlay (or the
         // feed being off) falls back to in-game drawing instead of showing nothing.
@@ -229,8 +228,9 @@ public class CorpseESP {
         if (client.level == null || activeWaypoints.isEmpty()) return;
 
         Vec3 cam = cameraState.pos;
-        MultiBufferSource.BufferSource buffers = client.renderBuffers().bufferSource();
-        Matrix4f pose = new Matrix4f(viewMatrix);
+        WorldBuffers buffers = WorldBuffers.get();
+        // Camera-relative: the 26.2 feature pass applies the view rotation itself.
+        Matrix4f pose = new Matrix4f();
 
         VertexConsumer outlines = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
 

@@ -142,7 +142,7 @@ public final class ForgeDisplay {
         if (!enabled) return;
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        if (hideWithF1 && client.options.hideGui) return;
+        if (hideWithF1 && client.gui.hud.isHidden()) return;
 
         List<Component> lines = buildLines();
         if (lines.isEmpty()) return;

@@ -73,7 +73,7 @@ public final class RollingMinerCooldown {
 
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        if (hideWithF1 && client.options.hideGui) return;
+        if (hideWithF1 && client.gui.hud.isHidden()) return;
 
         int secondsLeft = secondsLeft();
         boolean ready = secondsLeft <= 0;
@@ -81,9 +81,9 @@ public final class RollingMinerCooldown {
         if (titleEnabled && !ready && secondsLeft <= titleThreshold) {
             long now = System.currentTimeMillis();
             if (lastTitleCooldown != secondsLeft || now - lastTitleSetTime > 500) {
-                client.gui.setTimes(0, 15, 3);
-                client.gui.setTitle(Component.literal(""));
-                client.gui.setSubtitle(formatText(secs(secondsLeft), false, true));
+                client.gui.hud.setTimes(0, 15, 3);
+                client.gui.hud.setTitle(Component.literal(""));
+                client.gui.hud.setSubtitle(formatText(secs(secondsLeft), false, true));
                 lastTitleSetTime = now;
                 lastTitleCooldown = secondsLeft;
             }

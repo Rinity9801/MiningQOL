@@ -87,7 +87,7 @@ public final class ItemCooldownTimer {
             endsAt = 0;
             return;
         }
-        if (!pressed || client.screen != null || secondsLeft() > 0) return;
+        if (!pressed || client.gui.screen() != null || secondsLeft() > 0) return;
         ItemStack held = client.player.getMainHandItem();
         if (held.isEmpty()) return;
         String name = held.getHoverName().getString().replaceAll("§.", "").toLowerCase(Locale.ROOT);
@@ -98,13 +98,13 @@ public final class ItemCooldownTimer {
         if (!enabled) return;
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        if (hideWithF1 && client.options.hideGui) return;
+        if (hideWithF1 && client.gui.hud.isHidden()) return;
         int left = secondsLeft();
         if (titleEnabled && left > 0 && left <= titleThreshold) {
             if (left != lastTitleSecond) {
-                client.gui.setTimes(0, 15, 3);
-                client.gui.setTitle(Component.literal(""));
-                client.gui.setSubtitle(formatText(secs(left), false, true));
+                client.gui.hud.setTimes(0, 15, 3);
+                client.gui.hud.setTitle(Component.literal(""));
+                client.gui.hud.setSubtitle(formatText(secs(left), false, true));
                 lastTitleSecond = left;
             }
         } else {

@@ -7,7 +7,8 @@ plugins {
 
 val fullVersion = stonecutter.current.version
 val mc = fullVersion.substringBefore("-")
-val is26_1_2 = mc == "26.1.2"
+// 26.x is unobfuscated (official names, no Yarn) and shares the src/client26 tree.
+val is26 = mc.startsWith("26.")
 val isCheatVariant = fullVersion.endsWith("-cheat")
 
 // The external ESP feed lives in local/ and must never reach a published jar. It's
@@ -24,7 +25,7 @@ base {
 }
 
 loom {
-    if (is26_1_2) {
+    if (is26) {
         noIntermediateMappings()
         // official-namespace widener; 1.21.11 builds use yarn and would reject it
         accessWidenerPath.set(rootProject.file("src/main/resources/miningqol.accesswidener"))
@@ -42,7 +43,7 @@ loom {
 
 sourceSets {
     main {
-        if (is26_1_2) {
+        if (is26) {
             // 26.x client sources are canonical at the root; use the same canonical
             // metadata instead of stale Stonecutter-generated version resources.
             resources.setSrcDirs(listOf(rootProject.file("src/main/resources")))
@@ -52,7 +53,7 @@ sourceSets {
         }
     }
     named("client") {
-        if (is26_1_2) {
+        if (is26) {
             // client26 files are synced verbatim (no stonecutter preprocessing), so
             // cheat-only code lives in its own tree included only for -cheat.
             // local/esp/ is the external ESP feed: present on dev machines, never copied
@@ -65,7 +66,7 @@ sourceSets {
                 if (includeLocalEsp) add(rootProject.file("local/esp/java").path)
             })
             resources.srcDir(rootProject.file("src/client26/resources"))
-            // 26.1.2 Kotlin (Vexel GUI screens) lives in its own tree — the shared
+            // 26.x Kotlin (Vexel GUI screens) lives in its own tree — the shared
             // src/client/kotlin is Yarn-mapped and doesn't compile against 26.x.
             // The java dir is included so kotlinc can resolve the mod's Java classes
             // (joint compilation; javac still owns the .java files).
@@ -104,33 +105,33 @@ repositories {
 
 dependencies {
     minecraft("com.mojang:minecraft:${(findProperty("minecraft_version") ?: mc).toString()}")
-    if (!is26_1_2) {
+    if (!is26) {
         add("mappings", "net.fabricmc:yarn:${property("yarn_mappings")}:v2")
         add("modImplementation", "net.fabricmc:fabric-loader:${(findProperty("loader_version") ?: "").toString()}")
         add("modImplementation", "net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
     } else {
         implementation("net.fabricmc:fabric-loader:${(findProperty("loader_version") ?: "").toString()}")
         implementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_version")}")
-        implementation("net.fabricmc.fabric-api:fabric-key-mapping-api-v1:2.0.4+e2bdee784c")
+        implementation(property("key_mapping_dep").toString())
     }
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-stdlib")
-    if (!is26_1_2) {
+    if (!is26) {
         add("modImplementation", "net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     } else {
         implementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     }
 
     // Vexel GUI Library
-    if (!is26_1_2) {
+    if (!is26) {
         // Vexel embeds Knit for runtime but its published POM does not expose it to Kotlin's
         // compile classpath. Match the exact nested version from Vexel 127.
         add("modCompileOnly", "xyz.meowing:knit-1.21.10-fabric:118")
         add("modImplementation", include(property("vexel_dep").toString())!!)
     } else {
-        implementation("xyz.meowing:knit-26.1.2-fabric:26.1.2-local")
-        implementation(include("xyz.meowing:knit-26.1.2-fabric:26.1.2-local")!!)
+        implementation(property("knit_dep").toString())
+        implementation(include(property("knit_dep").toString())!!)
         implementation(property("vexel_dep").toString())
         implementation(include(property("vexel_dep").toString())!!)
     }
@@ -139,18 +140,18 @@ dependencies {
 // Stonecutter constants for preprocessor
 stonecutter {
     constants["is1_21_11"] = eval(mc, ">=1.21.11")
-    constants["is26_1_2"] = is26_1_2
+    constants["is26"] = is26
     constants["isCheat"] = fullVersion.endsWith("-cheat")
 }
 
-val targetJavaVersion = if (is26_1_2) 25 else 21
+val targetJavaVersion = if (is26) 25 else 21
 
 tasks.processResources {
     inputs.property("version", project.version)
     inputs.property("minecraft_version", (findProperty("minecraft_version") ?: mc).toString())
     inputs.property("loader_version", (findProperty("loader_version") ?: "").toString())
     inputs.property("fabric_kotlin_version", (findProperty("fabric_kotlin_version") ?: "").toString())
-    inputs.property("fabric_dependency", if (is26_1_2) "fabric-api" else "fabric")
+    inputs.property("fabric_dependency", if (is26) "fabric-api" else "fabric")
     inputs.property("java_version", targetJavaVersion)
     filteringCharset = "UTF-8"
 
@@ -158,16 +159,16 @@ tasks.processResources {
         expand(
             "version" to project.version,
             "minecraft_version" to (findProperty("minecraft_version") ?: mc).toString(),
-            "minecraft_dependency" to if (is26_1_2) "~${(findProperty("minecraft_version") ?: mc)}" else (findProperty("minecraft_version") ?: mc).toString(),
+            "minecraft_dependency" to if (is26) "~${(findProperty("minecraft_version") ?: mc)}" else (findProperty("minecraft_version") ?: mc).toString(),
             "loader_version" to (findProperty("loader_version") ?: "").toString(),
             "fabric_kotlin_version" to (findProperty("fabric_kotlin_version") ?: "").toString(),
-            "fabric_dependency" to if (is26_1_2) "fabric-api" else "fabric",
+            "fabric_dependency" to if (is26) "fabric-api" else "fabric",
             "java_version" to targetJavaVersion
         )
     }
 }
 
-if (is26_1_2) {
+if (is26) {
     val sync26ClientSources = tasks.register<Sync>("sync26ClientSources") {
         dependsOn("stonecutterGenerateClient")
         from(rootProject.file("src/client26/java"))
@@ -223,7 +224,7 @@ tasks.jar {
     }
 }
 
-if (is26_1_2) {
+if (is26) {
     tasks.withType<Jar>().configureEach {
         if (name == "sourcesJar") {
             duplicatesStrategy = org.gradle.api.file.DuplicatesStrategy.EXCLUDE

@@ -57,6 +57,6 @@ public final class ShatterUi {
 
     /** Opens the settings menu. */
     public static void openConfiguredGui() {
-        Minecraft.getInstance().setScreen(new ShatterScreen());
+        Minecraft.getInstance().gui.setScreen(new ShatterScreen());
     }
 }

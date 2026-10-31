@@ -40,9 +40,9 @@ public class FiletWarning {
         // Warn when filet is missing, but not too frequently
         if (!filetActive && now - lastWarning > 30000) {
             lastWarning = now;
-            client.gui.setTimes(5, 40, 10);
-            client.gui.setTitle(Component.literal(""));
-            client.gui.setSubtitle(Component.literal("§c§lFilet O' Fortune expired!"));
+            client.gui.hud.setTimes(5, 40, 10);
+            client.gui.hud.setTitle(Component.literal(""));
+            client.gui.hud.setSubtitle(Component.literal("§c§lFilet O' Fortune expired!"));
         }
     }
 

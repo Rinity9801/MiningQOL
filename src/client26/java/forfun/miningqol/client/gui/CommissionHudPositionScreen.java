@@ -116,7 +116,7 @@ public class CommissionHudPositionScreen extends Screen {
     @Override
     public void onClose() {
         MiningConfigSaver.save();
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 
     private static final class MiningConfigSaver {

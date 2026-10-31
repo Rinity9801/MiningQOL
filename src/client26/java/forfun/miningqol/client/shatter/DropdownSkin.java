@@ -213,8 +213,8 @@ public class DropdownSkin implements Skin {
 	/** The HUD mover, returning to this menu (panels as they were) on Done. */
 	private static void openHudEditor() {
 		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-		var here = mc.screen;
-		mc.schedule(() -> mc.setScreen(new forfun.miningqol.client.gui.HudPositionScreen(here)));
+		var here = mc.gui.screen();
+		mc.schedule(() -> mc.gui.setScreen(new forfun.miningqol.client.gui.HudPositionScreen(here)));
 	}
 
 	/** Same height and pill ends as the search bar, sitting just to its right. */

@@ -208,7 +208,7 @@ public class AutoClickerManager {
         // Pickaxe Cooldown HUD shows decides, firing the moment it reads Ready.
         boolean ready = customCooldownEnabled ? customRemainingSeconds() <= 0 : hudSaysReady();
         // Not from inside a menu (chat included): the right-click would only hit the GUI.
-        boolean inGui = client.screen != null;
+        boolean inGui = client.gui.screen() != null;
         if (enabled && !inSequence && canStartNewSequence && ready && !inGui) {
             debug(client, "Fire | custom=" + customCooldownEnabled + " lastUse=" + lastAbilityUseAt);
             inSequence = true;

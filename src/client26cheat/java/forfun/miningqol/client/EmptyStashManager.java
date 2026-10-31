@@ -176,7 +176,7 @@ public class EmptyStashManager {
                 }
             }
             case CLICK_PICKAXE -> {
-                if (client.screen instanceof AbstractContainerScreen<?>) {
+                if (client.gui.screen() instanceof AbstractContainerScreen<?>) {
                     click(client, pickaxeSlot, 0, ContainerInput.PICKUP);
                 }
                 state = State.SEND_VIEWSTASH;
@@ -223,7 +223,7 @@ public class EmptyStashManager {
     }
 
     private static int currentContainerId(Minecraft client) {
-        if (client.screen instanceof AbstractContainerScreen<?> screen) {
+        if (client.gui.screen() instanceof AbstractContainerScreen<?> screen) {
             return screen.getMenu().containerId;
         }
         return -1;
@@ -245,7 +245,7 @@ public class EmptyStashManager {
 
     /** True if the open GUI (any id) has a non-player slot named exactly this. */
     private static boolean guiHasExactName(Minecraft client, String exactName) {
-        if (!(client.screen instanceof AbstractContainerScreen<?> screen)) return false;
+        if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) return false;
         for (Slot slot : screen.getMenu().slots) {
             if (slot.container == client.player.getInventory()) continue;
             if (slot.getItem().isEmpty()) continue;
@@ -263,7 +263,7 @@ public class EmptyStashManager {
         if (requireNewGui) {
             screen = newGui(client);
         } else {
-            screen = client.screen instanceof AbstractContainerScreen<?> s2 ? s2 : null;
+            screen = client.gui.screen() instanceof AbstractContainerScreen<?> s2 ? s2 : null;
         }
         if (screen == null) return null;
         for (Slot slot : screen.getMenu().slots) {
@@ -274,7 +274,7 @@ public class EmptyStashManager {
     }
 
     private static AbstractContainerScreen<?> newGui(Minecraft client) {
-        if (client.screen instanceof AbstractContainerScreen<?> screen
+        if (client.gui.screen() instanceof AbstractContainerScreen<?> screen
                 && screen.getMenu().containerId != lastContainerId) {
             return screen;
         }
@@ -282,13 +282,13 @@ public class EmptyStashManager {
     }
 
     private static void click(Minecraft client, int slotIndex, int button, ContainerInput type) {
-        if (!(client.screen instanceof AbstractContainerScreen<?> screen)) return;
+        if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) return;
         client.gameMode.handleContainerInput(screen.getMenu().containerId, slotIndex, button, type, client.player);
     }
 
     /** True if the open GUI still shows the regular (non-enchanted) material. */
     private static boolean stashHasRegularMaterial(Minecraft client) {
-        if (!(client.screen instanceof AbstractContainerScreen<?> screen)) return false;
+        if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) return false;
         String needle = material.stashName.toLowerCase(Locale.ROOT);
         for (Slot slot : screen.getMenu().slots) {
             if (slot.container == client.player.getInventory()) continue;

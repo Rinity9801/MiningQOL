@@ -57,21 +57,25 @@ Chat color codes: use `§` escapes in string literals, never a raw `§`.
 `RenderLayer`/`RenderLayers` + raw GL11 state calls DO NOT EXIST on 26.1.2.
 
 **World rendering** (boxes/lines/labels in the world): hook is already built —
-`forfun.miningqol.mixin.client.LevelRendererMixin` injects at TAIL of
-`LevelRenderer.renderLevel` and calls into renderers with
-`(CameraRenderState cameraState, Matrix4fc viewMatrix)`. Follow
+`forfun.miningqol.client.WorldRenderHook` runs on Fabric's
+`LevelRenderEvents.COLLECT_SUBMITS` and calls into renderers with
+`(CameraRenderState cameraState)`. Follow
 `client26/.../waypoints/OrderedWaypointRenderer.java` as the canonical example:
-- buffer source: `Minecraft.getInstance().renderBuffers().bufferSource()`
+- buffer source: `WorldBuffers.get()` (`utils/render`) — 26.2 removed
+  `MultiBufferSource`; this records vertices and submits them to the frame's
+  `SubmitNodeCollector` on `endBatch()`
 - camera position: `cameraState.pos` (Vec3); orientation: `cameraState.orientation`
 - render types live in `net.minecraft.client.renderer.rendertype.RenderTypes`
 - see-through (through-wall) colored quads: `RenderTypes.textBackgroundSeeThrough()`
   with `addVertex(matrix,x,y,z).setColor(r,g,b,a).setLight(15728880)`
 - depth-tested lines: `RenderTypes.lines()` with `.setColor().setNormal().setLineWidth(2f)`
-- world text: `client.font.drawInBatch(text, x, y, argb, shadow, matrix, buffers,
-  Font.DisplayMode.SEE_THROUGH, 0x40000000, 15728880)`
-- vertices are camera-relative; multiply through the passed view matrix
+- world text: `WorldBuffers.collector().submitText(poseStack, x, y,
+  Component.literal(text).getVisualOrderText(), shadow, Font.DisplayMode.SEE_THROUGH,
+  15728880, argb, 0x40000000, 0)`
+- vertices are camera-relative; do NOT multiply by a view matrix (the feature pass
+  applies the camera rotation through the model-view matrix)
 - finish with `buffers.endBatch()`
-- new world renderers: add a call in `LevelRendererMixin`, gate everything on
+- new world renderers: add a call in `WorldRenderHook`, gate everything on
   your feature's enabled flag first
 
 **HUD rendering** (2D overlay): register via

@@ -1,8 +1,10 @@
 package forfun.miningqol.client.utils.render;
 
+import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.CompareOp;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import forfun.miningqol.mixin.client.RenderTypeInvoker;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
@@ -58,20 +60,22 @@ public final class ChamsRenderLayer {
             .withLocation(Identifier.fromNamespaceAndPath("miningqol", "pipeline/chams_hidden"))
             .withVertexShader(source.getVertexShader())
             .withFragmentShader(source.getFragmentShader())
-            .withVertexFormat(source.getVertexFormat(), source.getVertexFormatMode())
+            .withPrimitiveTopology(source.getPrimitiveTopology())
             .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN, false))
-            .withColorTargetState(source.getColorTargetState())
             .withPolygonMode(source.getPolygonMode())
             .withCull(source.isCull());
 
-        for (String sampler : source.getSamplers()) builder.withSampler(sampler);
-        for (RenderPipeline.UniformDescription uniform : source.getUniforms()) {
-            if (uniform.textureFormat() != null) {
-                builder.withUniform(uniform.name(), uniform.type(), uniform.textureFormat());
-            } else {
-                builder.withUniform(uniform.name(), uniform.type());
-            }
+        VertexFormat[] bindings = source.getVertexFormatBindings();
+        for (int i = 0; i < bindings.length; i++) {
+            if (bindings[i] != null) builder.withVertexBinding(i, bindings[i]);
         }
+        ColorTargetState[] targets = source.getColorTargetStates();
+        for (int i = 0; i < targets.length; i++) {
+            if (targets[i] != null) builder.withColorTargetState(i, targets[i]);
+            else builder.withUnusedColorTargetState(i);
+        }
+        // 26.2 groups samplers and uniforms into bind group layouts.
+        source.getBindGroupLayouts().forEach(builder::withBindGroupLayout);
         source.getShaderDefines().values().forEach((key, value) -> {
             try {
                 builder.withShaderDefine(key, Integer.parseInt(value));

@@ -49,12 +49,6 @@ public class ContainerScreenHideMixin {
         if (miningqol$hideAll()) ci.cancel();
     }
 
-    @Inject(method = "extractSnapbackItem(Lnet/minecraft/client/gui/GuiGraphicsExtractor;)V",
-            at = @At("HEAD"), cancellable = true)
-    private void miningqol$hideSnapback(GuiGraphicsExtractor ctx, CallbackInfo ci) {
-        if (miningqol$hideAll()) ci.cancel();
-    }
-
     private boolean miningqol$hideAll() {
         if (forfun.miningqol.client.CommissionGui.isReplacing(
                 (net.minecraft.client.gui.screens.Screen) (Object) this)) {

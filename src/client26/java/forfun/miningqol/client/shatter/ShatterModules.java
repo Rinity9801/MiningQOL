@@ -216,11 +216,21 @@ public final class ShatterModules {
             .add(new StringSetting("Current Comms", "Commissions you've done — completions add to it", "", "e.g. 1234")
                 .bind(CommTracker::getTotalInput, CommTracker::setTotalInput))
             .add(new BoolSetting("Stats HUD", "On-screen Total / Comms/hr / Session panel", false)
-                .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled))
-            .add(new BoolSetting("Stats in Menu", "Total + session above the commissions menu", true)
-                .bind(CommissionGui::isStatsInMenu, CommissionGui::setStatsInMenu))
-            .add(new ActionSetting("Reset Menu Line", "Put the menu line back above the menu", false,
-                () -> CommissionGui.setStatsMoved(false))));
+                .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled)));
+
+        Modules.register(new Module("Commission Count", "Your commission total on screen", huds,
+            forfun.miningqol.client.CommCountHUD::isEnabled, forfun.miningqol.client.CommCountHUD::setEnabled)
+            .add(new BoolSetting("Hide with F1", "Hide when the vanilla HUD is hidden", false)
+                .bind(forfun.miningqol.client.CommCountHUD::isHideWithF1, forfun.miningqol.client.CommCountHUD::setHideWithF1))
+            .add(new ModeSetting("Text Align", "Where the lines sit in the HUD box", "Left", "Left", "Center", "Right")
+                .bind(() -> List.of("Left", "Center", "Right").get(forfun.miningqol.client.CommCountHUD.getTextAlign()),
+                    v -> forfun.miningqol.client.CommCountHUD.setTextAlign(List.of("Left", "Center", "Right").indexOf(v))))
+            .add(new BoolSetting("Show Session", "Second line with this session's count", true)
+                .bind(forfun.miningqol.client.CommCountHUD::isShowSession, forfun.miningqol.client.CommCountHUD::setShowSession))
+            .add(new BoolSetting("Number Only", "Hide the labels", false)
+                .bind(forfun.miningqol.client.CommCountHUD::isNumberOnly, forfun.miningqol.client.CommCountHUD::setNumberOnly))
+            .add(ColorSetting.ofRgb("Label Color", "", forfun.miningqol.client.CommCountHUD::getLabelColor, forfun.miningqol.client.CommCountHUD::setLabelColor))
+            .add(ColorSetting.ofRgb("Value Color", "", forfun.miningqol.client.CommCountHUD::getValueColor, forfun.miningqol.client.CommCountHUD::setValueColor)));
 
         Modules.register(new Module("Comm Menu GUI", "Odin-style commissions menu replacement", huds,
             CommissionGui::isEnabled, CommissionGui::setEnabled)
@@ -417,6 +427,16 @@ public final class ShatterModules {
 
         Modules.register(new Module("Block Outline", "Outline blocks around the next waypoint", waypoints,
             OrderedWaypointManager::isBlockOutlineAroundWaypoint, OrderedWaypointManager::setBlockOutlineAroundWaypoint)
+            .add(ColorSetting.ofRgb("Outline Color", "Edges (and the fill, fainter)",
+                OrderedWaypointManager::getBlockOutlineColor, OrderedWaypointManager::setBlockOutlineColor,
+                OrderedWaypointManager::getBlockOutlineAlpha, OrderedWaypointManager::setBlockOutlineAlpha))
+            .add(new BoolSetting("Visible Edges Only", "Only the side facing you, still through walls", true)
+                .bind(OrderedWaypointManager::isBlockOutlineVisibleOnly, OrderedWaypointManager::setBlockOutlineVisibleOnly))
+            .add(new SliderSetting("Outline Radius", "Blocks around the waypoint to outline", 3, 1, 8, 1, " blocks")
+                .bind(() -> (double) OrderedWaypointManager.getBlockOutlineRadius(),
+                    v -> OrderedWaypointManager.setBlockOutlineRadius(v.intValue())))
+            .add(new BoolSetting("Outline Current Waypoint", "Keep the blocks at the waypoint you've reached outlined too", false)
+                .bind(OrderedWaypointManager::isBlockOutlineCurrent, OrderedWaypointManager::setBlockOutlineCurrent))
             .add(new BoolSetting("Outline Fill", "Tint the outlined blocks as well as edging them", false)
                 .bind(OrderedWaypointManager::isBlockOutlineFill, OrderedWaypointManager::setBlockOutlineFill))
             .add(new SliderSetting("Outline Thickness", "Edge thickness", 2, 0.5, 9, 0.5, "")
@@ -517,8 +537,8 @@ public final class ShatterModules {
 
     /** Opens an editor whose Done/Esc comes back to this menu, panels and scroll as they were. */
     private static void openScreen(java.util.function.Function<Screen, Screen> screen) {
-        Screen here = Minecraft.getInstance().screen;
-        Minecraft.getInstance().schedule(() -> Minecraft.getInstance().setScreen(screen.apply(here)));
+        Screen here = Minecraft.getInstance().gui.screen();
+        Minecraft.getInstance().schedule(() -> Minecraft.getInstance().gui.setScreen(screen.apply(here)));
     }
 
     private static List<String> overlayModeNames() {

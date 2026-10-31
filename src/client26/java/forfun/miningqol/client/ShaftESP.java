@@ -4,7 +4,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import forfun.miningqol.client.utils.render.SeeThroughBoxRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.MultiBufferSource;
+import forfun.miningqol.client.utils.render.WorldBuffers;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.entity.Entity;
@@ -18,7 +18,6 @@ import net.minecraft.world.scores.Objective;
 import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
 import java.util.Collection;
@@ -252,7 +251,7 @@ public class ShaftESP {
             || client.getConnection().getPlayerInfo(player.getUUID()) == null;
     }
 
-    public static void render(CameraRenderState cameraState, Matrix4fc viewMatrix) {
+    public static void render(CameraRenderState cameraState) {
         // External mode hands rendering to the overlay app — drawing here too would
         // double up every box. Gated on a live overlay so closing the overlay (or the
         // feed being off) falls back to in-game drawing instead of showing nothing.
@@ -261,8 +260,9 @@ public class ShaftESP {
         if (client.level == null || trackedEntities.isEmpty()) return;
 
         Vec3 cam = cameraState.pos;
-        MultiBufferSource.BufferSource buffers = client.renderBuffers().bufferSource();
-        Matrix4f pose = new Matrix4f(viewMatrix);
+        WorldBuffers buffers = WorldBuffers.get();
+        // Camera-relative: the 26.2 feature pass applies the view rotation itself.
+        Matrix4f pose = new Matrix4f();
 
         // One buffer acquisition, one endBatch at the very end — the same shape
         // OrderedWaypointRenderer uses, whose tracer works. Ending the batch between the
@@ -324,7 +324,7 @@ public class ShaftESP {
         buffers.endBatch();
     }
 
-    private static void line(MultiBufferSource.BufferSource buffers, Matrix4f pose, Vec3 camPos,
+    private static void line(WorldBuffers buffers, Matrix4f pose, Vec3 camPos,
                              Vec3 from, Vec3 to, float[] color, float alpha) {
         VertexConsumer buffer = buffers.getBuffer(RenderTypes.lines());
 

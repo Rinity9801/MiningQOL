@@ -186,7 +186,7 @@ public final class MayhemHUD {
 
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        if (hideWithF1 && client.options.hideGui) return;
+        if (hideWithF1 && client.gui.hud.isHidden()) return;
 
         ctx.text(client.font, currentText(), ANCHOR.x(), ANCHOR.y(), 0xFFFFFFFF, true);
     }

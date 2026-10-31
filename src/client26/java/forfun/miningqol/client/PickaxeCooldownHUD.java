@@ -189,7 +189,7 @@ public class PickaxeCooldownHUD {
 
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        if (hideWithF1 && client.options.hideGui) return;
+        if (hideWithF1 && client.gui.hud.isHidden()) return;
 
         Font font = client.font;
 
@@ -226,9 +226,9 @@ public class PickaxeCooldownHUD {
                     long currentTime = System.currentTimeMillis();
 
                     if (lastTitleCooldown != interpolatedCooldown || currentTime - lastTitleSetTime > 500) {
-                        client.gui.setTimes(0, 15, 3);
-                        client.gui.setTitle(Component.literal(""));
-                        client.gui.setSubtitle(formatText(
+                        client.gui.hud.setTimes(0, 15, 3);
+                        client.gui.hud.setTitle(Component.literal(""));
+                        client.gui.hud.setSubtitle(formatText(
                             abilityName,
                             secs(interpolatedCooldown),
                             cooldownLabelColor,

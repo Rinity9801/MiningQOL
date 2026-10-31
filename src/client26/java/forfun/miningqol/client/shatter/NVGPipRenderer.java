@@ -4,17 +4,19 @@ import com.mojang.blaze3d.opengl.DirectStateAccess;
 import com.mojang.blaze3d.opengl.GlConst;
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.opengl.GlTexture;
+import com.mojang.blaze3d.opengl.GlTextureView;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.gui.pip.PictureInPictureRenderState;
 import org.joml.Matrix3x2f;
 import org.lwjgl.opengl.GL33C;
+
+import java.util.List;
 
 /**
  * Lets NanoVG draw into Minecraft's GUI: the GUI renderer hands us an off-screen colour+depth texture,
@@ -24,21 +26,18 @@ import org.lwjgl.opengl.GL33C;
 public class NVGPipRenderer extends PictureInPictureRenderer<NVGPipRenderer.State> {
 	private final xyz.meowing.vexel.api.nvg.GlStateSnapshot glState = new xyz.meowing.vexel.api.nvg.GlStateSnapshot();
 
-	public NVGPipRenderer(MultiBufferSource.BufferSource bufferSource) {
-		super(bufferSource);
-	}
-
 	@Override
-	protected void renderToTexture(State state, PoseStack poseStack) {
+	protected void renderToTexture(State state, PoseStack poseStack, SubmitNodeCollector submitNodeCollector) {
 		GpuTextureView colorView = RenderSystem.outputColorTextureOverride;
 		GpuTextureView depthView = RenderSystem.outputDepthTextureOverride;
 		if (colorView == null || depthView == null) return;
 		if (!(RenderSystem.getDevice().backend instanceof GlDevice glDevice)) return;
-		if (!(colorView.texture() instanceof GlTexture colorTex) || !(depthView.texture() instanceof GlTexture depthTex)) return;
+		if (!(colorView instanceof GlTextureView colorGl) || !(depthView instanceof GlTextureView depthGl)) return;
 
 		DirectStateAccess dsa = glDevice.directStateAccess();
 		int width = colorView.getWidth(0), height = colorView.getHeight(0);
-		int fbo = colorTex.getFbo(dsa, depthTex);
+		// 26.2 moved per-texture FBOs into the device's framebuffer cache (same call GlCommandEncoder uses).
+		int fbo = glDevice.frameBufferCache().getFbo(dsa, List.of(colorGl), depthGl);
 		GlStateManager._glBindFramebuffer(GlConst.GL_FRAMEBUFFER, fbo);
 		GlStateManager._viewport(0, 0, width, height);
 

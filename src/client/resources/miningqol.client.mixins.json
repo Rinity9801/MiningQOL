@@ -4,7 +4,7 @@
   "package": "forfun.miningqol.mixin.client",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    //? if is26_1_2 {
+    //? if is26 {
     //?} else {
     "EntityRendererMixin",
     "ChatHudMixin",

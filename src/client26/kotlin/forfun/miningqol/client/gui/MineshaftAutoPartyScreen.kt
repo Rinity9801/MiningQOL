@@ -574,7 +574,7 @@ class MineshaftAutoPartyScreen(private val parent: Screen?) : VexelScreen("Mines
     private fun close() {
         save()
         val back = parent
-        Minecraft.getInstance().schedule(Runnable { Minecraft.getInstance().setScreen(back) })
+        Minecraft.getInstance().schedule(Runnable { Minecraft.getInstance().gui.setScreen(back) })
     }
 
     override fun keyPressed(input: KeyEvent): Boolean {

@@ -298,7 +298,7 @@ public class AutoForgeManager {
     public static void onContainerClick(int containerId, int slot, int button, ContainerInput input) {
         if (!recording || running || input != ContainerInput.PICKUP) return;
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null || !(client.screen instanceof ContainerScreen screen)) return;
+        if (client.player == null || !(client.gui.screen() instanceof ContainerScreen screen)) return;
         AbstractContainerMenu menu = screen.getMenu();
         if (menu.containerId != containerId || slot < 0 || slot >= containerSlotCount(menu)) return;
         ItemStack stack = menu.slots.get(slot).getItem();
@@ -364,7 +364,7 @@ public class AutoForgeManager {
     public static boolean isRunning() { return running; }
 
     public static void tick(Minecraft client) {
-        Screen screen = client.screen;
+        Screen screen = client.gui.screen();
         if (screen != lastScreen) {
             lastScreen = screen;
             onScreenChange(client, screen);
@@ -601,7 +601,7 @@ public class AutoForgeManager {
             running = false;
             return;
         }
-        if (!(client.screen instanceof ContainerScreen screen)) {
+        if (!(client.gui.screen() instanceof ContainerScreen screen)) {
             if (++noGuiTicks > 40) stop("Menu closed");
             return;
         }
@@ -661,7 +661,7 @@ public class AutoForgeManager {
             // Only when this is the menu the click was recorded in — the same item name can
             // sit in the previous menu too (the recipe in the list and on its confirm page).
             Minecraft client = Minecraft.getInstance();
-            String title = client.screen == null ? "" : clean(client.screen.getTitle().getString());
+            String title = client.gui.screen() == null ? "" : clean(client.gui.screen().getTitle().getString());
             return title.equals(step.title) && findStep(menu, step) != -1;
         }
         return step.type == STEP_NAME && findStep(menu, step) != -1;
@@ -779,7 +779,7 @@ public class AutoForgeManager {
     public static void debugDump(boolean fullLore) {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
-        if (!(client.screen instanceof ContainerScreen screen)) {
+        if (!(client.gui.screen() instanceof ContainerScreen screen)) {
             msg(client, "§cNo container GUI open");
             return;
         }

@@ -1,8 +1,8 @@
 package forfun.miningqol.mixin.client;
 
 import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.gui.Gui;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.Hud;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,7 +13,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * commissions menu GUI is replacing the Royal Pigeon screen — the grid floats over the
  * bare world, like Odin's terminals, with nothing else drawn.
  */
-@Mixin(Gui.class)
+// 26.2 split the HUD out of Gui (which now owns screens) into Hud.
+@Mixin(Hud.class)
 public class GuiHideMixin {
     @Inject(method = "extractRenderState(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/DeltaTracker;)V",
             at = @At("HEAD"), cancellable = true)

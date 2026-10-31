@@ -59,18 +59,18 @@ public class CommStatsHUD {
             return;
         }
 
-        boolean editor = mc.screen instanceof forfun.miningqol.client.gui.CommStatsHudPositionScreen
-            || (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen
+        boolean editor = mc.gui.screen() instanceof forfun.miningqol.client.gui.CommStatsHudPositionScreen
+            || (mc.gui.screen() instanceof forfun.miningqol.client.gui.HudPositionScreen
                 && CommTracker.isHudShown());
         if (!editor) {
             if (!CommTracker.isHudShown()) {
                 return;
             }
             // Shares the commission HUD's "Hide with F1" toggle — the two draw together.
-            if (CommissionHUD.isHideWithF1() && mc.options.hideGui) {
+            if (CommissionHUD.isHideWithF1() && mc.gui.hud.isHidden()) {
                 return;
             }
-            if (mc.screen != null && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)) {
+            if (mc.gui.screen() != null && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)) {
                 return;
             }
             long now = System.currentTimeMillis();

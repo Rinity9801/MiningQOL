@@ -6,6 +6,7 @@ import forfun.miningqol.client.utils.render.BlockOverlayRenderTypes;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.BlockOutlineRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -60,7 +61,7 @@ public final class BlockOverlay {
 
     private static boolean beforeBlockOutline(LevelRenderContext context, BlockOutlineRenderState outlineState) {
         Minecraft client = Minecraft.getInstance();
-        if (!enabled || client.options.hideGui) return true;
+        if (!enabled || client.gui.hud.isHidden()) return true;
         if (hideDuringEtherwarp && shouldHideForEtherwarp(client)) return false;
         if (client.level == null) return true;
 
@@ -81,24 +82,25 @@ public final class BlockOverlay {
         double maxY = pos.getY() + shape.max(Direction.Axis.Y);
         double maxZ = pos.getZ() + shape.max(Direction.Axis.Z);
 
-        Vec3 camera = client.gameRenderer.getMainCamera().position();
+        Vec3 camera = client.gameRenderer.mainCamera().position();
         PoseStack matrices = context.poseStack();
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
-        PoseStack.Pose pose = matrices.last();
 
+        // 26.2: geometry is submitted and drawn later in the frame, so capture this frame's values.
+        SubmitNodeCollector collector = context.submitNodeCollector();
         if (mode == Mode.FILL || mode == Mode.FILLED_OUTLINE) {
-            VertexConsumer fill = context.bufferSource().getBuffer(
-                phase ? BlockOverlayRenderTypes.FILLED_PHASE : BlockOverlayRenderTypes.FILLED);
-            addFilledBox(fill, pose, minX, minY, minZ, maxX, maxY, maxZ,
-                fillColor[0], fillColor[1], fillColor[2], fillAlpha);
+            float r = fillColor[0], g = fillColor[1], b = fillColor[2], a = fillAlpha;
+            collector.submitCustomGeometry(matrices,
+                phase ? BlockOverlayRenderTypes.FILLED_PHASE : BlockOverlayRenderTypes.FILLED,
+                (pose, fill) -> addFilledBox(fill, pose, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, a));
         }
 
         if (mode == Mode.OUTLINE || mode == Mode.FILLED_OUTLINE) {
-            VertexConsumer lines = context.bufferSource().getBuffer(
-                phase ? BlockOverlayRenderTypes.LINES_PHASE : BlockOverlayRenderTypes.LINES);
-            addLineBox(lines, pose, minX, minY, minZ, maxX, maxY, maxZ,
-                outlineColor[0], outlineColor[1], outlineColor[2], outlineAlpha, lineWidth);
+            float r = outlineColor[0], g = outlineColor[1], b = outlineColor[2], a = outlineAlpha, width = lineWidth;
+            collector.submitCustomGeometry(matrices,
+                phase ? BlockOverlayRenderTypes.LINES_PHASE : BlockOverlayRenderTypes.LINES,
+                (pose, lines) -> addLineBox(lines, pose, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, a, width));
         }
 
         matrices.popPose();

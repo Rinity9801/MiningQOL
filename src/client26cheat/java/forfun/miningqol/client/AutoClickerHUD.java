@@ -21,7 +21,7 @@ public class AutoClickerHUD {
 
     public static void render(GuiGraphicsExtractor ctx) {
         Minecraft client = Minecraft.getInstance();
-        if (!enabled || !AutoClickerManager.isEnabled() || client.player == null || client.options.hideGui) {
+        if (!enabled || !AutoClickerManager.isEnabled() || client.player == null || client.gui.hud.isHidden()) {
             return;
         }
 

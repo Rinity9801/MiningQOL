@@ -34,7 +34,7 @@ public class CommandKeybindManager {
         if (client.player == null) return;
 
         // Don't process keybinds when a screen is open (GUI, chat, etc.)
-        if (client.screen != null) return;
+        if (client.gui.screen() != null) return;
 
         for (Map.Entry<Integer, String> entry : keybindCommands.entrySet()) {
             int keyCode = entry.getKey();

@@ -123,6 +123,6 @@ public class PickaxeCooldownPositionScreen extends Screen {
             MiningqolClient.getConfig().loadFromGame();
             MiningqolClient.getConfig().save();
         }
-        Minecraft.getInstance().setScreen(parent);
+        Minecraft.getInstance().gui.setScreen(parent);
     }
 }

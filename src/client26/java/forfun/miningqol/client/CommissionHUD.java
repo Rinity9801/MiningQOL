@@ -428,8 +428,8 @@ public class CommissionHUD {
             return;   // the custom commissions menu owns the screen
         }
 
-        boolean editor = mc.screen instanceof forfun.miningqol.client.gui.CommissionHudPositionScreen
-            || (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen && enabled);
+        boolean editor = mc.gui.screen() instanceof forfun.miningqol.client.gui.CommissionHudPositionScreen
+            || (mc.gui.screen() instanceof forfun.miningqol.client.gui.HudPositionScreen && enabled);
         if (editor) {
             drawPanelNvg(sampleEntries(), true);
             return;
@@ -438,15 +438,15 @@ public class CommissionHUD {
         if (!enabled) {
             return;
         }
-        if (hideWithF1 && mc.options.hideGui) {
+        if (hideWithF1 && mc.gui.hud.isHidden()) {
             return;
         }
         // Vexel's NanoVG pass draws on top of open screens, so anything left un-gated paints
         // over the screen. Chat is allowed by convention, and the Commissions menu itself when
         // showOverMenus is on — watching the panel update as you claim is the point of that
         // toggle. Every other screen hides it, the same as the vanilla-drawn HUDs.
-        if (mc.screen != null
-                && !(mc.screen instanceof net.minecraft.client.gui.screens.ChatScreen)
+        if (mc.gui.screen() != null
+                && !(mc.gui.screen() instanceof net.minecraft.client.gui.screens.ChatScreen)
                 && !(showOverMenus && isCommissionMenuOpen(mc))) {
             return;
         }
@@ -479,10 +479,10 @@ public class CommissionHUD {
         if (mc.player == null || mc.level == null) {
             return;
         }
-        if (hideWithF1 && mc.options.hideGui) {
+        if (hideWithF1 && mc.gui.hud.isHidden()) {
             return;
         }
-        if (mc.screen instanceof forfun.miningqol.client.gui.HudPositionScreen) {
+        if (mc.gui.screen() instanceof forfun.miningqol.client.gui.HudPositionScreen) {
             return;   // the editor draws the sample itself
         }
         if (CommissionGui.isActive()) {
@@ -809,7 +809,7 @@ public class CommissionHUD {
         }
         List<PlayerInfo> infos = new ArrayList<>(mc.getConnection().getListedOnlinePlayers());
         infos.sort(TAB_ORDER);
-        PlayerTabOverlay overlay = mc.gui.getTabList();
+        PlayerTabOverlay overlay = mc.gui.hud.getTabList();
         List<String> out = new ArrayList<>(infos.size());
         for (PlayerInfo info : infos) {
             Component name = overlay.getNameForDisplay(info);
@@ -822,10 +822,10 @@ public class CommissionHUD {
 
     /** Whether the commissions menu is the open screen right now. */
     static boolean isCommissionMenuOpen(Minecraft mc) {
-        if (mc.screen == null) {
+        if (mc.gui.screen() == null) {
             return false;
         }
-        String title = mc.screen.getTitle() == null ? "" : mc.screen.getTitle().getString();
+        String title = mc.gui.screen().getTitle() == null ? "" : mc.gui.screen().getTitle().getString();
         return FORMATTING.matcher(title).replaceAll("").toLowerCase(Locale.ROOT).contains("commission");
     }
 

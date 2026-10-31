@@ -3,7 +3,7 @@ package forfun.miningqol.client;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import forfun.miningqol.client.utils.render.SeeThroughBoxRenderer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
+import forfun.miningqol.client.utils.render.WorldBuffers;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.entity.Entity;
@@ -11,7 +11,6 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
 import java.util.List;
@@ -115,15 +114,16 @@ public final class MineshaftPortal {
         return space >= 0 ? name.substring(space + 1) : name;
     }
 
-    public static void render(CameraRenderState cameraState, Matrix4fc viewMatrix) {
+    public static void render(CameraRenderState cameraState) {
         Minecraft client = Minecraft.getInstance();
-        if (!enabled || portalId == -1 || client.level == null || client.options.hideGui) return;
+        if (!enabled || portalId == -1 || client.level == null || client.gui.hud.isHidden()) return;
         Entity portal = client.level.getEntity(portalId);
         if (portal == null) return;
 
         Vec3 cam = cameraState.pos;
-        Matrix4f pose = new Matrix4f(viewMatrix);
-        MultiBufferSource.BufferSource buffers = client.renderBuffers().bufferSource();
+        // Camera-relative: the 26.2 feature pass applies the view rotation itself.
+        Matrix4f pose = new Matrix4f();
+        WorldBuffers buffers = WorldBuffers.get();
         VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
 
         AABB box = portal.getBoundingBox();

@@ -4,31 +4,32 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.MultiBufferSource;
+import forfun.miningqol.client.utils.render.WorldBuffers;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
-import org.joml.Matrix4fc;
 import org.joml.Vector3f;
 
 import java.util.List;
 
 /**
  * 26.1.2 port of the ordered waypoint renderer. The RenderLayer/GL-state approach from
- * 1.21.x is gone; this draws through the immediate BufferSource at the tail of
- * LevelRenderer.renderLevel (see LevelRendererMixin):
+ * 1.21.x is gone; on 26.2 this draws through WorldBuffers while the level collects
+ * submits (see WorldRenderHook):
  *  - boxes:  RenderTypes.textBackgroundSeeThrough() — a no-depth colored-quad layer
  *            (what vanilla nametag backgrounds use), so boxes show through walls
- *  - labels: Font.drawInBatch with DisplayMode.SEE_THROUGH
+ *  - labels: SubmitNodeCollector.submitText with DisplayMode.SEE_THROUGH
  *  - lines:  RenderTypes.lines() (depth-tested; no stock see-through line layer, which
  *            is why the block outline draws its edges as thin quads — see buildOutlineEdges)
  */
 public class OrderedWaypointRenderer {
     private static final int FULL_BRIGHT = 15728880;
 
-    public static void render(CameraRenderState cameraState, Matrix4fc viewMatrix) {
+    public static void render(CameraRenderState cameraState) {
         if (!OrderedWaypointManager.isEnabled()) return;
 
         Minecraft client = Minecraft.getInstance();
@@ -37,8 +38,9 @@ public class OrderedWaypointRenderer {
         List<OrderedWaypoint> route = OrderedWaypointManager.getCurrentRoute();
         if (route.isEmpty()) return;
 
-        MultiBufferSource.BufferSource buffers = client.renderBuffers().bufferSource();
-        Matrix4f pose = new Matrix4f(viewMatrix);
+        WorldBuffers buffers = WorldBuffers.get();
+        // Camera-relative: the 26.2 feature pass applies the view rotation itself.
+        Matrix4f pose = new Matrix4f();
         Vec3 camPos = cameraState.pos;
 
         OrderedWaypoint current = OrderedWaypointManager.getCurrentWaypoint();
@@ -117,7 +119,11 @@ public class OrderedWaypointRenderer {
 
         // ===== Block outline around the next waypoint (lobby-check blocks) =====
         if (target != null && OrderedWaypointManager.isBlockOutlineAroundWaypoint()) {
-            refreshOutlineCache(client, target.getPosition());
+            // Outline Current Waypoint: the blocks at the waypoint you've reached keep their outline
+            // too, instead of it jumping ahead the moment you arrive and leaving what you mine bare.
+            BlockPos alsoAt = OrderedWaypointManager.isBlockOutlineCurrent() && current != null && current != target
+                ? current.getPosition() : null;
+            refreshOutlineCache(client, target.getPosition(), alsoAt);
             float[] outlineColor = OrderedWaypointManager.getBlockOutlineColor();
             float outlineAlpha = OrderedWaypointManager.getBlockOutlineAlpha();
             float dial = OrderedWaypointManager.getBlockOutlineThickness();
@@ -126,14 +132,21 @@ public class OrderedWaypointRenderer {
             // Faces first so the edges land on top of the fill rather than under it.
             // Re-fetched: line() asked the immediate buffer source for a different render
             // type, which ends the boxes' buffer — writing to the old one crashes "Not building!".
+            // Visible Edges Only: still drawn through walls (the coal sits inside them, so depth
+            // testing hid it all), but only edges on a face turned towards the camera — the far
+            // side of the vein stays undrawn, so it reads as the shape you're looking at.
+            boolean visibleOnly = OrderedWaypointManager.isBlockOutlineVisibleOnly();
             quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
             if (OrderedWaypointManager.isBlockOutlineFill()) {
                 for (double[] f : cachedFaces) {
+                    if (visibleOnly && !facesCamera((int) f[3], facePlane(f), camPos)) continue;
                     face(quads, pose, camPos, f[0], f[1], f[2], (int) f[3],
                         outlineColor, outlineAlpha * FILL_ALPHA);
                 }
             }
             for (double[] e : cachedEdges) {
+                if (visibleOnly && !(facesCamera((int) e[6], e[7], camPos)
+                        || (e[8] >= 0 && facesCamera((int) e[8], e[9], camPos)))) continue;
                 edge(quads, pose, camPos, e[0], e[1], e[2], e[3], e[4], e[5],
                     outlineColor, outlineAlpha, dial);
             }
@@ -141,20 +154,21 @@ public class OrderedWaypointRenderer {
             cachedEdges = java.util.List.of();
             cachedFaces = java.util.List.of();
             outlineCenter = null;
+            outlineAlsoAt = null;
         }
 
         // ===== Labels =====
         if (OrderedWaypointManager.isEditMode()) {
             for (OrderedWaypoint wp : route) {
-                label(buffers, viewMatrix, cameraState, wp);
+                label(cameraState, wp);
             }
         } else {
             if (current != null) {
-                label(buffers, viewMatrix, cameraState, current);
+                label(cameraState, current);
             }
             for (OrderedWaypoint next : nextWaypoints) {
                 if (next != current) {
-                    label(buffers, viewMatrix, cameraState, next);
+                    label(cameraState, next);
                 }
             }
         }
@@ -233,13 +247,15 @@ public class OrderedWaypointRenderer {
     /** The fill sits well under the outline so the edges stay the thing you read. */
     private static final float FILL_ALPHA = 0.25f;
     private static BlockPos outlineCenter;
+    /** The current waypoint, when it's outlined as well; null when it isn't. */
+    private static BlockPos outlineAlsoAt;
     private static long outlineBuiltAt;
     private static String outlineBlockId;
     private static int outlineRadius = -1;
     /** Blocks get mined while you look at them, so the cache still has to expire on its own. */
     private static final long OUTLINE_REFRESH_MS = 250;
 
-    private static void refreshOutlineCache(Minecraft client, BlockPos center) {
+    private static void refreshOutlineCache(Minecraft client, BlockPos center, BlockPos alsoAt) {
         String blockId = OrderedWaypointManager.getLobbyCheckBlock();
         int radius = OrderedWaypointManager.getBlockOutlineRadius();
         long now = System.currentTimeMillis();
@@ -247,11 +263,13 @@ public class OrderedWaypointRenderer {
         boolean stale = outlineCenter == null
             || !outlineCenter.equals(center)
             || !blockId.equals(outlineBlockId)
+            || !java.util.Objects.equals(alsoAt, outlineAlsoAt)
             || radius != outlineRadius
             || now - outlineBuiltAt > OUTLINE_REFRESH_MS;
         if (!stale) return;
 
         outlineCenter = center;
+        outlineAlsoAt = alsoAt;
         outlineBlockId = blockId;
         outlineRadius = radius;
         outlineBuiltAt = now;
@@ -273,13 +291,17 @@ public class OrderedWaypointRenderer {
 
         // One mutable cursor for the whole scan instead of a BlockPos per position.
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+        // Both areas go into one set, so where they overlap the shape is outlined once, cleanly,
+        // rather than as two wireframes drawn over each other.
         java.util.Set<BlockPos> matching = new java.util.HashSet<>();
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dy = -radius; dy <= radius; dy++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    cursor.set(center.getX() + dx, center.getY() + dy, center.getZ() + dz);
-                    if (client.level.getBlockState(cursor).getBlock() == expected) {
-                        matching.add(cursor.immutable());
+        for (BlockPos c : alsoAt == null ? java.util.List.of(center) : java.util.List.of(center, alsoAt)) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                for (int dy = -radius; dy <= radius; dy++) {
+                    for (int dz = -radius; dz <= radius; dz++) {
+                        cursor.set(c.getX() + dx, c.getY() + dy, c.getZ() + dz);
+                        if (client.level.getBlockState(cursor).getBlock() == expected) {
+                            matching.add(cursor.immutable());
+                        }
                     }
                 }
             }
@@ -315,6 +337,7 @@ public class OrderedWaypointRenderer {
             int x = pos.getX(), y = pos.getY(), z = pos.getZ();
             double minX = x, minY = y, minZ = z;
             double maxX = x + 1.0, maxY = y + 1.0, maxZ = z + 1.0;
+            int firstEdge = edges.size();
 
             // A face is on the outside when no matching block sits against it. Each direction is
             // tested once and reused; the previous version called pos.north() twice per axis and
@@ -405,8 +428,57 @@ public class OrderedWaypointRenderer {
                 if (!northExposed && !northHasEastExposed) edges.add(new double[]{maxX, minY, minZ, maxX, maxY, minZ});
                 if (!southExposed && !southHasEastExposed) edges.add(new double[]{maxX, minY, maxZ, maxX, maxY, maxZ});
             }
+
+            // Tag each new edge with the exposed faces of this block it lies on (one or two), as
+            // {code, plane} pairs, so the renderer can drop edges on faces turned away from it.
+            boolean[] exposed = {downExposed, upExposed, northExposed, southExposed, westExposed, eastExposed};
+            for (int i = firstEdge; i < edges.size(); i++) {
+                double[] e = edges.get(i);
+                int[] candidates = new int[2];
+                int n = 0;
+                if (e[1] == e[4]) candidates[n++] = e[1] == minY ? 0 : 1;              // on the down/up face
+                if (e[2] == e[5]) candidates[n++] = e[2] == minZ ? 2 : 3;              // north/south
+                if (e[0] == e[3] && n < 2) candidates[n++] = e[0] == minX ? 4 : 5;     // west/east
+                double[] tagged = java.util.Arrays.copyOf(e, 10);
+                tagged[6] = -1; tagged[8] = -1;
+                int slot = 6;
+                for (int k = 0; k < n; k++) {
+                    int code = candidates[k];
+                    if (!exposed[code]) continue;
+                    tagged[slot] = code;
+                    tagged[slot + 1] = planeOf(code, minX, minY, minZ, maxX, maxY, maxZ);
+                    slot += 2;
+                }
+                if (tagged[6] < 0) { // concave corner: belongs to a neighbour's face; always keep
+                    tagged[6] = candidates[0];
+                    tagged[7] = Double.NaN;
+                }
+                edges.set(i, tagged);
+            }
         }
         return edges;
+    }
+
+    private static double planeOf(int code, double minX, double minY, double minZ,
+                                  double maxX, double maxY, double maxZ) {
+        return switch (code) {
+            case 0 -> minY; case 1 -> maxY; case 2 -> minZ; case 3 -> maxZ; case 4 -> minX; default -> maxX;
+        };
+    }
+
+    /** The plane of a fill face {x, y, z, code}. */
+    private static double facePlane(double[] f) {
+        return planeOf((int) f[3], f[0], f[1], f[2], f[0] + 1, f[1] + 1, f[2] + 1);
+    }
+
+    /** Whether the camera is on the outside of a face (down/up/north/south/west/east) at {@code plane}. */
+    private static boolean facesCamera(int code, double plane, Vec3 cam) {
+        if (Double.isNaN(plane)) return true;
+        return switch (code) {
+            case 0 -> cam.y < plane; case 1 -> cam.y > plane;
+            case 2 -> cam.z < plane; case 3 -> cam.z > plane;
+            case 4 -> cam.x < plane; default -> cam.x > plane;
+        };
     }
 
     /**
@@ -485,7 +557,7 @@ public class OrderedWaypointRenderer {
         buffer.addVertex(pose, x4, y4, z4).setColor(r, g, b, a).setLight(FULL_BRIGHT);
     }
 
-    private static void line(MultiBufferSource.BufferSource buffers, Matrix4f pose, Vec3 camPos,
+    private static void line(WorldBuffers buffers, Matrix4f pose, Vec3 camPos,
                              Vec3 from, Vec3 to, float[] color, float alpha) {
         VertexConsumer buffer = buffers.getBuffer(RenderTypes.lines());
 
@@ -513,8 +585,9 @@ public class OrderedWaypointRenderer {
             .setLineWidth(2.0f);
     }
 
-    private static void label(MultiBufferSource.BufferSource buffers, Matrix4fc viewMatrix,
-                              CameraRenderState cameraState, OrderedWaypoint waypoint) {
+    private static void label(CameraRenderState cameraState, OrderedWaypoint waypoint) {
+        SubmitNodeCollector collector = WorldBuffers.collector();
+        if (collector == null) return;
         Minecraft client = Minecraft.getInstance();
         BlockPos pos = waypoint.getPosition();
         Vec3 camPos = cameraState.pos;
@@ -541,7 +614,6 @@ public class OrderedWaypointRenderer {
         if (text.isEmpty()) return;
 
         PoseStack matrices = new PoseStack();
-        matrices.mulPose(viewMatrix);
         matrices.translate(x, y, z);
         matrices.mulPose(cameraState.orientation);
         float scale = (float) (0.025 * Math.max(1, distance / 10));
@@ -549,7 +621,7 @@ public class OrderedWaypointRenderer {
 
         Font font = client.font;
         float width = font.width(text);
-        font.drawInBatch(text, -width / 2.0f, 0, 0xFFFFFFFF, false,
-            matrices.last().pose(), buffers, Font.DisplayMode.SEE_THROUGH, 0x40000000, FULL_BRIGHT);
+        collector.submitText(matrices, -width / 2.0f, 0, Component.literal(text).getVisualOrderText(), false,
+            Font.DisplayMode.SEE_THROUGH, FULL_BRIGHT, 0xFFFFFFFF, 0x40000000, 0);
     }
 }

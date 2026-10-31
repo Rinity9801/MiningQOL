@@ -23,6 +23,9 @@ import java.util.List;
 public class OrderedWaypointManager {
     private static final Logger LOGGER = LoggerFactory.getLogger("OrderedWaypointManager");
     private static final File ROUTES_DIR = new File("config/miningqol_routes");
+    /** Where /mqo convert keeps the original .txt files; outside the folder routes are listed from. */
+    private static final File TXT_BACKUP_DIR = new File(ROUTES_DIR, "txt-backup");
+    private static boolean outdatedNoticeShown = false;
 
     private static List<OrderedWaypoint> currentRoute = new ArrayList<>();
     private static int currentIndex = 0;
@@ -97,6 +100,10 @@ public class OrderedWaypointManager {
     private static float blockOutlineAlpha = 0.8f;
     private static float blockOutlineThickness = 1.5f;
     private static boolean blockOutlineFill = true;
+    /** Only the edges you could actually see: none through walls or on the far side of the vein. */
+    private static boolean blockOutlineVisibleOnly = true;
+    /** Also outline the blocks at the waypoint you've reached, not only the next one. */
+    private static boolean blockOutlineCurrent = false;
 
     // World change / teleport tracking
     private static Object lastWorld = null;
@@ -187,13 +194,17 @@ public class OrderedWaypointManager {
     public static boolean isBlockOutlineAroundWaypoint() { return blockOutlineAroundWaypoint; }
     public static void setBlockOutlineAroundWaypoint(boolean value) { blockOutlineAroundWaypoint = value; }
     public static int getBlockOutlineRadius() { return blockOutlineRadius; }
-    public static void setBlockOutlineRadius(int radius) { blockOutlineRadius = radius; }
+    public static void setBlockOutlineRadius(int radius) { blockOutlineRadius = Math.max(1, Math.min(8, radius)); }
     public static float[] getBlockOutlineColor() { return blockOutlineColor; }
     public static void setBlockOutlineColor(float r, float g, float b) { blockOutlineColor = new float[]{r, g, b}; }
     public static float getBlockOutlineAlpha() { return blockOutlineAlpha; }
     public static void setBlockOutlineAlpha(float alpha) { blockOutlineAlpha = alpha; }
     public static boolean isBlockOutlineFill() { return blockOutlineFill; }
     public static void setBlockOutlineFill(boolean value) { blockOutlineFill = value; }
+    public static boolean isBlockOutlineVisibleOnly() { return blockOutlineVisibleOnly; }
+    public static void setBlockOutlineVisibleOnly(boolean value) { blockOutlineVisibleOnly = value; }
+    public static boolean isBlockOutlineCurrent() { return blockOutlineCurrent; }
+    public static void setBlockOutlineCurrent(boolean value) { blockOutlineCurrent = value; }
     public static float getBlockOutlineThickness() { return blockOutlineThickness; }
     /** Clamped so an edge can never be thick enough to swallow the block it outlines. */
     public static void setBlockOutlineThickness(float value) {
@@ -240,6 +251,17 @@ public class OrderedWaypointManager {
     public static void tick() {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null || client.level == null) return;
+
+        // Once per launch, on the first world: point anyone with old-format routes at the converter.
+        if (!outdatedNoticeShown) {
+            outdatedNoticeShown = true;
+            int outdated = outdatedRouteCount();
+            if (outdated > 0) {
+                sendMessage("\u00A7e" + outdated + " saved route" + (outdated == 1 ? " is" : "s are")
+                    + " in the old text format. \u00A77Run \u00A7f/mqo convert \u00A77to switch "
+                    + (outdated == 1 ? "it" : "them") + " to SkyHanni format.");
+            }
+        }
 
         boolean shouldReset = false;
 
@@ -685,14 +707,11 @@ public class OrderedWaypointManager {
             return;
         }
 
-        File routeFile = new File(ROUTES_DIR, name + ".txt");
-        try (PrintWriter writer = new PrintWriter(new FileWriter(routeFile))) {
-            for (OrderedWaypoint wp : currentRoute) {
-                BlockPos pos = wp.getPosition();
-                writer.println(pos.getX() + "," + pos.getY() + "," + pos.getZ()
-                    + (wp.isEtherwarp() ? ",ether" : ""));
-            }
-            sendMessage("\u00A7aSaved route as \u00A7e" + name + ".txt \u00A7awith " + currentRoute.size() + " waypoints.");
+        // Saved in SkyHanni's (ColeWeight) format, so the file opens in either mod as-is.
+        File routeFile = new File(ROUTES_DIR, name + ".json");
+        try {
+            Files.writeString(routeFile.toPath(), toSkyHanniJson(currentRoute, true));
+            sendMessage("\u00A7aSaved route as \u00A7e" + name + ".json \u00A7awith " + currentRoute.size() + " waypoints.");
         } catch (IOException e) {
             LOGGER.error("Failed to save route: " + e.getMessage());
             sendMessage("\u00A7cFailed to save route: " + e.getMessage());
@@ -700,12 +719,14 @@ public class OrderedWaypointManager {
     }
 
     public static void load(String name) {
-        File routeFile = new File(ROUTES_DIR, name + ".txt");
+        // .json is SkyHanni's format (what save writes now); .txt routes from older versions
+        // still load. A name saved both ways reads the newer .json.
+        File jsonFile = new File(ROUTES_DIR, name + ".json");
+        File textFile = new File(ROUTES_DIR, name + ".txt");
+        File routeFile = jsonFile.exists() ? jsonFile : textFile;
         if (!routeFile.exists()) {
-            String[] routes = ROUTES_DIR.list((dir, n) -> n.endsWith(".txt"));
-            String available = routes != null && routes.length > 0
-                ? String.join(", ", routes).replace(".txt", "")
-                : "none";
+            List<String> routes = savedRouteNames();
+            String available = routes.isEmpty() ? "none" : String.join(", ", routes);
             sendMessage("\u00A7cRoute \u00A7e" + name + " \u00A7cnot found. Available: " + available);
             return;
         }
@@ -713,26 +734,13 @@ public class OrderedWaypointManager {
         currentRoute.clear();
         obstructionMemory.clear();
         sweepCursor = 0;
-        int index = 1;
 
         try {
-            List<String> lines = Files.readAllLines(routeFile.toPath());
-            for (String line : lines) {
-                line = line.trim();
-                if (line.isEmpty()) continue;
-
-                try {
-                    String[] coords = line.split(",");
-                    int x = Integer.parseInt(coords[0].trim());
-                    int y = Integer.parseInt(coords[1].trim());
-                    int z = Integer.parseInt(coords[2].trim());
-                    OrderedWaypoint wp = new OrderedWaypoint(new BlockPos(x, y, z), index);
-                    wp.setEtherwarp(isEtherwarpToken(coords));
-                    currentRoute.add(wp);
-                    index++;
-                } catch (Exception e) {
-                    LOGGER.warn("Failed to parse waypoint line: " + line);
-                }
+            String content = Files.readString(routeFile.toPath());
+            if (routeFile == jsonFile) {
+                parseJsonWaypoints(content.trim());
+            } else {
+                parseTextWaypoints(content);
             }
         } catch (IOException e) {
             LOGGER.error("Failed to load route: " + e.getMessage());
@@ -741,8 +749,12 @@ public class OrderedWaypointManager {
         }
 
         if (currentRoute.isEmpty()) {
-            sendMessage("\u00A7cNo valid waypoints found in " + name + ".txt");
+            sendMessage("\u00A7cNo valid waypoints found in " + routeFile.getName());
             return;
+        }
+
+        if (routeFile == textFile) {
+            sendMessage("\u00A77This route is in the old text format \u00A78- \u00A7f/mqo convert \u00A77updates all of them.");
         }
 
         startAtClosestWaypoint();
@@ -820,30 +832,109 @@ public class OrderedWaypointManager {
         return token.equals("ether") || token.equals("etherwarp") || token.equals("ew") || token.equals("e");
     }
 
+    /**
+     * JSON routes: SkyHanni / ColeWeight ({@code [{"x":..,"y":..,"z":..,"options":{"name":"1"}}]}),
+     * ordered by each waypoint's {@code name} number when it has one. An {@code etherwarp}
+     * option marks an etherwarp; SkyHanni keeps unknown options, so it survives a round trip.
+     */
     private static void parseJsonWaypoints(String content) {
-        // Parse JSON format: [{"x": 495, "y": 84, "z": 221}, ...]
-        int index = 1;
+        try {
+            com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(content);
+            com.google.gson.JsonArray array = root.isJsonArray() ? root.getAsJsonArray()
+                : root.isJsonObject() && root.getAsJsonObject().has("waypoints")
+                    ? root.getAsJsonObject().getAsJsonArray("waypoints") : null;
+            if (array == null) throw new IllegalStateException("not a waypoint list");
 
-        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
-            "\"x\"\\s*:\\s*(-?\\d+).*?\"y\"\\s*:\\s*(-?\\d+).*?\"z\"\\s*:\\s*(-?\\d+)",
-            java.util.regex.Pattern.DOTALL
-        );
-        java.util.regex.Matcher matcher = pattern.matcher(content);
-
-        while (matcher.find()) {
-            try {
-                int x = Integer.parseInt(matcher.group(1));
-                int y = Integer.parseInt(matcher.group(2));
-                int z = Integer.parseInt(matcher.group(3));
-                currentRoute.add(new OrderedWaypoint(new BlockPos(x, y, z), index));
-                index++;
-            } catch (Exception e) {
-                LOGGER.warn("Failed to parse JSON waypoint: " + e.getMessage());
+            List<Object[]> parsed = new ArrayList<>(); // {order, waypoint}
+            int sequence = 0;
+            for (com.google.gson.JsonElement element : array) {
+                if (!element.isJsonObject()) continue;
+                com.google.gson.JsonObject obj = element.getAsJsonObject();
+                if (!obj.has("x") || !obj.has("y") || !obj.has("z")) continue;
+                int x = (int) Math.floor(obj.get("x").getAsDouble());
+                int y = (int) Math.floor(obj.get("y").getAsDouble());
+                int z = (int) Math.floor(obj.get("z").getAsDouble());
+                sequence++;
+                int order = sequence;
+                boolean ether = false;
+                if (obj.has("options") && obj.get("options").isJsonObject()) {
+                    com.google.gson.JsonObject options = obj.getAsJsonObject("options");
+                    if (options.has("name")) {
+                        try {
+                            order = Integer.parseInt(options.get("name").getAsString().trim());
+                        } catch (NumberFormatException ignored) {
+                            // a named (non-numbered) waypoint keeps its place in the list
+                        }
+                    }
+                    ether = options.has("etherwarp") && options.get("etherwarp").getAsString().equalsIgnoreCase("true");
+                }
+                OrderedWaypoint wp = new OrderedWaypoint(new BlockPos(x, y, z), 0);
+                wp.setEtherwarp(ether);
+                parsed.add(new Object[]{order, wp});
+            }
+            parsed.sort(java.util.Comparator.comparingInt(entry -> (int) entry[0]));
+            int index = 1;
+            for (Object[] entry : parsed) {
+                OrderedWaypoint wp = (OrderedWaypoint) entry[1];
+                wp.setIndex(index++);
+                currentRoute.add(wp);
+            }
+        } catch (Exception notJson) {
+            // Loose JSON-ish text: pull out every x/y/z triple in order.
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(
+                "\"x\"\\s*:\\s*(-?\\d+).*?\"y\"\\s*:\\s*(-?\\d+).*?\"z\"\\s*:\\s*(-?\\d+)",
+                java.util.regex.Pattern.DOTALL).matcher(content);
+            int index = 1;
+            while (matcher.find()) {
+                currentRoute.add(new OrderedWaypoint(new BlockPos(
+                    Integer.parseInt(matcher.group(1)), Integer.parseInt(matcher.group(2)),
+                    Integer.parseInt(matcher.group(3))), index++));
             }
         }
     }
 
+    /**
+     * SkyHanni's ordered-waypoint format (ColeWeight's): what {@code /shordered import} reads.
+     * {@code name} is the waypoint number SkyHanni orders by; the colour is SkyHanni's own green.
+     */
+    private static String toSkyHanniJson(List<OrderedWaypoint> route, boolean pretty) {
+        com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+        int number = 1;
+        for (OrderedWaypoint wp : route) {
+            BlockPos pos = wp.getPosition();
+            com.google.gson.JsonObject obj = new com.google.gson.JsonObject();
+            obj.addProperty("x", pos.getX());
+            obj.addProperty("y", pos.getY());
+            obj.addProperty("z", pos.getZ());
+            obj.addProperty("r", 0.0);
+            obj.addProperty("g", 1.0);
+            obj.addProperty("b", 0.0);
+            com.google.gson.JsonObject options = new com.google.gson.JsonObject();
+            options.addProperty("name", String.valueOf(number++));
+            if (wp.isEtherwarp()) options.addProperty("etherwarp", "true");
+            obj.add("options", options);
+            array.add(obj);
+        }
+        com.google.gson.GsonBuilder builder = new com.google.gson.GsonBuilder();
+        if (pretty) builder.setPrettyPrinting();
+        return builder.create().toJson(array);
+    }
+
+    /** Saved route names, .json and older .txt alike, without duplicates. */
+    private static List<String> savedRouteNames() {
+        java.util.TreeSet<String> names = new java.util.TreeSet<>();
+        String[] files = ROUTES_DIR.list((dir, n) -> n.endsWith(".json") || n.endsWith(".txt"));
+        if (files != null) {
+            for (String file : files) names.add(file.substring(0, file.lastIndexOf('.')));
+        }
+        return new ArrayList<>(names);
+    }
+
     private static void parseTextWaypoints(String content) {
+        parseTextWaypoints(content, currentRoute);
+    }
+
+    private static void parseTextWaypoints(String content, List<OrderedWaypoint> out) {
         // Parse text format: "x,y,z" per line or "x y z", optionally "index:x,y,z"
         String[] lines = content.split("\\r?\\n");
         int index = 1;
@@ -875,7 +966,7 @@ public class OrderedWaypointManager {
 
                 OrderedWaypoint wp = new OrderedWaypoint(new BlockPos(x, y, z), index);
                 wp.setEtherwarp(isEtherwarpToken(coords));
-                currentRoute.add(wp);
+                out.add(wp);
                 index++;
             } catch (Exception e) {
                 LOGGER.warn("Failed to parse waypoint line: " + line);
@@ -892,7 +983,23 @@ public class OrderedWaypointManager {
         sendMessage("\u00A7aRoute unloaded.");
     }
 
+    /** Copies the route in SkyHanni's format — paste it in with /shordered import. */
     public static void exportToClipboard() {
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null) return;
+
+        if (currentRoute.isEmpty()) {
+            sendMessage("\u00A7cNo route to export.");
+            return;
+        }
+
+        client.keyboardHandler.setClipboard(toSkyHanniJson(currentRoute, false));
+        sendMessage("\u00A7aExported " + currentRoute.size()
+            + " waypoints to clipboard in SkyHanni format \u00A77(/shordered import)");
+    }
+
+    /** The old plain "x,y,z[,ether]" lines, for tools that want text. */
+    public static void exportTextToClipboard() {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null) return;
 
@@ -910,7 +1017,7 @@ public class OrderedWaypointManager {
         }
 
         client.keyboardHandler.setClipboard(sb.toString().trim());
-        sendMessage("\u00A7aExported " + currentRoute.size() + " waypoints to clipboard.");
+        sendMessage("\u00A7aExported " + currentRoute.size() + " waypoints to clipboard as text.");
     }
 
     public static void export() {
@@ -918,33 +1025,100 @@ public class OrderedWaypointManager {
     }
 
     public static void deleteRoute(String name) {
-        File routeFile = new File(ROUTES_DIR, name + ".txt");
-        if (!routeFile.exists()) {
+        File jsonFile = new File(ROUTES_DIR, name + ".json");
+        File textFile = new File(ROUTES_DIR, name + ".txt");
+        if (!jsonFile.exists() && !textFile.exists()) {
             sendMessage("\u00A7cRoute \u00A7e" + name + " \u00A7cnot found.");
             return;
         }
 
-        if (routeFile.delete()) {
-            sendMessage("\u00A7aDeleted route \u00A7e" + name + ".txt");
+        boolean ok = (!jsonFile.exists() || jsonFile.delete()) && (!textFile.exists() || textFile.delete());
+        if (ok) {
+            sendMessage("\u00A7aDeleted route \u00A7e" + name);
         } else {
-            sendMessage("\u00A7cFailed to delete route \u00A7e" + name + ".txt");
+            sendMessage("\u00A7cFailed to delete route \u00A7e" + name);
+        }
+    }
+
+    /** Saved routes still in the old "x,y,z[,ether]" text format. */
+    public static int outdatedRouteCount() {
+        File[] files = ROUTES_DIR.listFiles((dir, n) -> n.endsWith(".txt"));
+        return files == null ? 0 : files.length;
+    }
+
+    /**
+     * /mqo convert — rewrites every old .txt route as SkyHanni-format .json and moves the
+     * original into txt-backup/. A route that already has a .json keeps it (that is the newer
+     * save) and only its stale .txt is moved aside. Anything unreadable is left untouched.
+     */
+    public static void convertRoutes() {
+        File[] files = ROUTES_DIR.listFiles((dir, n) -> n.endsWith(".txt"));
+        if (files == null || files.length == 0) {
+            sendMessage("\u00A7aAll your routes are already in SkyHanni format.");
+            return;
+        }
+        TXT_BACKUP_DIR.mkdirs();
+
+        int converted = 0;
+        int alreadyJson = 0;
+        List<String> failed = new ArrayList<>();
+        for (File file : files) {
+            String name = file.getName().substring(0, file.getName().length() - 4);
+            File jsonFile = new File(ROUTES_DIR, name + ".json");
+            try {
+                if (jsonFile.exists()) {
+                    alreadyJson++;
+                } else {
+                    List<OrderedWaypoint> route = new ArrayList<>();
+                    parseTextWaypoints(Files.readString(file.toPath()), route);
+                    if (route.isEmpty()) {
+                        failed.add(name);
+                        continue;
+                    }
+                    Files.writeString(jsonFile.toPath(), toSkyHanniJson(route, true));
+                    converted++;
+                }
+                File backup = new File(TXT_BACKUP_DIR, file.getName());
+                if (backup.exists()) backup = new File(TXT_BACKUP_DIR, name + "-" + System.currentTimeMillis() + ".txt");
+                Files.move(file.toPath(), backup.toPath());
+            } catch (IOException e) {
+                LOGGER.warn("Failed to convert route {}: {}", name, e.getMessage());
+                failed.add(name);
+            }
+        }
+
+        sendMessage("\u00A7aConverted \u00A7e" + converted + " \u00A7aroute" + (converted == 1 ? "" : "s")
+            + " to SkyHanni format.\u00A77 Originals are in miningqol_routes/txt-backup.");
+        if (alreadyJson > 0) {
+            sendMessage("\u00A77" + alreadyJson + " already had a .json save; kept that and moved the old copy aside.");
+        }
+        if (!failed.isEmpty()) {
+            sendMessage("\u00A7cCouldn't read: \u00A7e" + String.join(", ", failed) + " \u00A77(left as they were)");
         }
     }
 
     public static void listRoutes() {
-        File[] files = ROUTES_DIR.listFiles((dir, name) -> name.endsWith(".txt"));
-        if (files == null || files.length == 0) {
+        List<String> names = savedRouteNames();
+        if (names.isEmpty()) {
             sendMessage("\u00A7cNo saved routes.");
             return;
         }
 
         sendMessage("\u00A76Saved routes:");
-        for (File file : files) {
-            String name = file.getName().replace(".txt", "");
+        for (String name : names) {
+            File jsonFile = new File(ROUTES_DIR, name + ".json");
+            File file = jsonFile.exists() ? jsonFile : new File(ROUTES_DIR, name + ".txt");
             try {
-                long lineCount = Files.lines(file.toPath()).filter(l -> !l.trim().isEmpty()).count();
-                sendMessage("\u00A7e  " + name + " \u00A77(" + lineCount + " waypoints)");
-            } catch (IOException e) {
+                long count;
+                if (file == jsonFile) {
+                    com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(Files.readString(file.toPath()));
+                    count = root.isJsonArray() ? root.getAsJsonArray().size() : 0;
+                } else {
+                    count = Files.lines(file.toPath()).filter(l -> !l.trim().isEmpty()).count();
+                }
+                sendMessage("\u00A7e  " + name + " \u00A77(" + count + " waypoints"
+                    + (file == jsonFile ? "" : ", old text format") + ")");
+            } catch (Exception e) {
                 sendMessage("\u00A7e  " + name + " \u00A77(unknown waypoints)");
             }
         }

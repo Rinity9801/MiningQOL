@@ -500,7 +500,7 @@ public final class ShaftSummary {
         Minecraft client = Minecraft.getInstance();
         if (client.gui == null) return;
         try {
-            ChatComponentAccessor chat = (ChatComponentAccessor) client.gui.getChat();
+            ChatComponentAccessor chat = (ChatComponentAccessor) client.gui.hud.getChat();
             List<GuiMessage> all = chat.miningqol$allMessages();
             String needle = "Fines: " + oldFinesStr;
             for (int i = 0; i < all.size(); i++) {
