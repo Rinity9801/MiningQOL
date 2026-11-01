@@ -1,13 +1,13 @@
 # MiningQOL
 
-A modern Minecraft Fabric mod for 1.21.10 that provides quality-of-life improvements for mining in Hypixel Skyblock.
+A modern Minecraft Fabric mod for 26.1.2/26.2 that provides quality-of-life improvements for mining in Hypixel Skyblock.
 
 Built with the Vexel GUI library for a sleek, modern interface with smooth animations and an intuitive card-based design.
 
 ## Features
 
 ### Corpse ESP
-Highlight and track different types of corpses in the Crystal Hollows:
+Highlight and track different types of corpses in Glacite Mineshafts:
 - Lapis Armor Corpses (Blue)
 - Tungsten Corpses (Gray)
 - Umber Corpses (Brown)
