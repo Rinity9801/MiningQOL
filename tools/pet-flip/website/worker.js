@@ -205,12 +205,15 @@ const hrs = h => h >= 48 ? (h / 24).toFixed(h % 24 ? 1 : 0) + 'd' : h + 'h';
 function costNote(v) {
   const c = v.upgrade || v.craft;
   if (!c) return '';
+  // Kat coins are discounted 0.3%/lvl by the buy level, so show the cost at the active best level.
+  const coins = v.upgrade ? (v.best.upCoins ?? c.coins) : c.coins;
+  const total = v.upgrade ? (v.best.upTotal ?? c.total) : c.total;
   const mats = (c.materials || []).map(m => m.amount + '× ' + m.id.toLowerCase().replace(/_/g, ' ') + ' (' + compact(m.unit * m.amount) + ')');
   const parts = [];
-  if (c.coins) parts.push(compact(c.coins) + ' coins');
+  if (coins) parts.push(compact(coins) + ' coins' + (v.upgrade ? ' (−' + (+(0.3 * v.best.level).toFixed(1)) + '% Kat, at Lvl ' + v.best.level + ')' : ''));
   parts.push(...mats);
   let s = (v.upgrade ? 'Kat upgrade ' + v.upgrade.from.toLowerCase() + ' → ' + v.upgrade.to.toLowerCase() + ': '
-    : 'Golden Dragon made at Lvl 1: ') + parts.join(' + ') + ' = <b>' + compact(c.total) + '</b>';
+    : 'Golden Dragon made at Lvl 1: ') + parts.join(' + ') + ' = <b>' + compact(total) + '</b>';
   if (v.upgrade && v.upgrade.hours) s += ' · takes ' + hrs(v.upgrade.hours) + (v.upgrade.steps > 1 ? ' over ' + v.upgrade.steps + ' upgrades' : '');
   const r = v.upgrade && v.upgrade.rush;
   if (r && r.days) {
@@ -258,7 +261,7 @@ function sortedPets() {
 function rowCells(p, i) {
   const v = view(p);
   return '<td>' + p.listings + '</td>' +
-    '<td>' + v.best.level + '</td><td>' + fmt0(v.best.price) + (v.upgrade ? '<br><span class="kat">+ ' + compact(v.upgrade.total) + ' Kat</span>' : '') + '</td>' +
+    '<td>' + v.best.level + '</td><td>' + fmt0(v.best.price) + (v.upgrade ? '<br><span class="kat">+ ' + compact(v.best.upTotal ?? v.upgrade.total) + ' Kat</span>' : '') + '</td>' +
     '<td>' + v.sell.level + '</td><td>' + fmt0(v.sellNet) + '</td>' +
     '<td>' + fmt0(v.best.xp) + '</td>' +
     '<td class="' + (v.best.profit >= 0 ? 'pos' : 'neg') + '">' + fmt0(v.best.profit) + '</td>' +
@@ -309,7 +312,7 @@ function render() {
     const v = view(top);
     const how = v.best.crafted ? '<b>Make ' + top.name + '</b> at Lvl 1 for ' + compact(v.best.price)
       : '<b>Buy ' + top.name + '</b> (' + optLabel(top, activeTier(top)) + ') at Lvl ' + v.best.level + ' for ' + compact(v.best.price)
-        + (v.upgrade ? ' + ' + compact(v.upgrade.total) + ' Kat upgrade' : '');
+        + (v.upgrade ? ' + ' + compact(v.best.upTotal ?? v.upgrade.total) + ' Kat upgrade' : '');
     banner.innerHTML = '<span class="star">★</span> ' + how + ' → grind to Lvl ' + v.sell.level +
       ' = <b>' + fmt2(v.perXp) + ' coins/' + xpName() + '</b> &nbsp; ' + buyLink(v.best, 'open auction ↗');
   }

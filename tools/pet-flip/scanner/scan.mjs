@@ -247,16 +247,21 @@ function buildFlip({ type, key, label, sellTier, buyList, sellList, cap, extra =
   if (!sell) return null;
   const sellNet = netSell(sell.price);
   const byLevel = cheapest(buyList);
-  const extraCost = extra ? extra.total : 0;
 
   // Grind target: just crossing the cap threshold (exact table) at the rarity it's sold at,
   // not matching the possibly over-ground exp stored on the sell listing. A Kat upgrade
   // keeps the pet's exp, so the XP still to grind is measured against the new rarity.
   const capExp = expToReach(type, sellTier, cap);
+  // Kat discounts an upgrade's coins by the pet's level: 0.3% per level (30% at Lvl 100), so the
+  // cost depends on the buy level (the pet goes to Kat right after buying). Materials aren't
+  // discounted. Non-Kat extras have no coins split, so they fall back to their flat total.
   const row = (L, a, isCrafted) => {
     const xp = (capExp != null ? capExp : sell.exp) - a.exp;
-    const profit = sellNet - a.price - extraCost;
+    const upCoins = extra ? extra.coins * Math.max(0, 1 - 0.003 * L) : 0;
+    const upTotal = extra ? upCoins + extra.matCost : 0;
+    const profit = sellNet - a.price - upTotal;
     const r = { level: L, price: a.price, uuid: a.uuid || null, exp: a.exp, xp, profit, perXp: xp > 0 ? profit / xp : null };
+    if (extra) { r.upCoins = upCoins; r.upTotal = upTotal; }
     if (isCrafted) r.crafted = true;
     return r;
   };
