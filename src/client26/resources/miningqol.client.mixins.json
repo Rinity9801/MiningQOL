@@ -20,11 +20,11 @@
     "ContainerClickMixin",
     "SoundEngineMixin",
     "ParticleEngineMixin",
-    "ChatComponentAccessor",
     "MultiPlayerGameModeInvoker",
     "FogRendererMixin",
     "LevelRendererSkyMixin",
-    "SystemChatMixin"
+    "SystemChatMixin",
+    "BlockUpdateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

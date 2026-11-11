@@ -79,9 +79,9 @@ public class MiningqolClient implements ClientModInitializer {
         BlockOverlay.init();
         PickaxeCooldownHUD.register();
         RollingMinerCooldown.register();
+        CommCountHUD.register();
         ItemCooldownTimer.registerAll();
         MayhemHUD.register();
-        forfun.miningqol.client.summary.ShaftSummary.init();
         ForgeDisplay.register();
         LobbyFinderHUD.register();
         OrderedWaypointManager.init();
@@ -99,7 +99,6 @@ public class MiningqolClient implements ClientModInitializer {
                 LobbyFinder.tick();
                 ColdTracker.tick();
                 MayhemHUD.tick();
-                forfun.miningqol.client.summary.ShaftSummary.tick(client);
                 WispRadius.tick();
                 MineshaftPortal.tick();
                 FiletWarning.tick();
@@ -124,8 +123,6 @@ public class MiningqolClient implements ClientModInitializer {
             RollingMinerCooldown.onGameMessage(messageText);
             PickaxeCooldownHUD.onGameMessage(messageText);
             MayhemHUD.onGameMessage(messageText);
-            // ShaftSummary is fed from SystemChatMixin instead: it needs the lines other
-            // mods' chat filters cancel before this event fires.
             forfun.miningqol.client.party.MineshaftAutoParty.onGameMessage(messageText);
             forfun.miningqol.client.party.PartyAutoAccept.onGameMessage(messageText);
 
@@ -318,28 +315,6 @@ public class MiningqolClient implements ClientModInitializer {
                 return 1;
             }));
 
-        dispatcher.register(ClientCommands.literal("shaftsummary")
-            .executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printStatus();
-                return 1;
-            })
-            .then(ClientCommands.literal("status").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printStatus();
-                return 1;
-            }))
-            .then(ClientCommands.literal("test").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printSample(net.minecraft.client.Minecraft.getInstance());
-                return 1;
-            }))
-            .then(ClientCommands.literal("debug").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printDebug();
-                return 1;
-            }))
-            .then(ClientCommands.literal("party").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.sendLastToParty();
-                return 1;
-            })));
-
         dispatcher.register(ClientCommands.literal("getcold")
                 .executes(context -> {
                     net.minecraft.client.Minecraft client = net.minecraft.client.Minecraft.getInstance();
@@ -466,6 +441,11 @@ public class MiningqolClient implements ClientModInitializer {
                         OrderedWaypointManager.listRoutes();
                         return 1;
                     }))
+                .then(ClientCommands.literal("convert")
+                    .executes(context -> {
+                        OrderedWaypointManager.convertRoutes();
+                        return 1;
+                    }))
                 .then(ClientCommands.literal("info")
                     .executes(context -> {
                         OrderedWaypointManager.info();
@@ -480,7 +460,12 @@ public class MiningqolClient implements ClientModInitializer {
                     .executes(context -> {
                         OrderedWaypointManager.export();
                         return 1;
-                    })));
+                    })
+                    .then(ClientCommands.literal("text")
+                        .executes(context -> {
+                            OrderedWaypointManager.exportTextToClipboard();
+                            return 1;
+                        }))));
         });
     }
 

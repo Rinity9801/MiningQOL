@@ -9,10 +9,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Sees every system chat line before other mods can cancel it. Chat filters in
- * SkyblockCollectionTracker and SkyHanni swallow Hypixel's Sky Mall and sack lines,
- * which never reach the Fabric message event; priority 900 runs ahead of their
- * default-priority cancel on the same method.
+ * Sees every system chat line before other mods can cancel it. Chat filters in other
+ * mods can swallow Hypixel lines, which then never reach the Fabric message event;
+ * priority 900 runs ahead of a default-priority cancel on the same method.
  */
 @Mixin(value = ClientPacketListener.class, priority = 900)
 public class SystemChatMixin {
@@ -21,7 +20,6 @@ public class SystemChatMixin {
         // The handler runs once on the network thread to re-dispatch and once on the
         // client thread; only count the client-thread pass.
         if (packet.overlay() || !Minecraft.getInstance().isSameThread()) return;
-        forfun.miningqol.client.summary.ShaftSummary.onGameMessage(packet.content());
         String text = packet.content().getString();
         forfun.miningqol.client.CommTracker.onChatMessage(text);
         forfun.miningqol.client.CommissionHUD.onCommissionComplete(text);

@@ -26,8 +26,6 @@ import forfun.miningqol.client.gui.HudPositionScreen;
 import forfun.miningqol.client.gui.MineshaftAutoPartyScreen;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
-import forfun.miningqol.client.summary.ShaftPbType;
-import forfun.miningqol.client.summary.ShaftSummary;
 import forfun.miningqol.client.waypoints.OrderedWaypointManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -45,6 +43,28 @@ public final class ShatterModules {
 
     /** Cheat/local-only registrars, added before the menu is first opened. */
     public static final List<Runnable> EXTRA_REGISTRARS = new ArrayList<>();
+
+    /**
+     * A key box editing one of the vanilla KeyMappings in place (keyboard keys only; right-click
+     * clears). Same binding as Controls -> MiningQOL, saved to options.txt.
+     */
+    public static KeySetting keyMappingSetting(net.minecraft.client.KeyMapping mapping, String name, String description) {
+        return new KeySetting(name, description, KeySetting.NONE)
+            .bind(
+                () -> {
+                    com.mojang.blaze3d.platform.InputConstants.Key bound =
+                        net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(mapping);
+                    return bound.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                        ? bound.getValue() : KeySetting.NONE;
+                },
+                code -> {
+                    mapping.setKey(code == KeySetting.NONE
+                        ? com.mojang.blaze3d.platform.InputConstants.UNKNOWN
+                        : com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(code));
+                    net.minecraft.client.KeyMapping.resetMapping();
+                    Minecraft.getInstance().options.save();
+                });
+    }
 
     private static boolean registered;
 
@@ -156,22 +176,8 @@ public final class ShatterModules {
         Module keybinds = new Module("Keybinds", "Rebind the mod's hotkeys", general, null, null);
         for (net.minecraft.client.KeyMapping mapping : Minecraft.getInstance().options.keyMappings) {
             if (!mapping.getName().startsWith("key.miningqol.")) continue;
-            keybinds.add(new KeySetting(
-                net.minecraft.client.resources.language.I18n.get(mapping.getName()), "Toggle key", KeySetting.NONE)
-                .bind(
-                    () -> {
-                        com.mojang.blaze3d.platform.InputConstants.Key bound =
-                            net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(mapping);
-                        return bound.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
-                            ? bound.getValue() : KeySetting.NONE;
-                    },
-                    code -> {
-                        mapping.setKey(code == KeySetting.NONE
-                            ? com.mojang.blaze3d.platform.InputConstants.UNKNOWN
-                            : com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(code));
-                        net.minecraft.client.KeyMapping.resetMapping();
-                        Minecraft.getInstance().options.save();
-                    }));
+            keybinds.add(keyMappingSetting(mapping,
+                net.minecraft.client.resources.language.I18n.get(mapping.getName()), "Toggle key"));
         }
         Modules.register(keybinds);
 
@@ -216,11 +222,21 @@ public final class ShatterModules {
             .add(new StringSetting("Current Comms", "Commissions you've done — completions add to it", "", "e.g. 1234")
                 .bind(CommTracker::getTotalInput, CommTracker::setTotalInput))
             .add(new BoolSetting("Stats HUD", "On-screen Total / Comms/hr / Session panel", false)
-                .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled))
-            .add(new BoolSetting("Stats in Menu", "Total + session above the commissions menu", true)
-                .bind(CommissionGui::isStatsInMenu, CommissionGui::setStatsInMenu))
-            .add(new ActionSetting("Reset Menu Line", "Put the menu line back above the menu", false,
-                () -> CommissionGui.setStatsMoved(false))));
+                .bind(CommTracker::isStatsEnabled, CommTracker::setStatsEnabled)));
+
+        Modules.register(new Module("Commission Count", "Your commission total on screen", huds,
+            forfun.miningqol.client.CommCountHUD::isEnabled, forfun.miningqol.client.CommCountHUD::setEnabled)
+            .add(new BoolSetting("Hide with F1", "Hide when the vanilla HUD is hidden", false)
+                .bind(forfun.miningqol.client.CommCountHUD::isHideWithF1, forfun.miningqol.client.CommCountHUD::setHideWithF1))
+            .add(new ModeSetting("Text Align", "Where the lines sit in the HUD box", "Left", "Left", "Center", "Right")
+                .bind(() -> List.of("Left", "Center", "Right").get(forfun.miningqol.client.CommCountHUD.getTextAlign()),
+                    v -> forfun.miningqol.client.CommCountHUD.setTextAlign(List.of("Left", "Center", "Right").indexOf(v))))
+            .add(new BoolSetting("Show Session", "Second line with this session's count", true)
+                .bind(forfun.miningqol.client.CommCountHUD::isShowSession, forfun.miningqol.client.CommCountHUD::setShowSession))
+            .add(new BoolSetting("Number Only", "Hide the labels", false)
+                .bind(forfun.miningqol.client.CommCountHUD::isNumberOnly, forfun.miningqol.client.CommCountHUD::setNumberOnly))
+            .add(ColorSetting.ofRgb("Label Color", "", forfun.miningqol.client.CommCountHUD::getLabelColor, forfun.miningqol.client.CommCountHUD::setLabelColor))
+            .add(ColorSetting.ofRgb("Value Color", "", forfun.miningqol.client.CommCountHUD::getValueColor, forfun.miningqol.client.CommCountHUD::setValueColor)));
 
         Modules.register(new Module("Comm Menu GUI", "Odin-style commissions menu replacement", huds,
             CommissionGui::isEnabled, CommissionGui::setEnabled)
@@ -289,44 +305,6 @@ public final class ShatterModules {
             .add(ColorSetting.ofRgb("Label Color", "", MayhemHUD::getLabelColor, MayhemHUD::setLabelColor))
             .add(ColorSetting.ofRgb("Buff Color", "", MayhemHUD::getValueColor, MayhemHUD::setValueColor))
             .add(ColorSetting.ofRgb("None Color", "", MayhemHUD::getNoneColor, MayhemHUD::setNoneColor)));
-
-        Modules.register(new Module("Shaft Summary", "Fines, coins and rank after every gem shaft", general,
-            ShaftSummary::isEnabled, ShaftSummary::setEnabled)
-            .add(new BoolSetting("Print to Chat", "Show the summary block in chat", true)
-                .bind(ShaftSummary::isPrintToChat, ShaftSummary::setPrintToChat))
-            .add(new BoolSetting("Print to Party", "Send a one-line recap to /pc", false)
-                .bind(ShaftSummary::isPrintToParty, ShaftSummary::setPrintToParty))
-            .add(new BoolSetting("Show Buffs in Summary", "Add a Buffs line to the summary", false)
-                .bind(ShaftSummary::isShowBuffsInSummary, ShaftSummary::setShowBuffsInSummary))
-            .add(new BoolSetting("Front Loaded", "Tag runs as front loaded", false)
-                .bind(ShaftSummary::isFrontLoaded, ShaftSummary::setFrontLoaded))
-            .add(new BoolSetting("Track All Shaft Types", "Off: only Jasper shafts are tracked", true)
-                .bind(ShaftSummary::isTrackAllShaftSummaries, ShaftSummary::setTrackAllShaftSummaries))
-            .add(new BoolSetting("Auto Save", "Keep runs for the Rank line", true)
-                .bind(ShaftSummary::isAutoSave, ShaftSummary::setAutoSave))
-            .add(new SliderSetting("Max Saved Runs", "History size; weakest runs are dropped first", 100, 0, 1000, 10, "")
-                .bind(() -> (double) ShaftSummary.getMaxSavedRuns(), v -> ShaftSummary.setMaxSavedRuns((int) Math.round(v))))
-            .add(new BoolSetting("Track Efficiency in Summary", "Blocks mined vs a nonstop miner", true)
-                .bind(ShaftSummary::isTrackEfficiencyInSummary, ShaftSummary::setTrackEfficiencyInSummary))
-            .add(new SliderSetting("Efficiency Reset Delay", "Idle seconds before the max-miner pauses", 15, 1, 120, 1, "s")
-                .bind(() -> (double) ShaftSummary.getEfficiencyPauseSeconds(), v -> ShaftSummary.setEfficiencyPauseSeconds((int) Math.round(v))))
-            .add(new SliderSetting("Gem Mining Speed", "0 = read from the tab list", 0, 0, 20000, 50, "")
-                .bind(() -> (double) ShaftSummary.getGemMiningSpeed(), v -> ShaftSummary.setGemMiningSpeed((int) Math.round(v))))
-            .add(new BoolSetting("Blue Cheese", "Mining Speed Boost lasts 25s", false)
-                .bind(ShaftSummary::isBlueCheese, ShaftSummary::setBlueCheese))
-            .add(new ModeSetting("Coin Price", "Bazaar price for the Money line", "Sell Offer", "Sell Offer", "Instant Sell")
-                .bind(() -> ShaftSummary.isSellOffer() ? "Sell Offer" : "Instant Sell", v -> ShaftSummary.setSellOffer(v.equals("Sell Offer"))))
-            .add(new ModeSetting("Value As", "Gem quality the coin value is based on", "Flawless", "Fine", "Flawless")
-                .bind(() -> ShaftSummary.isValueAsFlawless() ? "Flawless" : "Fine", v -> ShaftSummary.setValueAsFlawless(v.equals("Flawless"))))
-            .add(new MultiSetting("Group Ranks By", "Only rank against runs sharing these", ShaftSummary.getRanksBy(),
-                    ShaftSummary.RANK_CRITERIA.toArray(new String[0]))
-                .bind(ShaftSummary::getRanksBy, ShaftSummary::setRanksBy))
-            .add(new MultiSetting("Summarize Which Shafts", "Shaft types that print a summary", ShaftSummary.getSummaryShaftTypes(), shaftTypeKeys())
-                .bind(ShaftSummary::getSummaryShaftTypes, ShaftSummary::setSummaryShaftTypes))
-            .add(new MultiSetting("Save Which Shafts", "Shaft types kept in the history", ShaftSummary.getSavedShaftTypes(), shaftTypeKeys())
-                .bind(ShaftSummary::getSavedShaftTypes, ShaftSummary::setSavedShaftTypes))
-            .add(new ActionSetting("Print Preview", "Print a sample summary in chat", false,
-                () -> ShaftSummary.printSample(Minecraft.getInstance()))));
 
         Modules.register(new Module("Mineshaft Portal", "Outline the portal you just found, through walls", esp,
             forfun.miningqol.client.MineshaftPortal::isEnabled, forfun.miningqol.client.MineshaftPortal::setEnabled)
@@ -417,6 +395,16 @@ public final class ShatterModules {
 
         Modules.register(new Module("Block Outline", "Outline blocks around the next waypoint", waypoints,
             OrderedWaypointManager::isBlockOutlineAroundWaypoint, OrderedWaypointManager::setBlockOutlineAroundWaypoint)
+            .add(ColorSetting.ofRgb("Outline Color", "Edges (and the fill, fainter)",
+                OrderedWaypointManager::getBlockOutlineColor, OrderedWaypointManager::setBlockOutlineColor,
+                OrderedWaypointManager::getBlockOutlineAlpha, OrderedWaypointManager::setBlockOutlineAlpha))
+            .add(new BoolSetting("Visible Edges Only", "Only the side facing you, still through walls", true)
+                .bind(OrderedWaypointManager::isBlockOutlineVisibleOnly, OrderedWaypointManager::setBlockOutlineVisibleOnly))
+            .add(new SliderSetting("Outline Radius", "Blocks around the waypoint to outline", 3, 1, 8, 1, " blocks")
+                .bind(() -> (double) OrderedWaypointManager.getBlockOutlineRadius(),
+                    v -> OrderedWaypointManager.setBlockOutlineRadius(v.intValue())))
+            .add(new BoolSetting("Outline Current Waypoint", "Keep the blocks at the waypoint you've reached outlined too", false)
+                .bind(OrderedWaypointManager::isBlockOutlineCurrent, OrderedWaypointManager::setBlockOutlineCurrent))
             .add(new BoolSetting("Outline Fill", "Tint the outlined blocks as well as edging them", false)
                 .bind(OrderedWaypointManager::isBlockOutlineFill, OrderedWaypointManager::setBlockOutlineFill))
             .add(new SliderSetting("Outline Thickness", "Edge thickness", 2, 0.5, 9, 0.5, "")
@@ -564,12 +552,5 @@ public final class ShatterModules {
                 return;
             }
         }
-    }
-
-    private static String[] shaftTypeKeys() {
-        ShaftPbType[] types = ShaftPbType.values();
-        String[] keys = new String[types.length];
-        for (int i = 0; i < types.length; i++) keys[i] = types[i].key();
-        return keys;
     }
 }

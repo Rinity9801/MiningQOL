@@ -16,6 +16,7 @@ import forfun.miningqol.client.FiletWarning;
 import forfun.miningqol.client.LobbyFinder;
 import forfun.miningqol.client.ForgeDisplay;
 import forfun.miningqol.client.PickaxeCooldownHUD;
+import forfun.miningqol.client.CommCountHUD;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
 import forfun.miningqol.client.MayhemHUD;
@@ -165,28 +166,6 @@ public class MiningConfig {
     public float[] mayhemValueColor = {1.0f, 1.0f, 85.0f / 255.0f};
     public float[] mayhemNoneColor = {170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
 
-    public boolean shaftSummaryEnabled = true;
-    public boolean shaftSummaryFrontLoaded = false;
-    public boolean shaftSummaryTrackAll = true;
-    public boolean shaftSummaryShowBuffs = false;
-    public boolean shaftSummaryTrackEfficiency = true;
-    public int shaftSummaryEfficiencyPause = 15;
-    public boolean shaftSummaryAutoSave = true;
-    public boolean shaftSummaryPrintToChat = true;
-    public boolean shaftSummaryPrintToParty = false;
-    public int shaftSummaryMaxSavedRuns = 100;
-    public java.util.List<String> shaftSummaryTypes = null;
-    public java.util.List<String> shaftSummarySavedTypes = null;
-    public java.util.List<String> shaftSummaryRanksBy = new java.util.ArrayList<>();
-    public int shaftSummaryGemMiningSpeed = 0;
-    public boolean shaftSummaryBlueCheese = false;
-    public boolean shaftSummaryValueGemsAsFlawless = true;
-    public boolean shaftSummarySellOffer = true;
-
-    /** Today's Sky Mall buff and when it expires, so a relog inside the same SkyBlock day keeps it. */
-    public String skyMallBuff = "";
-    public long skyMallBuffUntil = 0L;
-
     public boolean wispRadiusEnabled = true;
     public boolean wispRadiusEdgeOnly = false;
     public boolean wispRadiusFloorBlocksOnly = true;
@@ -207,14 +186,19 @@ public class MiningConfig {
 
     public boolean commGuiEnabled = false;
     public boolean commGuiShowProgress = true;
-    public boolean commGuiStatsInMenu = true;
-    public boolean commMenuStatsMoved = false;
-    public int commMenuStatsX = 0;
-    public int commMenuStatsY = 0;
-    public int commMenuStatsAnchorModeX = -1;
-    public int commMenuStatsAnchorOffX = 0;
-    public int commMenuStatsAnchorModeY = -1;
-    public int commMenuStatsAnchorOffY = 0;
+    public boolean commCountEnabled = false;
+    public int commCountX = 10;
+    public int commCountY = 74;
+    public int commCountAnchorModeX = -1;
+    public int commCountAnchorOffX = 0;
+    public int commCountAnchorModeY = -1;
+    public int commCountAnchorOffY = 0;
+    public boolean commCountHideWithF1 = false;
+    public int commCountTextAlign = 0;
+    public boolean commCountShowSession = true;
+    public boolean commCountNumberOnly = false;
+    public float[] commCountLabelColor = {1.0f, 170.0f / 255.0f, 0.0f};
+    public float[] commCountValueColor = {1.0f, 1.0f, 1.0f};
     public float commGuiScale = 1.0f;
     public float commGuiButtonSize = 24.0f;
     public float[] commGuiAccentColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
@@ -270,7 +254,6 @@ public class MiningConfig {
     public java.util.Map<String, java.util.List<String>> autoPartySignups = new java.util.LinkedHashMap<>();
     /** Player name -> "CORPSE:COUNT" picks, e.g. "LAPIS:3". */
     public java.util.Map<String, java.util.List<String>> autoPartyCorpseSignups = new java.util.LinkedHashMap<>();
-
 
     public boolean chatLogsEnabled = true;
     public boolean critParticleDrop = false;
@@ -330,7 +313,6 @@ public class MiningConfig {
     public boolean shaftJoinCdEnabled = true;
     public int shaftJoinCdSeconds = 30;
 
-
     public boolean orderedWaypointsEnabled = true;
     public float orderedWaypointRange = 4.5f;
     public int orderedWaypointNextCount = 2;
@@ -357,8 +339,19 @@ public class MiningConfig {
     public float orderedWaypointBlockOutlineThickness = 1.5f;
     /** Tint the outlined blocks as well as edging them. */
     public boolean orderedWaypointBlockOutlineFill = true;
+    public boolean orderedWaypointBlockOutlineVisibleOnly = true;
+    public boolean orderedWaypointBlockOutlineCurrent = false;
     /** Cheat builds: auto right-click when sneaking + aiming at an etherwarp-marked waypoint. */
     public boolean orderedWaypointEtherwarpClick = true;
+    /** Cheat builds: let go of break, right-click a powder chest once, resume break on looking off it. */
+    public boolean powderChestClickEnabled = false;
+    /** Crosshair on the chest -> break let go, in ms. */
+    public int powderChestReleaseDelayMs = 50;
+    /** Break let go -> right-click, in ms. */
+    public int powderChestClickDelayMs = 75;
+    /** Crosshair off the chest -> break back on, in ms. */
+    public int powderChestResumeDelayMs = 100;
+    public boolean powderChestShowToggleMessage = true;
     /** /mqo skip walks past waypoints whose lobby-check block is gone. */
     public boolean orderedWaypointSkipObstructed = false;
     /** At or below this many blocks near a waypoint, /mqo skip treats it as mined out. */
@@ -388,18 +381,11 @@ public class MiningConfig {
     }
 
     private void ensureDefaults() {
-        if (skyMallBuff == null) skyMallBuff = "";
         if (wispRadiusColor == null || wispRadiusColor.length != 3) wispRadiusColor = new float[]{0.45f, 0.85f, 1.0f};
         if (mineshaftPortalColor == null || mineshaftPortalColor.length != 3) mineshaftPortalColor = new float[]{170f / 255f, 1.0f, 85f / 255f};
         if (customFogColor == null || customFogColor.length != 3) customFogColor = new float[]{170f / 255f, 190f / 255f, 220f / 255f};
         if (wispRadiusRadius < 1f || wispRadiusRadius > 64f) wispRadiusRadius = 30.0f;
         if (wispRadiusAlpha < 0.05f || wispRadiusAlpha > 1f) wispRadiusAlpha = 0.35f;
-        if (shaftSummaryEfficiencyPause < 1 || shaftSummaryEfficiencyPause > 120) shaftSummaryEfficiencyPause = 15;
-        if (shaftSummaryMaxSavedRuns < 0 || shaftSummaryMaxSavedRuns > 1000) shaftSummaryMaxSavedRuns = 100;
-        // Null = never written by this build: Jeff's defaults (every type summarised, only Jasper saved).
-        if (shaftSummaryTypes == null) shaftSummaryTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.defaultSummaryKeys());
-        if (shaftSummarySavedTypes == null) shaftSummarySavedTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.defaultSavedKeys());
-        if (shaftSummaryRanksBy == null) shaftSummaryRanksBy = new java.util.ArrayList<>();
         if (commissionHudScale < 0.5f || commissionHudScale > 2.0f) {
             commissionHudScale = 1.0f;
         }
@@ -580,26 +566,6 @@ public class MiningConfig {
         RollingMinerCooldown.setReadyLabelColor(rollingReadyLabelColor[0], rollingReadyLabelColor[1], rollingReadyLabelColor[2]);
         RollingMinerCooldown.setReadyValueColor(rollingReadyValueColor[0], rollingReadyValueColor[1], rollingReadyValueColor[2]);
 
-        forfun.miningqol.client.summary.ShaftSummary.setEnabled(shaftSummaryEnabled);
-        forfun.miningqol.client.summary.ShaftSummary.setFrontLoaded(shaftSummaryFrontLoaded);
-        forfun.miningqol.client.summary.ShaftSummary.setTrackAllShaftSummaries(shaftSummaryTrackAll);
-        forfun.miningqol.client.summary.ShaftSummary.setShowBuffsInSummary(shaftSummaryShowBuffs);
-        forfun.miningqol.client.summary.ShaftSummary.setTrackEfficiencyInSummary(shaftSummaryTrackEfficiency);
-        forfun.miningqol.client.summary.ShaftSummary.setEfficiencyPauseSeconds(shaftSummaryEfficiencyPause);
-        forfun.miningqol.client.summary.ShaftSummary.setAutoSave(shaftSummaryAutoSave);
-        forfun.miningqol.client.summary.ShaftSummary.setPrintToChat(shaftSummaryPrintToChat);
-        forfun.miningqol.client.summary.ShaftSummary.setPrintToParty(shaftSummaryPrintToParty);
-        forfun.miningqol.client.summary.ShaftSummary.setMaxSavedRuns(shaftSummaryMaxSavedRuns);
-        forfun.miningqol.client.summary.ShaftSummary.setSummaryShaftTypes(shaftSummaryTypes);
-        forfun.miningqol.client.summary.ShaftSummary.setSavedShaftTypes(shaftSummarySavedTypes);
-        forfun.miningqol.client.summary.ShaftSummary.setRanksBy(shaftSummaryRanksBy);
-        forfun.miningqol.client.summary.ShaftSummary.setGemMiningSpeed(shaftSummaryGemMiningSpeed);
-        forfun.miningqol.client.summary.ShaftSummary.setBlueCheese(shaftSummaryBlueCheese);
-        forfun.miningqol.client.summary.ShaftSummary.setValueAsFlawless(shaftSummaryValueGemsAsFlawless);
-        forfun.miningqol.client.summary.ShaftSummary.setSellOffer(shaftSummarySellOffer);
-
-        forfun.miningqol.client.summary.SkyMallTracker.restore(skyMallBuff, skyMallBuffUntil);
-
         WispRadius.setEnabled(wispRadiusEnabled);
         WispRadius.setEdgeOnly(wispRadiusEdgeOnly);
         WispRadius.setFloorBlocksOnly(wispRadiusFloorBlocksOnly);
@@ -629,11 +595,18 @@ public class MiningConfig {
 
         forfun.miningqol.client.CommissionGui.setEnabled(commGuiEnabled);
         forfun.miningqol.client.CommissionGui.setShowProgress(commGuiShowProgress);
-        forfun.miningqol.client.CommissionGui.setStatsInMenu(commGuiStatsInMenu);
-        if (commMenuStatsMoved) {
-            forfun.miningqol.client.CommissionGui.setStatsPosition(commMenuStatsX, commMenuStatsY);
-            forfun.miningqol.client.CommissionGui.statsAnchor().load(anchorMode(commMenuStatsAnchorModeX), commMenuStatsAnchorOffX,
-                anchorMode(commMenuStatsAnchorModeY), commMenuStatsAnchorOffY);
+        CommCountHUD.setEnabled(commCountEnabled);
+        CommCountHUD.setPosition(commCountX, commCountY);
+        CommCountHUD.anchor().load(anchorMode(commCountAnchorModeX), commCountAnchorOffX, anchorMode(commCountAnchorModeY), commCountAnchorOffY);
+        CommCountHUD.setHideWithF1(commCountHideWithF1);
+        CommCountHUD.setTextAlign(commCountTextAlign);
+        CommCountHUD.setShowSession(commCountShowSession);
+        CommCountHUD.setNumberOnly(commCountNumberOnly);
+        if (commCountLabelColor != null && commCountLabelColor.length >= 3) {
+            CommCountHUD.setLabelColor(commCountLabelColor[0], commCountLabelColor[1], commCountLabelColor[2]);
+        }
+        if (commCountValueColor != null && commCountValueColor.length >= 3) {
+            CommCountHUD.setValueColor(commCountValueColor[0], commCountValueColor[1], commCountValueColor[2]);
         }
         forfun.miningqol.client.CommissionGui.setScale(commGuiScale);
         forfun.miningqol.client.CommissionGui.setButtonSize(commGuiButtonSize);
@@ -730,6 +703,8 @@ public class MiningConfig {
         OrderedWaypointManager.setBlockOutlineAlpha(orderedWaypointBlockOutlineAlpha);
         OrderedWaypointManager.setBlockOutlineThickness(orderedWaypointBlockOutlineThickness);
         OrderedWaypointManager.setBlockOutlineFill(orderedWaypointBlockOutlineFill);
+        OrderedWaypointManager.setBlockOutlineVisibleOnly(orderedWaypointBlockOutlineVisibleOnly);
+        OrderedWaypointManager.setBlockOutlineCurrent(orderedWaypointBlockOutlineCurrent);
         OrderedWaypointManager.setSkipObstructed(orderedWaypointSkipObstructed);
         OrderedWaypointManager.setObstructedThreshold(orderedWaypointObstructedThreshold);
     }
@@ -838,27 +813,6 @@ public class MiningConfig {
         rollingReadyLabelColor = RollingMinerCooldown.getReadyLabelColor();
         rollingReadyValueColor = RollingMinerCooldown.getReadyValueColor();
 
-        shaftSummaryEnabled = forfun.miningqol.client.summary.ShaftSummary.isEnabled();
-        shaftSummaryFrontLoaded = forfun.miningqol.client.summary.ShaftSummary.isFrontLoaded();
-        shaftSummaryTrackAll = forfun.miningqol.client.summary.ShaftSummary.isTrackAllShaftSummaries();
-        shaftSummaryShowBuffs = forfun.miningqol.client.summary.ShaftSummary.isShowBuffsInSummary();
-        shaftSummaryTrackEfficiency = forfun.miningqol.client.summary.ShaftSummary.isTrackEfficiencyInSummary();
-        shaftSummaryEfficiencyPause = forfun.miningqol.client.summary.ShaftSummary.getEfficiencyPauseSeconds();
-        shaftSummaryAutoSave = forfun.miningqol.client.summary.ShaftSummary.isAutoSave();
-        shaftSummaryPrintToChat = forfun.miningqol.client.summary.ShaftSummary.isPrintToChat();
-        shaftSummaryPrintToParty = forfun.miningqol.client.summary.ShaftSummary.isPrintToParty();
-        shaftSummaryMaxSavedRuns = forfun.miningqol.client.summary.ShaftSummary.getMaxSavedRuns();
-        shaftSummaryTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getSummaryShaftTypes());
-        shaftSummarySavedTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getSavedShaftTypes());
-        shaftSummaryRanksBy = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getRanksBy());
-        shaftSummaryGemMiningSpeed = forfun.miningqol.client.summary.ShaftSummary.getGemMiningSpeed();
-        shaftSummaryBlueCheese = forfun.miningqol.client.summary.ShaftSummary.isBlueCheese();
-        shaftSummaryValueGemsAsFlawless = forfun.miningqol.client.summary.ShaftSummary.isValueAsFlawless();
-        shaftSummarySellOffer = forfun.miningqol.client.summary.ShaftSummary.isSellOffer();
-
-        skyMallBuff = forfun.miningqol.client.summary.SkyMallTracker.storedBuffName();
-        skyMallBuffUntil = forfun.miningqol.client.summary.SkyMallTracker.storedUntil();
-
         wispRadiusEnabled = WispRadius.isEnabled();
         wispRadiusEdgeOnly = WispRadius.isEdgeOnly();
         wispRadiusFloorBlocksOnly = WispRadius.isFloorBlocksOnly();
@@ -892,16 +846,19 @@ public class MiningConfig {
 
         commGuiEnabled = forfun.miningqol.client.CommissionGui.isEnabled();
         commGuiShowProgress = forfun.miningqol.client.CommissionGui.isShowProgress();
-        commGuiStatsInMenu = forfun.miningqol.client.CommissionGui.isStatsInMenu();
-        commMenuStatsMoved = forfun.miningqol.client.CommissionGui.isStatsMoved();
-        if (commMenuStatsMoved) {
-            commMenuStatsX = forfun.miningqol.client.CommissionGui.getStatsX();
-            commMenuStatsY = forfun.miningqol.client.CommissionGui.getStatsY();
-            commMenuStatsAnchorModeX = forfun.miningqol.client.CommissionGui.statsAnchor().modeX();
-            commMenuStatsAnchorOffX = forfun.miningqol.client.CommissionGui.statsAnchor().offX();
-            commMenuStatsAnchorModeY = forfun.miningqol.client.CommissionGui.statsAnchor().modeY();
-            commMenuStatsAnchorOffY = forfun.miningqol.client.CommissionGui.statsAnchor().offY();
-        }
+        commCountEnabled = CommCountHUD.isEnabled();
+        commCountX = CommCountHUD.getX();
+        commCountY = CommCountHUD.getY();
+        commCountAnchorModeX = CommCountHUD.anchor().modeX();
+        commCountAnchorOffX = CommCountHUD.anchor().offX();
+        commCountAnchorModeY = CommCountHUD.anchor().modeY();
+        commCountAnchorOffY = CommCountHUD.anchor().offY();
+        commCountHideWithF1 = CommCountHUD.isHideWithF1();
+        commCountTextAlign = CommCountHUD.getTextAlign();
+        commCountShowSession = CommCountHUD.isShowSession();
+        commCountNumberOnly = CommCountHUD.isNumberOnly();
+        commCountLabelColor = CommCountHUD.getLabelColor();
+        commCountValueColor = CommCountHUD.getValueColor();
         commGuiScale = forfun.miningqol.client.CommissionGui.getScale();
         commGuiButtonSize = forfun.miningqol.client.CommissionGui.getButtonSize();
         commGuiAccentColor = forfun.miningqol.client.CommissionGui.getAccentColor();
@@ -993,6 +950,8 @@ public class MiningConfig {
         orderedWaypointBlockOutlineAlpha = OrderedWaypointManager.getBlockOutlineAlpha();
         orderedWaypointBlockOutlineThickness = OrderedWaypointManager.getBlockOutlineThickness();
         orderedWaypointBlockOutlineFill = OrderedWaypointManager.isBlockOutlineFill();
+        orderedWaypointBlockOutlineVisibleOnly = OrderedWaypointManager.isBlockOutlineVisibleOnly();
+        orderedWaypointBlockOutlineCurrent = OrderedWaypointManager.isBlockOutlineCurrent();
         orderedWaypointSkipObstructed = OrderedWaypointManager.isSkipObstructed();
         orderedWaypointObstructedThreshold = OrderedWaypointManager.getObstructedThreshold();
     }

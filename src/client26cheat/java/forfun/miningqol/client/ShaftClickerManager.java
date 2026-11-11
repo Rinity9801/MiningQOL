@@ -146,7 +146,7 @@ public class ShaftClickerManager {
         }
 
         // Auto click when on the mining slot, but don't force-release when off it
-        if (currentSlot == miningSlot) {
+        if (currentSlot == miningSlot && !PowderChestClickManager.isSuppressingBreak()) {
             client.options.keyAttack.setDown(true);
             wasAutoClicking = true;
         } else if (wasAutoClicking) {

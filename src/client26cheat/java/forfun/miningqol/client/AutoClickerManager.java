@@ -234,7 +234,8 @@ public class AutoClickerManager {
             client.options.keyAttack.setDown(false);
             handleManiacMinerSequence(client);
         } else {
-            client.options.keyAttack.setDown(currentSlot == expectedSlot);
+            client.options.keyAttack.setDown(currentSlot == expectedSlot
+                && !PowderChestClickManager.isSuppressingBreak());
         }
     }
 

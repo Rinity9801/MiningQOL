@@ -7,6 +7,7 @@ import forfun.miningqol.client.CommClaimManager
 import forfun.miningqol.client.EmptyStashManager
 import forfun.miningqol.client.EtherwarpClickManager
 import forfun.miningqol.client.InShaftClickManager
+import forfun.miningqol.client.PowderChestClickManager
 import forfun.miningqol.client.ShaftClickerManager
 import forfun.miningqol.client.ShaftJoinCdManager
 
@@ -76,6 +77,13 @@ object CheatGui {
             fun bool(name: String, desc: String, get: () -> Boolean, set: (Boolean) -> Unit) =
                 forfun.miningqol.client.shatter.BoolSetting(name, desc, false)
                     .bind<forfun.miningqol.client.shatter.BoolSetting>({ get() }, { v -> set(v) })
+            // The clicker's toggle key, first in its settings (right-click the module to unfold them).
+            fun forfun.miningqol.client.shatter.Module.keybind(mappingName: String) = apply {
+                net.minecraft.client.KeyMapping.get(mappingName)?.let {
+                    add(forfun.miningqol.client.shatter.ShatterModules.keyMappingSetting(it,
+                        "Keybind", "Toggles it — click the box, press a key (right-click clears)"))
+                }
+            }
             fun slider(name: String, desc: String, min: Double, max: Double, step: Double, unit: String,
                        get: () -> Double, set: (Double) -> Unit) =
                 forfun.miningqol.client.shatter.SliderSetting(name, desc, get(), min, max, step, unit)
@@ -83,6 +91,7 @@ object CheatGui {
 
             module("CoalClick", "Auto clicker — toggle with its keybind", clickers,
                 { AutoClickerManager.isEnabled() }, { AutoClickerManager.setEnabled(it) })
+                .keybind("key.miningqol.toggle_coalclick")
                 .add(slider("Mining Slot", "Hotbar slot of the drill", 1.0, 9.0, 1.0, "",
                     { (AutoClickerManager.getMiningSlot() + 1).toDouble() }, { AutoClickerManager.setMiningSlot(it.toInt() - 1) }))
                 .add(bool("Rod Swap", "Swap to your hotbar fishing rod and right-click it before the ability",
@@ -104,6 +113,7 @@ object CheatGui {
 
             module("In Shaft Click", "Cold-aware clicker", clickers,
                 { InShaftClickManager.isEnabled() }, { InShaftClickManager.setEnabled(it) })
+                .keybind("key.miningqol.toggle_inshaftclick")
                 .add(slider("Mining Slot", "", 1.0, 9.0, 1.0, "",
                     { (InShaftClickManager.getMiningSlot() + 1).toDouble() }, { InShaftClickManager.setMiningSlot(it.toInt() - 1) }))
                 .add(slider("Second Drill Slot", "", 1.0, 9.0, 1.0, "",
@@ -123,10 +133,23 @@ object CheatGui {
 
             module("Shaft Clicker", "Mineshaft clicker", clickers,
                 { ShaftClickerManager.isEnabled() }, { ShaftClickerManager.setEnabled(it) })
+                .keybind("key.miningqol.toggle_shaftclick")
                 .add(slider("Mining Slot", "", 1.0, 9.0, 1.0, "",
                     { (ShaftClickerManager.getMiningSlot() + 1).toDouble() }, { ShaftClickerManager.setMiningSlot(it.toInt() - 1) }))
                 .add(bool("Toggle Message", "Chat message when toggled via keybind",
                     { ShaftClickerManager.isShowToggleMessage() }, { ShaftClickerManager.setShowToggleMessage(it) }))
+
+            module("Powder Chest Click", "Lets go of break to right-click powder chests, then resumes — toggle with its keybind", clickers,
+                { PowderChestClickManager.isEnabled() }, { PowderChestClickManager.setEnabled(it) })
+                .keybind("key.miningqol.toggle_powderchest")
+                .add(slider("Release Delay", "Crosshair on the chest until break is let go", 0.0, 500.0, 5.0, " ms",
+                    { PowderChestClickManager.getReleaseDelayMs().toDouble() }, { PowderChestClickManager.setReleaseDelayMs(it.toInt()) }))
+                .add(slider("Click Delay", "Break let go until the right-click", 0.0, 500.0, 5.0, " ms",
+                    { PowderChestClickManager.getClickDelayMs().toDouble() }, { PowderChestClickManager.setClickDelayMs(it.toInt()) }))
+                .add(slider("Resume Delay", "Crosshair off the chest until break turns back on", 0.0, 1000.0, 5.0, " ms",
+                    { PowderChestClickManager.getResumeDelayMs().toDouble() }, { PowderChestClickManager.setResumeDelayMs(it.toInt()) }))
+                .add(bool("Toggle Message", "Chat message when toggled via keybind",
+                    { PowderChestClickManager.isShowToggleMessage() }, { PowderChestClickManager.setShowToggleMessage(it) }))
 
             module("Comm Claim", "/claimcomms — auto commission claiming", automation, null, null)
                 .add(bool("Auto Trigger", "Run when all mining commissions complete",

@@ -160,7 +160,8 @@ public class InShaftClickManager {
 
             if (enabled) {
                 int currentSlot = getSelectedSlot(client);
-                client.options.keyAttack.setDown(currentSlot == getActiveMiningSlot());
+                client.options.keyAttack.setDown(currentSlot == getActiveMiningSlot()
+                    && !PowderChestClickManager.isSuppressingBreak());
             }
             return;
         }
@@ -204,7 +205,8 @@ public class InShaftClickManager {
             client.options.keyAttack.setDown(false);
             handleSequence(client);
         } else {
-            client.options.keyAttack.setDown(currentSlot == getActiveMiningSlot());
+            client.options.keyAttack.setDown(currentSlot == getActiveMiningSlot()
+                && !PowderChestClickManager.isSuppressingBreak());
         }
     }
 
