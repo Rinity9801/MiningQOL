@@ -17,7 +17,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.List;
+import java.util.ArrayList;
 import net.minecraft.world.phys.AABB;
 import org.joml.Vector3f;
 
@@ -76,14 +79,36 @@ public final class BlockOverlay {
         VoxelShape shape = state.isAir() ? Shapes.block() : state.getShape(client.level, pos);
         if (shape.isEmpty()) return;
 
-        // Follow the block's real shape, like vanilla's outline: a bent or branching pane (or
-        // stairs, walls, bars) is several boxes, and one box around all of them covers empty space.
+        // Follow the block's real shape: a bent or branching pane (or stairs, walls, bars) is
+        // several boxes, and one box around all of them covers empty space. Of each box, draw only
+        // the faces turned towards the camera, and only their edges, so the back of the shape
+        // never shows through see-through blocks as lines and fill inside the glass.
         double ox = pos.getX(), oy = pos.getY(), oz = pos.getZ();
         List<AABB> boxes = shape.toAabbs();
-        AABB bounds = shape.bounds();
-        double cx = (bounds.minX + bounds.maxX) / 2.0, cy = (bounds.minY + bounds.maxY) / 2.0, cz = (bounds.minZ + bounds.maxZ) / 2.0;
-
         Vec3 camera = client.gameRenderer.mainCamera().position();
+        double camX = camera.x - ox, camY = camera.y - oy, camZ = camera.z - oz;
+
+        List<float[]> faces = new ArrayList<>();
+        List<float[]> edges = new ArrayList<>();
+        Set<String> seenEdges = new HashSet<>();
+        for (AABB box : boxes) {
+            float x0 = (float) (ox + box.minX - PUSH), y0 = (float) (oy + box.minY - PUSH), z0 = (float) (oz + box.minZ - PUSH);
+            float x1 = (float) (ox + box.maxX + PUSH), y1 = (float) (oy + box.maxY + PUSH), z1 = (float) (oz + box.maxZ + PUSH);
+            if (camX < box.minX && !covered(boxes, box, 0, box.minX - EPS))
+                addFace(faces, edges, seenEdges, x0, y0, z0, x0, y0, z1, x0, y1, z1, x0, y1, z0);
+            if (camX > box.maxX && !covered(boxes, box, 0, box.maxX + EPS))
+                addFace(faces, edges, seenEdges, x1, y0, z0, x1, y1, z0, x1, y1, z1, x1, y0, z1);
+            if (camY < box.minY && !covered(boxes, box, 1, box.minY - EPS))
+                addFace(faces, edges, seenEdges, x0, y0, z0, x1, y0, z0, x1, y0, z1, x0, y0, z1);
+            if (camY > box.maxY && !covered(boxes, box, 1, box.maxY + EPS))
+                addFace(faces, edges, seenEdges, x0, y1, z0, x0, y1, z1, x1, y1, z1, x1, y1, z0);
+            if (camZ < box.minZ && !covered(boxes, box, 2, box.minZ - EPS))
+                addFace(faces, edges, seenEdges, x0, y0, z0, x0, y1, z0, x1, y1, z0, x1, y0, z0);
+            if (camZ > box.maxZ && !covered(boxes, box, 2, box.maxZ + EPS))
+                addFace(faces, edges, seenEdges, x0, y0, z1, x1, y0, z1, x1, y1, z1, x0, y1, z1);
+        }
+        if (faces.isEmpty()) return; // camera inside the block
+
         PoseStack matrices = context.poseStack();
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
@@ -95,7 +120,9 @@ public final class BlockOverlay {
             collector.submitCustomGeometry(matrices,
                 phase ? BlockOverlayRenderTypes.FILLED_PHASE : BlockOverlayRenderTypes.FILLED,
                 (pose, fill) -> {
-                    for (AABB box : boxes) addFilledBox(fill, pose, boxes, box, ox, oy, oz, r, g, b, a);
+                    for (float[] f : faces) {
+                        quad(fill, pose, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], f[9], f[10], f[11], r, g, b, a);
+                    }
                 });
         }
 
@@ -103,50 +130,59 @@ public final class BlockOverlay {
             float r = outlineColor[0], g = outlineColor[1], b = outlineColor[2], a = outlineAlpha, width = lineWidth;
             collector.submitCustomGeometry(matrices,
                 phase ? BlockOverlayRenderTypes.LINES_PHASE : BlockOverlayRenderTypes.LINES,
-                (pose, lines) -> shape.forAllEdges((x1, y1, z1, x2, y2, z2) -> line(lines, pose,
-                    (float) (ox + nudge(x1, cx)), (float) (oy + nudge(y1, cy)), (float) (oz + nudge(z1, cz)),
-                    (float) (ox + nudge(x2, cx)), (float) (oy + nudge(y2, cy)), (float) (oz + nudge(z2, cz)),
-                    r, g, b, a, width)));
+                (pose, lines) -> {
+                    for (float[] e : edges) line(lines, pose, e[0], e[1], e[2], e[3], e[4], e[5], r, g, b, a, width);
+                });
         }
 
         matrices.popPose();
     }
 
-    /** Pushed slightly away from the shape's centre so it doesn't z-fight the block's own faces. */
+    /** Pushed slightly out from each box so it doesn't z-fight the block's own faces. */
     private static final double PUSH = 0.002;
+    private static final double EPS = 1.0E-4;
 
-    private static double nudge(double v, double centre) {
-        return v > centre ? v + PUSH : v < centre ? v - PUSH : v;
+    /** A face (corners in order) and its four edges, each edge once even when faces share it. */
+    private static void addFace(List<float[]> faces, List<float[]> edges, Set<String> seen,
+                                float ax, float ay, float az, float bx, float by, float bz,
+                                float cx, float cy, float cz, float dx, float dy, float dz) {
+        faces.add(new float[]{ax, ay, az, bx, by, bz, cx, cy, cz, dx, dy, dz});
+        addEdge(edges, seen, ax, ay, az, bx, by, bz);
+        addEdge(edges, seen, bx, by, bz, cx, cy, cz);
+        addEdge(edges, seen, cx, cy, cz, dx, dy, dz);
+        addEdge(edges, seen, dx, dy, dz, ax, ay, az);
     }
 
-    /** One box of the shape, leaving out faces that are buried against another box of it. */
-    private static void addFilledBox(VertexConsumer buffer, PoseStack.Pose pose, List<AABB> shape, AABB box,
-                                     double ox, double oy, double oz,
-                                     float red, float green, float blue, float alpha) {
-        double midX = (box.minX + box.maxX) / 2.0, midY = (box.minY + box.maxY) / 2.0, midZ = (box.minZ + box.maxZ) / 2.0;
-        float minX = (float) (ox + box.minX - PUSH);
-        float minY = (float) (oy + box.minY - PUSH);
-        float minZ = (float) (oz + box.minZ - PUSH);
-        float maxX = (float) (ox + box.maxX + PUSH);
-        float maxY = (float) (oy + box.maxY + PUSH);
-        float maxZ = (float) (oz + box.maxZ + PUSH);
-
-        if (!buried(shape, box, midX, box.minY - 1.0E-4, midZ))
-            quad(buffer, pose, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ, red, green, blue, alpha);
-        if (!buried(shape, box, midX, box.maxY + 1.0E-4, midZ))
-            quad(buffer, pose, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, red, green, blue, alpha);
-        if (!buried(shape, box, midX, midY, box.minZ - 1.0E-4))
-            quad(buffer, pose, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ, red, green, blue, alpha);
-        if (!buried(shape, box, midX, midY, box.maxZ + 1.0E-4))
-            quad(buffer, pose, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, red, green, blue, alpha);
-        if (!buried(shape, box, box.minX - 1.0E-4, midY, midZ))
-            quad(buffer, pose, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ, red, green, blue, alpha);
-        if (!buried(shape, box, box.maxX + 1.0E-4, midY, midZ))
-            quad(buffer, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ, red, green, blue, alpha);
+    private static void addEdge(List<float[]> edges, Set<String> seen,
+                                float ax, float ay, float az, float bx, float by, float bz) {
+        String a = ax + "," + ay + "," + az, b = bx + "," + by + "," + bz;
+        if (seen.add(a.compareTo(b) < 0 ? a + "|" + b : b + "|" + a)) edges.add(new float[]{ax, ay, az, bx, by, bz});
     }
 
-    /** Whether a point just outside one of {@code self}'s faces is inside another box of the shape. */
-    private static boolean buried(List<AABB> shape, AABB self, double x, double y, double z) {
+    /**
+     * Whether one of {@code self}'s faces is buried against the rest of the shape: its corners and
+     * centre, just outside the face (axis 0/1/2 = X/Y/Z, at {@code plane}), are all inside other
+     * boxes. A face only partly covered, like a pane's crossbar where the stem joins it, still draws.
+     */
+    private static boolean covered(List<AABB> shape, AABB self, int axis, double plane) {
+        double[][] uv = axis == 0 ? new double[][]{{self.minY, self.maxY}, {self.minZ, self.maxZ}}
+            : axis == 1 ? new double[][]{{self.minX, self.maxX}, {self.minZ, self.maxZ}}
+            : new double[][]{{self.minX, self.maxX}, {self.minY, self.maxY}};
+        double[] us = {uv[0][0] + EPS, uv[0][1] - EPS, (uv[0][0] + uv[0][1]) / 2.0};
+        double[] vs = {uv[1][0] + EPS, uv[1][1] - EPS, (uv[1][0] + uv[1][1]) / 2.0};
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if ((i == 2) != (j == 2)) continue; // the four corners and the centre
+                double u = us[i], v = vs[j];
+                double x = axis == 0 ? plane : u, y = axis == 0 ? u : axis == 1 ? plane : v, z = axis == 2 ? plane : v;
+                if (axis == 1) { x = u; z = v; }
+                if (!insideOther(shape, self, x, y, z)) return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean insideOther(List<AABB> shape, AABB self, double x, double y, double z) {
         for (AABB other : shape) {
             if (other != self && other.contains(x, y, z)) return true;
         }
