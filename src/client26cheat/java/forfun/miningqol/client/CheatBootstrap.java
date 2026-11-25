@@ -288,6 +288,7 @@ public final class CheatBootstrap {
             PowderChestClickManager.setClickDelayMs(config.powderChestClickDelayMs);
             PowderChestClickManager.setResumeDelayMs(config.powderChestResumeDelayMs);
             PowderChestClickManager.setShowToggleMessage(config.powderChestShowToggleMessage);
+            PowderChestClickManager.setAutoMine(config.powderChestAutoMine);
         };
 
         CheatHooks.storeConfig = () -> {
@@ -349,6 +350,7 @@ public final class CheatBootstrap {
             config.powderChestClickDelayMs = PowderChestClickManager.getClickDelayMs();
             config.powderChestResumeDelayMs = PowderChestClickManager.getResumeDelayMs();
             config.powderChestShowToggleMessage = PowderChestClickManager.isShowToggleMessage();
+            config.powderChestAutoMine = PowderChestClickManager.isAutoMine();
         };
     }
 }

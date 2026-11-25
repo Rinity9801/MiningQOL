@@ -384,6 +384,8 @@ public class MiningConfig {
     /** Crosshair off the chest -> break back on, in ms. */
     public int powderChestResumeDelayMs = 100;
     public boolean powderChestShowToggleMessage = true;
+    /** Powder Chest Click holds break and uses the ability itself, with CoalClick's settings. */
+    public boolean powderChestAutoMine = true;
     /** /mqo skip walks past waypoints whose lobby-check block is gone. */
     public boolean orderedWaypointSkipObstructed = false;
     /** At or below this many blocks near a waypoint, /mqo skip treats it as mined out. */

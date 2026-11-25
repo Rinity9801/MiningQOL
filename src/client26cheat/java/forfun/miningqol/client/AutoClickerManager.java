@@ -1,12 +1,20 @@
 package forfun.miningqol.client;
 
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.FishingRodItem;
 import net.minecraft.world.item.ItemStack;
 
+/**
+ * CoalClick: holds break while the drill is out and fires its pickaxe ability whenever it reads
+ * ready. Also the engine behind Powder Chest Click's Auto Mine, which runs it with these same
+ * settings while CoalClick itself is off — see {@link #isRunning()}.
+ */
 public class AutoClickerManager {
     private static boolean enabled = false;
+    /** Whether the last tick drove the keys, so the one after it stops can let them go. */
+    private static boolean wasRunning = false;
     private static boolean inSequence = false;
     private static int sequenceStep = 0;
     private static int sequenceTickCounter = 0;
@@ -69,14 +77,35 @@ public class AutoClickerManager {
         inSequence = false;
         sequenceStep = 0;
         sequenceTickCounter = 0;
-        if (!enabled) {
+        // Powder Chest Click's Auto Mine can keep the engine going with CoalClick off.
+        if (!isRunning()) {
             Minecraft client = Minecraft.getInstance();
-            if (client != null) {
-                client.options.keyAttack.setDown(false);
-                client.options.keyUse.setDown(false);
-            }
+            if (client != null) releaseKeys(client);
+            wasRunning = false;
         }
         // Turned on: tick fires as soon as the ability reads ready.
+    }
+
+    /** True while the engine is driving: CoalClick is on, or Powder Chest Click's Auto Mine is. */
+    public static boolean isRunning() {
+        return enabled || PowderChestClickManager.drivesBreak();
+    }
+
+    /**
+     * Holds or lets go of a key whatever vanilla's toggle option says. With Attack/Use set to
+     * Toggle, setDown(true) flips the key and setDown(false) is ignored, so setting it every tick
+     * flickered break on and off; this touches the key only when it is in the wrong state, and
+     * flips it there when the plain set did not take.
+     */
+    private static void setKey(KeyMapping key, boolean down) {
+        if (key.isDown() == down) return;
+        key.setDown(down);
+        if (key.isDown() != down) key.setDown(true);
+    }
+
+    private static void releaseKeys(Minecraft client) {
+        setKey(client.options.keyAttack, false);
+        setKey(client.options.keyUse, false);
     }
 
     public static void setEnabled(boolean value) {
@@ -195,6 +224,20 @@ public class AutoClickerManager {
             return;
         }
 
+        if (!isRunning()) {
+            // Whichever toggle was driving just went off: let go of break once, then stay out
+            // of the way of the player and the other clickers.
+            if (wasRunning) {
+                releaseKeys(client);
+                inSequence = false;
+                sequenceStep = 0;
+                sequenceTickCounter = 0;
+            }
+            wasRunning = false;
+            return;
+        }
+        wasRunning = true;
+
         // An activation that drew no "used your ability" line fired early or didn't register, so
         // it may go again sooner; a real use puts the ability on cooldown and Ready stays false.
         long currentTime = System.currentTimeMillis();
@@ -209,15 +252,13 @@ public class AutoClickerManager {
         boolean ready = customCooldownEnabled ? customRemainingSeconds() <= 0 : hudSaysReady();
         // Not from inside a menu (chat included): the right-click would only hit the GUI.
         boolean inGui = client.gui.screen() != null;
-        if (enabled && !inSequence && canStartNewSequence && ready && !inGui) {
+        // Nor while Powder Chest Click is busy with a chest: the crosshair is on it, so the
+        // ability's right-click would land on the chest instead.
+        if (!inSequence && canStartNewSequence && ready && !inGui && !PowderChestClickManager.isBusy()) {
             debug(client, "Fire | custom=" + customCooldownEnabled + " lastUse=" + lastAbilityUseAt);
             inSequence = true;
             sequenceStep = 0;
             sequenceTickCounter = 0;
-        }
-
-        if (!enabled) {
-            return;
         }
 
         int currentSlot = getSelectedSlot(client);
@@ -225,16 +266,16 @@ public class AutoClickerManager {
         if (inSequence && inGui) {
             // A menu opened mid-swap: drop the activation and go back to the drill. It fires
             // again once the menu closes, as the ability still reads ready.
-            client.options.keyUse.setDown(false);
+            setKey(client.options.keyUse, false);
             setSelectedSlot(client, expectedSlot);
             inSequence = false;
             sequenceStep = 0;
             sequenceTickCounter = 0;
         } else if (inSequence) {
-            client.options.keyAttack.setDown(false);
+            setKey(client.options.keyAttack, false);
             handleManiacMinerSequence(client);
         } else {
-            client.options.keyAttack.setDown(currentSlot == expectedSlot
+            setKey(client.options.keyAttack, currentSlot == expectedSlot
                 && !PowderChestClickManager.isSuppressingBreak());
         }
     }
@@ -285,9 +326,9 @@ public class AutoClickerManager {
 
             case 2: // Right click rod
                 if (sequenceTickCounter == 1) debug(client, "  -> right-click ROD | held=" + heldItemName(client));
-                client.options.keyUse.setDown(true);
+                setKey(client.options.keyUse, true);
                 if (sequenceTickCounter >= 2) {
-                    client.options.keyUse.setDown(false);
+                    setKey(client.options.keyUse, false);
                     // The second drill has its own swap delay; passing through the main drill
                     // first only added mainDrillDelay ticks without clicking it.
                     sequenceStep = enableSecondDrill ? 5 : 3;
@@ -314,9 +355,9 @@ public class AutoClickerManager {
 
             case 50: // Right click main drill ability (no second drill)
                 if (sequenceTickCounter == 1) debug(client, "  -> right-click MAIN DRILL (activate) | held=" + heldItemName(client));
-                client.options.keyUse.setDown(true);
+                setKey(client.options.keyUse, true);
                 if (sequenceTickCounter >= 2) {
-                    client.options.keyUse.setDown(false);
+                    setKey(client.options.keyUse, false);
                     sequenceStep = 9; // End
                     sequenceTickCounter = 0;
                 }
@@ -337,9 +378,9 @@ public class AutoClickerManager {
 
             case 7: // Right click second drill
                 if (sequenceTickCounter == 1) debug(client, "  -> right-click 2ND DRILL (activate) | held=" + heldItemName(client));
-                client.options.keyUse.setDown(true);
+                setKey(client.options.keyUse, true);
                 if (sequenceTickCounter >= 2) {
-                    client.options.keyUse.setDown(false);
+                    setKey(client.options.keyUse, false);
                     sequenceStep = 8;
                     sequenceTickCounter = 0;
                 }
@@ -365,10 +406,6 @@ public class AutoClickerManager {
     }
 
     public static void cleanup() {
-        if (enabled) {
-            Minecraft client = Minecraft.getInstance();
-            client.options.keyAttack.setDown(false);
-            client.options.keyUse.setDown(false);
-        }
+        if (isRunning()) releaseKeys(Minecraft.getInstance());
     }
 }

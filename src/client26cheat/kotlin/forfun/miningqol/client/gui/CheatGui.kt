@@ -131,6 +131,8 @@ object CheatGui {
 
             module("Powder Chest Click", "Lets go of break to right-click powder chests, then resumes — toggle with its keybind", clickers,
                 { PowderChestClickManager.isEnabled() }, { PowderChestClickManager.setEnabled(it) })
+                .add(bool("Auto Mine", "Hold break and use the ability like CoalClick, with CoalClick's slot and ability settings — off while another clicker is on",
+                    { PowderChestClickManager.isAutoMine() }, { PowderChestClickManager.setAutoMine(it) }))
                 .add(slider("Release Delay", "Crosshair on the chest until break is let go", 0.0, 500.0, 5.0, " ms",
                     { PowderChestClickManager.getReleaseDelayMs().toDouble() }, { PowderChestClickManager.setReleaseDelayMs(it.toInt()) }))
                 .add(slider("Click Delay", "Break let go until the right-click", 0.0, 500.0, 5.0, " ms",

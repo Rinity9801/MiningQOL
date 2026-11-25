@@ -19,6 +19,8 @@ import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.scores.Scoreboard;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -70,6 +72,11 @@ public class ShaftESP {
     private static final Set<Integer> littlefootEntityIds = new HashSet<>();
     /** Entity ID -> skin hash ("" when the profile carries none), so the profile is decoded once. */
     private static final Map<Integer, String> skinHashes = new HashMap<>();
+    private static final Logger LOGGER = LoggerFactory.getLogger("MiningQOL/ShaftESP");
+    /** When the sidebar last started reading as a mineshaft; the zero point for the sighting log. */
+    private static long minesEnteredAt;
+    /** Littlefoot entity IDs already logged this shaft, so each sighting is logged once. */
+    private static final Set<Integer> loggedLittlefeet = new HashSet<>();
 
     private static boolean checkIfInMineshaft() {
         Minecraft client = Minecraft.getInstance();
@@ -115,6 +122,10 @@ public class ShaftESP {
             isInMines = checkIfInMineshaft();
             locationCheckCooldown = 20;
         }
+        if (isInMines && !wasInMines) {
+            minesEnteredAt = System.currentTimeMillis();
+            loggedLittlefeet.clear();
+        }
 
         if (!littlefootEnabled && !mobsEnabled && !anySkinMobEnabled()) {
             trackedEntities.clear();
@@ -140,10 +151,12 @@ public class ShaftESP {
 
         // Skin pass first: Hypixel's humanoid mobs are fake players in a fixed skin, and the
         // profile's texture hash names the mob exactly — so the box lands on the mob itself.
+        // No real-player filter here: the hash alone rules real players out, and that filter
+        // skips a v4-UUID mob for as long as Hypixel leaves its tab entry up after spawning.
         List<Player> skinned = level.getEntitiesOfClass(
             Player.class,
             client.player.getBoundingBox().inflate(800),
-            e -> isTrackableMob(client, e)
+            e -> e != client.player
         );
         List<Player> skinLittlefeet = new java.util.ArrayList<>();
         for (Player player : skinned) {
@@ -156,7 +169,10 @@ public class ShaftESP {
             boolean littlefoot = mob == SkinMob.LITTLEFOOT;
             if (littlefoot ? !littlefootEnabled : !mob.isEnabled()) continue;
             trackedEntities.put(player.getId(), new Track(mob, littlefoot));
-            if (littlefoot) skinLittlefeet.add(player);
+            if (littlefoot) {
+                skinLittlefeet.add(player);
+                logFirstSighting(client, player, "skin");
+            }
         }
 
         // Identify littlefoot entities via nametag armor stands — the fallback for when the skin
@@ -181,7 +197,10 @@ public class ShaftESP {
                     break;
                 }
             }
-            if (!labelsSkinMob) littlefootEntityIds.add(stand.getId());
+            if (!labelsSkinMob) {
+                littlefootEntityIds.add(stand.getId());
+                logFirstSighting(client, stand, "nametag");
+            }
         }
 
         if (mobsEnabled) {
@@ -230,6 +249,29 @@ public class ShaftESP {
             }
         }
 
+    }
+
+    /**
+     * Logs a Littlefoot the first time the ESP picks it up, to tell a late detection's cause.
+     *
+     * <p>{@code tickCount} counts client ticks since the entity reached this client: a low
+     * count on a late sighting means Hypixel only just sent it (range or a late spawn), a
+     * high one means the client had it all along and the ESP failed to recognise it.
+     */
+    private static void logFirstSighting(Minecraft client, Entity entity, String via) {
+        if (!loggedLittlefeet.add(entity.getId())) return;
+        String profile = "";
+        if (entity instanceof Player player) {
+            boolean inTab = client.getConnection() != null
+                && client.getConnection().getPlayerInfo(player.getUUID()) != null;
+            profile = ", uuid v" + player.getUUID().version() + (inTab ? ", in tab list" : ", not in tab list");
+        }
+        LOGGER.info("[ShaftESP] Littlefoot first seen via {}: {}s after entering, {} blocks away, on client {} ticks{}",
+            via,
+            String.format(java.util.Locale.ROOT, "%.1f", (System.currentTimeMillis() - minesEnteredAt) / 1000.0),
+            Math.round(Math.sqrt(entity.distanceToSqr(client.player))),
+            entity.tickCount,
+            profile);
     }
 
     /** Any of the skin-matched mobs other than the Littlefoot switched on. */
@@ -356,6 +398,7 @@ public class ShaftESP {
         trackedEntities.clear();
         littlefootEntityIds.clear();
         skinHashes.clear();
+        loggedLittlefeet.clear();
         isInMines = false;
     }
 
