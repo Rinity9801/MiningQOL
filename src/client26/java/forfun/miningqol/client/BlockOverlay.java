@@ -7,6 +7,9 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.feature.CustomFeatureRenderer;
+import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
 import net.minecraft.client.renderer.state.level.BlockOutlineRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
@@ -117,7 +120,7 @@ public final class BlockOverlay {
         SubmitNodeCollector collector = context.submitNodeCollector();
         if (mode == Mode.FILL || mode == Mode.FILLED_OUTLINE) {
             float r = fillColor[0], g = fillColor[1], b = fillColor[2], a = fillAlpha;
-            collector.submitCustomGeometry(matrices,
+            submit(collector, matrices,
                 phase ? BlockOverlayRenderTypes.FILLED_PHASE : BlockOverlayRenderTypes.FILLED,
                 (pose, fill) -> {
                     for (float[] f : faces) {
@@ -128,7 +131,7 @@ public final class BlockOverlay {
 
         if (mode == Mode.OUTLINE || mode == Mode.FILLED_OUTLINE) {
             float r = outlineColor[0], g = outlineColor[1], b = outlineColor[2], a = outlineAlpha, width = lineWidth;
-            collector.submitCustomGeometry(matrices,
+            submit(collector, matrices,
                 phase ? BlockOverlayRenderTypes.LINES_PHASE : BlockOverlayRenderTypes.LINES,
                 (pose, lines) -> {
                     for (float[] e : edges) line(lines, pose, e[0], e[1], e[2], e[3], e[4], e[5], r, g, b, a, width);
@@ -136,6 +139,16 @@ public final class BlockOverlay {
         }
 
         matrices.popPose();
+    }
+
+    /**
+     * Drawn after all terrain, see-through blocks included (like NoammAddons), so glass can't paint
+     * over the outline at a pane's edges; Phase draws on top of everything.
+     */
+    private static void submit(SubmitNodeCollector collector, PoseStack matrices, RenderType type,
+                               SubmitNodeCollector.CustomGeometryRenderer renderer) {
+        collector.submitCustom(phase ? SubmitRenderPhases.ALWAYS_ON_TOP : SubmitRenderPhases.AFTER_TERRAIN,
+            new CustomFeatureRenderer.Submit(matrices.last().copy(), type, renderer));
     }
 
     /** Pushed slightly out from each box so it doesn't z-fight the block's own faces. */
