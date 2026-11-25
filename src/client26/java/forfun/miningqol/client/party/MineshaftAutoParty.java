@@ -67,6 +67,9 @@ public final class MineshaftAutoParty {
     /** "The party invite to [MVP+] Bob has expired" — that player is no longer waited for. */
     private static final Pattern INVITE_EXPIRED =
         Pattern.compile("The party invite to (?:\\[[^\\]]+\\] )?([A-Za-z0-9_]{1,16}) has expired");
+    /** "[MVP+] You invited [MVP+] Bob to the party!" — Hypixel accepted the invite to Bob. */
+    private static final Pattern INVITE_SENT =
+        Pattern.compile("invited (?:\\[[^\\]]+\\] )?([A-Za-z0-9_]{1,16}) to the party");
 
     private enum Stage { IDLE, WAITING_JOIN, WARP_PENDING, DISBAND_PENDING }
 
@@ -115,7 +118,6 @@ public final class MineshaftAutoParty {
     private static final Map<String, Signup> signups = new LinkedHashMap<>();
 
     private static Stage stage = Stage.IDLE;
-    private static long stageStartedAt;
     private static long actionAt;
     private static long lastScan;
     /** Set once a party has gone out for the current shaft; cleared on leaving it. */
@@ -143,8 +145,15 @@ public final class MineshaftAutoParty {
     private static boolean debugChat;
     /** Everyone invited for the current shaft, so a top-up cannot double-invite. */
     private static final Set<String> roster = new LinkedHashSet<>();
-    /** Roster members (lower-cased) who joined, or whose invite expired: nobody to wait for. */
+    /** Roster members (lower-cased) who joined, or whose invite expired or failed: nobody to wait for. */
     private static final Set<String> settled = new java.util.HashSet<>();
+    /**
+     * Invitees, in the order the commands named them, that Hypixel has neither confirmed nor
+     * refused yet. Its refusals ("You cannot invite that player since they're not online.")
+     * do not name the player, but it answers each name in turn — so a refusal belongs to
+     * the oldest name still unanswered.
+     */
+    private static final Set<String> unanswered = new LinkedHashSet<>();
     /** When the latest invite went out; the warp waits up to the disband timeout from it. */
     private static long lastInviteAt;
     /**
@@ -272,14 +281,15 @@ public final class MineshaftAutoParty {
         roster.clear();
         roster.addAll(targets);
         settled.clear();
+        unanswered.clear();
+        for (String name : targets) unanswered.add(name.toLowerCase(Locale.ROOT));
         // /party takes every name at once, so the whole group goes out in one command
         // rather than a first invite plus follow-ups that Hypixel's throttle can drop.
         send(client, "party " + String.join(" ", targets));
 
         stage = Stage.WAITING_JOIN;
-        stageStartedAt = System.currentTimeMillis();
-        lastInviteAt = stageStartedAt;
-        nextInviteAt = stageStartedAt + INVITE_INTERVAL_MS;
+        lastInviteAt = System.currentTimeMillis();
+        nextInviteAt = lastInviteAt + INVITE_INTERVAL_MS;
         MqoChat.reply("§6[Auto Party] §f" + reason + " §7→ §f" + String.join("§7, §f", targets));
     }
 
@@ -288,6 +298,7 @@ public final class MineshaftAutoParty {
         // strand the players who have not been invited yet.
         if (!pendingInvites.isEmpty() && stage != Stage.IDLE && now >= nextInviteAt) {
             String invitee = pendingInvites.poll();
+            unanswered.add(invitee.toLowerCase(Locale.ROOT));
             send(client, "p invite " + invitee);
             MqoChat.reply("§6[Auto Party] §7Invited §f" + invitee);
             nextInviteAt = now + INVITE_INTERVAL_MS;
@@ -296,7 +307,9 @@ public final class MineshaftAutoParty {
 
         switch (stage) {
             case WAITING_JOIN -> {
-                if (now - stageStartedAt >= disbandSeconds * 1000L) {
+                // Timed from the latest invite, not the first: a late match invited near the
+                // end of the window was otherwise disbanded on seconds after its invite.
+                if (pendingInvites.isEmpty() && now - lastInviteAt >= disbandSeconds * 1000L) {
                     if (disbandOnTimeout) {
                         send(client, "p disband");
                         MqoChat.log("§6[Auto Party] §7Nobody joined in " + disbandSeconds + "s — disbanded.");
@@ -342,6 +355,7 @@ public final class MineshaftAutoParty {
         pendingInvites.clear();
         roster.clear();
         settled.clear();
+        unanswered.clear();
         partyEndedAt = now;
     }
 
@@ -390,10 +404,24 @@ public final class MineshaftAutoParty {
 
         Matcher expired = INVITE_EXPIRED.matcher(clean);
         if (expired.find()) {
-            settled.add(expired.group(1).toLowerCase(Locale.ROOT));
-            // The last one we were holding the warp for gave up: go now.
-            if (stage == Stage.WARP_PENDING && everyoneSettled()) {
-                actionAt = Math.min(actionAt, System.currentTimeMillis() + (long) (warpDelaySeconds * 1000f));
+            settle(expired.group(1).toLowerCase(Locale.ROOT));
+            return;
+        }
+        Matcher sent = INVITE_SENT.matcher(clean);
+        if (sent.find()) {
+            unanswered.remove(sent.group(1).toLowerCase(Locale.ROOT));
+            return;
+        }
+        // Offline, invites switched off, or no such player: that invite never went out, so
+        // the warp must not sit out the whole timeout waiting for them to accept it.
+        if (clean.contains("You cannot invite that player")
+            || clean.contains("Couldn't find a player with that name")) {
+            java.util.Iterator<String> oldest = unanswered.iterator();
+            if (oldest.hasNext()) {
+                String failed = oldest.next();
+                oldest.remove();
+                MqoChat.reply("§6[Auto Party] §7Couldn't invite §f" + failed + " §7— not waiting for them.");
+                settle(failed);
             }
             return;
         }
@@ -427,7 +455,15 @@ public final class MineshaftAutoParty {
         }
     }
 
-    /** Roster members who have neither joined nor had their invite expire. */
+    /** Stops waiting on one invitee (lower-cased); if they were the last, the warp goes now. */
+    private static void settle(String name) {
+        settled.add(name);
+        if (stage == Stage.WARP_PENDING && everyoneSettled()) {
+            actionAt = Math.min(actionAt, System.currentTimeMillis() + (long) (warpDelaySeconds * 1000f));
+        }
+    }
+
+    /** Roster members who have neither joined nor had their invite expire or fail. */
     private static List<String> waitingOn() {
         List<String> out = new ArrayList<>();
         for (String name : roster) {
@@ -471,6 +507,7 @@ public final class MineshaftAutoParty {
         pendingInvites.clear();
         roster.clear();
         settled.clear();
+        unanswered.clear();
         lastSeenType = null;
         typeStableScans = 0;
     }

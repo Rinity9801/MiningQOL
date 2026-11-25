@@ -34,6 +34,10 @@ import java.util.Map;
  *
  * <p>Powder chests are told apart from decorative ones by how they arrive: the server places them with
  * a block update while you mine, while ordinary chests come in with the chunk.
+ *
+ * <p>With Auto Mine on, break doesn't need holding or vanilla's toggle-attack: CoalClick's engine runs
+ * for us, holding break on its Mining Slot and firing the pickaxe ability with its settings. It stands
+ * down while CoalClick, In Shaft Click or Shaft Clicker is on, since that clicker is driving already.
  */
 public final class PowderChestClickManager {
     /** Spawned chests are forgotten after this; powder chests despawn well before it. */
@@ -54,6 +58,8 @@ public final class PowderChestClickManager {
 
     private static boolean enabled = false;
     private static boolean showToggleMessage = true;
+    /** Hold break and use the ability ourselves, through CoalClick's engine. */
+    private static boolean autoMine = true;
     private static int releaseDelayMs = 50;
     private static int clickDelayMs = 75;
     private static int resumeDelayMs = 100;
@@ -97,6 +103,27 @@ public final class PowderChestClickManager {
 
     public static void setShowToggleMessage(boolean value) {
         showToggleMessage = value;
+    }
+
+    public static boolean isAutoMine() {
+        return autoMine;
+    }
+
+    public static void setAutoMine(boolean value) {
+        autoMine = value;
+    }
+
+    /**
+     * Whether CoalClick's engine should run on our behalf. Not while another clicker is on: that one
+     * already holds break, and In Shaft Click fires the ability on its own schedule.
+     */
+    public static boolean drivesBreak() {
+        return enabled && autoMine && !InShaftClickManager.isEnabled() && !ShaftClickerManager.isEnabled();
+    }
+
+    /** Mid-chest (from spotting one until break is back on), when nothing else should right-click. */
+    public static boolean isBusy() {
+        return phase != Phase.IDLE;
     }
 
     public static int getReleaseDelayMs() {
