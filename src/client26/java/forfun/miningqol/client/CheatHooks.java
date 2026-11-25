@@ -29,6 +29,14 @@ public final class CheatHooks {
     public static Runnable onRenderFrame = null;
     /** Every container click the client sends — Auto Forge records crafts from these. */
     public static ContainerClickListener onContainerClick = null;
+    /** Every server block change, before it applies — Powder Chest Click spots spawned chests. */
+    public static BlockChangeListener onBlockChange = null;
+
+    public interface BlockChangeListener {
+        void onBlockChange(net.minecraft.core.BlockPos pos,
+                           net.minecraft.world.level.block.state.BlockState oldState,
+                           net.minecraft.world.level.block.state.BlockState newState);
+    }
 
     public interface ContainerClickListener {
         void onContainerClick(int containerId, int slot, int button, net.minecraft.world.inventory.ContainerInput input);

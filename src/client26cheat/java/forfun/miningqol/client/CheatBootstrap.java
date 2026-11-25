@@ -22,6 +22,7 @@ public final class CheatBootstrap {
     private static KeyMapping toggleAutoClickerKey;
     private static KeyMapping toggleShaftClickerKey;
     private static KeyMapping toggleInShaftClickKey;
+    private static KeyMapping togglePowderChestKey;
 
     private CheatBootstrap() {}
 
@@ -37,6 +38,8 @@ public final class CheatBootstrap {
             "key.miningqol.toggle_shaftclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
         toggleInShaftClickKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.miningqol.toggle_inshaftclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+        togglePowderChestKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+            "key.miningqol.toggle_powderchest", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
 
         AutoClickerHUD.register();
         forfun.miningqol.client.hotm.HotmManager.init();
@@ -50,6 +53,9 @@ public final class CheatBootstrap {
             while (toggleAutoClickerKey.consumeClick()) AutoClickerManager.toggle();
             while (toggleShaftClickerKey.consumeClick()) ShaftClickerManager.toggle();
             while (toggleInShaftClickKey.consumeClick()) InShaftClickManager.toggle();
+            while (togglePowderChestKey.consumeClick()) PowderChestClickManager.toggle();
+            // Before the clickers, so a break it lets go of this tick isn't pressed straight back.
+            PowderChestClickManager.tick();
 
             if (client.level != null && client.player != null) {
                 AutoClickerManager.tick();
@@ -199,7 +205,12 @@ public final class CheatBootstrap {
         // Auto Forge records a craft by watching the player's own container clicks.
         CheatHooks.onContainerClick = AutoForgeManager::onContainerClick;
         // Per frame, so Comm Claim's pigeon swap delays aren't rounded to 50ms ticks.
-        CheatHooks.onRenderFrame = CommClaimManager::frame;
+        // Powder Chest Click steps per frame too, for the same reason.
+        CheatHooks.onRenderFrame = () -> {
+            CommClaimManager.frame();
+            PowderChestClickManager.frame();
+        };
+        CheatHooks.onBlockChange = PowderChestClickManager::onBlockChange;
         // Hide the container GUI visuals while a claim is running (if the toggle is on).
         CheatHooks.hideContainerGui = () -> CommClaimManager.isRunning() && CommClaimManager.isHideGui();
         // Auto Forge: side picker drawn over "The Forge", status card replacing GUIs mid-craft.
@@ -272,6 +283,12 @@ public final class CheatBootstrap {
             ShaftJoinCdManager.setCooldownSeconds(config.shaftJoinCdSeconds);
 
             EtherwarpClickManager.setEnabled(config.orderedWaypointEtherwarpClick);
+
+            PowderChestClickManager.setEnabled(config.powderChestClickEnabled);
+            PowderChestClickManager.setReleaseDelayMs(config.powderChestReleaseDelayMs);
+            PowderChestClickManager.setClickDelayMs(config.powderChestClickDelayMs);
+            PowderChestClickManager.setResumeDelayMs(config.powderChestResumeDelayMs);
+            PowderChestClickManager.setShowToggleMessage(config.powderChestShowToggleMessage);
         };
 
         CheatHooks.storeConfig = () -> {
@@ -327,6 +344,12 @@ public final class CheatBootstrap {
             config.shaftJoinCdSeconds = ShaftJoinCdManager.getCooldownSeconds();
 
             config.orderedWaypointEtherwarpClick = EtherwarpClickManager.isEnabled();
+
+            config.powderChestClickEnabled = PowderChestClickManager.isEnabled();
+            config.powderChestReleaseDelayMs = PowderChestClickManager.getReleaseDelayMs();
+            config.powderChestClickDelayMs = PowderChestClickManager.getClickDelayMs();
+            config.powderChestResumeDelayMs = PowderChestClickManager.getResumeDelayMs();
+            config.powderChestShowToggleMessage = PowderChestClickManager.isShowToggleMessage();
         };
     }
 }

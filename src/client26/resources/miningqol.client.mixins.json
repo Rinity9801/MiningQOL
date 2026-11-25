@@ -24,7 +24,9 @@
     "MultiPlayerGameModeInvoker",
     "FogRendererMixin",
     "LevelRendererSkyMixin",
-    "SystemChatMixin"
+    "SystemChatMixin",
+    "BlockBreakMixin",
+    "BlockUpdateMixin"
   ],
   "injectors": {
     "defaultRequire": 1

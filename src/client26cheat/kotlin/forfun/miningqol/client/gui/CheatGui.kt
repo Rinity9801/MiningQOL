@@ -7,6 +7,7 @@ import forfun.miningqol.client.CommClaimManager
 import forfun.miningqol.client.EmptyStashManager
 import forfun.miningqol.client.EtherwarpClickManager
 import forfun.miningqol.client.InShaftClickManager
+import forfun.miningqol.client.PowderChestClickManager
 import forfun.miningqol.client.ShaftClickerManager
 import forfun.miningqol.client.ShaftJoinCdManager
 
@@ -127,6 +128,17 @@ object CheatGui {
                     { (ShaftClickerManager.getMiningSlot() + 1).toDouble() }, { ShaftClickerManager.setMiningSlot(it.toInt() - 1) }))
                 .add(bool("Toggle Message", "Chat message when toggled via keybind",
                     { ShaftClickerManager.isShowToggleMessage() }, { ShaftClickerManager.setShowToggleMessage(it) }))
+
+            module("Powder Chest Click", "Lets go of break to right-click powder chests, then resumes — toggle with its keybind", clickers,
+                { PowderChestClickManager.isEnabled() }, { PowderChestClickManager.setEnabled(it) })
+                .add(slider("Release Delay", "Crosshair on the chest until break is let go", 0.0, 500.0, 5.0, " ms",
+                    { PowderChestClickManager.getReleaseDelayMs().toDouble() }, { PowderChestClickManager.setReleaseDelayMs(it.toInt()) }))
+                .add(slider("Click Delay", "Break let go until the right-click", 0.0, 500.0, 5.0, " ms",
+                    { PowderChestClickManager.getClickDelayMs().toDouble() }, { PowderChestClickManager.setClickDelayMs(it.toInt()) }))
+                .add(slider("Resume Delay", "Crosshair off the chest until break turns back on", 0.0, 1000.0, 5.0, " ms",
+                    { PowderChestClickManager.getResumeDelayMs().toDouble() }, { PowderChestClickManager.setResumeDelayMs(it.toInt()) }))
+                .add(bool("Toggle Message", "Chat message when toggled via keybind",
+                    { PowderChestClickManager.isShowToggleMessage() }, { PowderChestClickManager.setShowToggleMessage(it) }))
 
             module("Comm Claim", "/claimcomms — auto commission claiming", automation, null, null)
                 .add(bool("Auto Trigger", "Run when all mining commissions complete",

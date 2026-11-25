@@ -1,5 +1,6 @@
 package forfun.miningqol.client.gui;
 
+import forfun.miningqol.client.CommBlocksHUD;
 import forfun.miningqol.client.CommStatsHUD;
 import forfun.miningqol.client.CommTracker;
 import forfun.miningqol.client.CommissionHUD;
@@ -30,6 +31,7 @@ public class HudPositionScreen extends Screen {
         COMMISSIONS,
         COMMISSION_STATS,
         COMM_COUNT,
+        COMM_BLOCKS,
         ROGUE_SWORD,
         TUBA
     }
@@ -79,6 +81,11 @@ public class HudPositionScreen extends Screen {
             forfun.miningqol.client.CommCountHUD.drawPreview(ctx);
             ctx.outline(forfun.miningqol.client.CommCountHUD.getX() - 2, forfun.miningqol.client.CommCountHUD.getY() - 2,
                 targetWidth(Target.COMM_COUNT) + 4, targetHeight(Target.COMM_COUNT) + 4, 0xFFDBA27F);
+        }
+        if (isVisible(Target.COMM_BLOCKS)) {
+            CommBlocksHUD.drawPreview(ctx);
+            ctx.outline(CommBlocksHUD.getX() - 2, CommBlocksHUD.getY() - 2,
+                targetWidth(Target.COMM_BLOCKS) + 4, targetHeight(Target.COMM_BLOCKS) + 4, 0xFF7FDBC9);
         }
         if (isVisible(Target.MAYHEM)) {
             ctx.text(font, MayhemHUD.getPreviewText(), MayhemHUD.getX(), MayhemHUD.getY(),
@@ -235,6 +242,7 @@ public class HudPositionScreen extends Screen {
             case COMMISSIONS -> CommissionHUD.setScale(CommissionHUD.getScale() + amount);
             case COMMISSION_STATS -> CommStatsHUD.setScale(CommStatsHUD.getScale() + amount);
             case COMM_COUNT -> { }
+            case COMM_BLOCKS -> { }
         }
         return true;
     }
@@ -269,6 +277,7 @@ public class HudPositionScreen extends Screen {
             || isVisible(Target.COMMISSIONS)
             || isVisible(Target.COMMISSION_STATS)
             || isVisible(Target.COMM_COUNT)
+            || isVisible(Target.COMM_BLOCKS)
             || isVisible(Target.ROGUE_SWORD)
             || isVisible(Target.TUBA);
     }
@@ -282,12 +291,13 @@ public class HudPositionScreen extends Screen {
             case COMMISSIONS -> CommissionHUD.isEnabled();
             case COMMISSION_STATS -> CommTracker.isHudShown();
             case COMM_COUNT -> forfun.miningqol.client.CommCountHUD.isEnabled();
+            case COMM_BLOCKS -> CommBlocksHUD.isEnabled();
             case ROGUE_SWORD, TUBA -> timer(target).isEnabled();
         };
     }
 
     private Target targetAt(double mouseX, double mouseY) {
-        Target[] hitOrder = {Target.COMM_COUNT, Target.COMMISSION_STATS, Target.COMMISSIONS, Target.FORGE, Target.MAYHEM, Target.ROLLING, Target.ROGUE_SWORD, Target.TUBA, Target.PICKAXE};
+        Target[] hitOrder = {Target.COMM_BLOCKS, Target.COMM_COUNT, Target.COMMISSION_STATS, Target.COMMISSIONS, Target.FORGE, Target.MAYHEM, Target.ROLLING, Target.ROGUE_SWORD, Target.TUBA, Target.PICKAXE};
         for (Target target : hitOrder) {
             if (isVisible(target) && contains(mouseX, mouseY, targetX(target), targetY(target),
                 targetWidth(target), targetHeight(target))) {
@@ -306,6 +316,7 @@ public class HudPositionScreen extends Screen {
             case COMMISSIONS -> CommissionHUD.getX();
             case COMMISSION_STATS -> CommStatsHUD.getX();
             case COMM_COUNT -> forfun.miningqol.client.CommCountHUD.getX();
+            case COMM_BLOCKS -> CommBlocksHUD.getX();
             case ROGUE_SWORD, TUBA -> timer(target).getX();
         };
     }
@@ -319,6 +330,7 @@ public class HudPositionScreen extends Screen {
             case COMMISSIONS -> CommissionHUD.getY();
             case COMMISSION_STATS -> CommStatsHUD.getY();
             case COMM_COUNT -> forfun.miningqol.client.CommCountHUD.getY();
+            case COMM_BLOCKS -> CommBlocksHUD.getY();
             case ROGUE_SWORD, TUBA -> timer(target).getY();
         };
     }
@@ -333,6 +345,7 @@ public class HudPositionScreen extends Screen {
                 ? Math.max(40, CommissionHUD.getWidth()) : Math.max(120, CommissionHUD.getWidth());
             case COMMISSION_STATS -> Math.max(60, CommStatsHUD.getWidth());
             case COMM_COUNT -> forfun.miningqol.client.CommCountHUD.getWidth();
+            case COMM_BLOCKS -> CommBlocksHUD.getWidth();
             case ROGUE_SWORD, TUBA -> timer(target).getWidth();
         };
     }
@@ -347,6 +360,7 @@ public class HudPositionScreen extends Screen {
                 ? Math.max(10, CommissionHUD.getHeight()) : Math.max(60, CommissionHUD.getHeight());
             case COMMISSION_STATS -> Math.max(14, CommStatsHUD.getHeight());
             case COMM_COUNT -> forfun.miningqol.client.CommCountHUD.getHeight();
+            case COMM_BLOCKS -> CommBlocksHUD.getHeight();
             case ROGUE_SWORD, TUBA -> timer(target).getHeight();
         };
     }
@@ -360,6 +374,7 @@ public class HudPositionScreen extends Screen {
             case COMMISSIONS -> CommissionHUD.setPosition(x, y);
             case COMMISSION_STATS -> CommStatsHUD.setPosition(x, y);
             case COMM_COUNT -> forfun.miningqol.client.CommCountHUD.setPosition(x, y);
+            case COMM_BLOCKS -> CommBlocksHUD.setPosition(x, y);
             case ROGUE_SWORD, TUBA -> timer(target).setPosition(x, y);
         }
     }

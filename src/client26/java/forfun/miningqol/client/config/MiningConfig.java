@@ -16,6 +16,7 @@ import forfun.miningqol.client.FiletWarning;
 import forfun.miningqol.client.LobbyFinder;
 import forfun.miningqol.client.ForgeDisplay;
 import forfun.miningqol.client.PickaxeCooldownHUD;
+import forfun.miningqol.client.CommBlocksHUD;
 import forfun.miningqol.client.CommCountHUD;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
@@ -165,6 +166,8 @@ public class MiningConfig {
     public float[] mayhemLabelColor = {1.0f, 85.0f / 255.0f, 1.0f};
     public float[] mayhemValueColor = {1.0f, 1.0f, 85.0f / 255.0f};
     public float[] mayhemNoneColor = {170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
+    public boolean mayhemCdTitleEnabled = false;
+    public int mayhemCdTitleSeconds = 3;
 
     public boolean shaftSummaryEnabled = true;
     public boolean shaftSummaryFrontLoaded = false;
@@ -221,6 +224,15 @@ public class MiningConfig {
     public boolean commCountNumberOnly = false;
     public float[] commCountLabelColor = {1.0f, 170.0f / 255.0f, 0.0f};
     public float[] commCountValueColor = {1.0f, 1.0f, 1.0f};
+    public boolean commBlocksEnabled = false;
+    public boolean commBlocksHideWithF1 = false;
+    public boolean commBlocksShowLeft = false;
+    /** Starts beside the crosshair, whatever the screen size. */
+    public int commBlocksAnchorModeX = forfun.miningqol.client.HudAnchor.CENTRE;
+    public int commBlocksAnchorOffX = 8;
+    public int commBlocksAnchorModeY = forfun.miningqol.client.HudAnchor.CENTRE;
+    public int commBlocksAnchorOffY = -4;
+    public java.util.Map<String, double[]> commBlocksRates = new java.util.HashMap<>();
     public float commGuiScale = 1.0f;
     public float commGuiButtonSize = 24.0f;
     public float[] commGuiAccentColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
@@ -367,6 +379,15 @@ public class MiningConfig {
     public boolean orderedWaypointBlockOutlineCurrent = false;
     /** Cheat builds: auto right-click when sneaking + aiming at an etherwarp-marked waypoint. */
     public boolean orderedWaypointEtherwarpClick = true;
+    /** Cheat builds: let go of break, right-click a powder chest once, resume break on looking off it. */
+    public boolean powderChestClickEnabled = false;
+    /** Crosshair on the chest -> break let go, in ms. */
+    public int powderChestReleaseDelayMs = 50;
+    /** Break let go -> right-click, in ms. */
+    public int powderChestClickDelayMs = 75;
+    /** Crosshair off the chest -> break back on, in ms. */
+    public int powderChestResumeDelayMs = 100;
+    public boolean powderChestShowToggleMessage = true;
     /** /mqo skip walks past waypoints whose lobby-check block is gone. */
     public boolean orderedWaypointSkipObstructed = false;
     /** At or below this many blocks near a waypoint, /mqo skip treats it as mined out. */
@@ -454,6 +475,7 @@ public class MiningConfig {
         if (orderedWaypointLobbyCheckBlock == null) orderedWaypointLobbyCheckBlock = "minecraft:coal_ore";
         if (lobbyFinderBlocks == null) lobbyFinderBlocks = new java.util.ArrayList<>();
         if (commandKeybinds == null) commandKeybinds = new java.util.HashMap<>();
+        if (commBlocksRates == null) commBlocksRates = new java.util.HashMap<>();
         if (forgeTitleColor == null || forgeTitleColor.length < 3) forgeTitleColor = new float[]{1.0f, 170.0f / 255.0f, 0.0f};
         if (forgeItemColor == null || forgeItemColor.length < 3) forgeItemColor = new float[]{1.0f, 1.0f, 1.0f};
         if (forgeTimeColor == null || forgeTimeColor.length < 3) forgeTimeColor = new float[]{170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
@@ -634,6 +656,8 @@ public class MiningConfig {
         MayhemHUD.setLabelColor(mayhemLabelColor[0], mayhemLabelColor[1], mayhemLabelColor[2]);
         MayhemHUD.setValueColor(mayhemValueColor[0], mayhemValueColor[1], mayhemValueColor[2]);
         MayhemHUD.setNoneColor(mayhemNoneColor[0], mayhemNoneColor[1], mayhemNoneColor[2]);
+        MayhemHUD.setCdTitleEnabled(mayhemCdTitleEnabled);
+        MayhemHUD.setCdTitleSeconds(mayhemCdTitleSeconds);
 
         forfun.miningqol.client.CommissionGui.setEnabled(commGuiEnabled);
         forfun.miningqol.client.CommissionGui.setShowProgress(commGuiShowProgress);
@@ -650,6 +674,11 @@ public class MiningConfig {
         if (commCountValueColor != null && commCountValueColor.length >= 3) {
             CommCountHUD.setValueColor(commCountValueColor[0], commCountValueColor[1], commCountValueColor[2]);
         }
+        CommBlocksHUD.setEnabled(commBlocksEnabled);
+        CommBlocksHUD.anchor().load(commBlocksAnchorModeX, commBlocksAnchorOffX, commBlocksAnchorModeY, commBlocksAnchorOffY);
+        CommBlocksHUD.setHideWithF1(commBlocksHideWithF1);
+        CommBlocksHUD.setShowLeft(commBlocksShowLeft);
+        CommBlocksHUD.setRates(commBlocksRates);
         forfun.miningqol.client.CommissionGui.setScale(commGuiScale);
         forfun.miningqol.client.CommissionGui.setButtonSize(commGuiButtonSize);
         forfun.miningqol.client.CommissionGui.setAccentColor(commGuiAccentColor[0], commGuiAccentColor[1], commGuiAccentColor[2]);
@@ -906,6 +935,8 @@ public class MiningConfig {
         mayhemLabelColor = MayhemHUD.getLabelColor();
         mayhemValueColor = MayhemHUD.getValueColor();
         mayhemNoneColor = MayhemHUD.getNoneColor();
+        mayhemCdTitleEnabled = MayhemHUD.isCdTitleEnabled();
+        mayhemCdTitleSeconds = MayhemHUD.getCdTitleSeconds();
 
         commGuiEnabled = forfun.miningqol.client.CommissionGui.isEnabled();
         commGuiShowProgress = forfun.miningqol.client.CommissionGui.isShowProgress();
@@ -922,6 +953,14 @@ public class MiningConfig {
         commCountNumberOnly = CommCountHUD.isNumberOnly();
         commCountLabelColor = CommCountHUD.getLabelColor();
         commCountValueColor = CommCountHUD.getValueColor();
+        commBlocksEnabled = CommBlocksHUD.isEnabled();
+        commBlocksAnchorModeX = CommBlocksHUD.anchor().modeX();
+        commBlocksAnchorOffX = CommBlocksHUD.anchor().offX();
+        commBlocksAnchorModeY = CommBlocksHUD.anchor().modeY();
+        commBlocksAnchorOffY = CommBlocksHUD.anchor().offY();
+        commBlocksHideWithF1 = CommBlocksHUD.isHideWithF1();
+        commBlocksShowLeft = CommBlocksHUD.isShowLeft();
+        commBlocksRates = CommBlocksHUD.getRates();
         commGuiScale = forfun.miningqol.client.CommissionGui.getScale();
         commGuiButtonSize = forfun.miningqol.client.CommissionGui.getButtonSize();
         commGuiAccentColor = forfun.miningqol.client.CommissionGui.getAccentColor();

@@ -356,6 +356,11 @@ public class CommissionHUD {
         return lastHeight;
     }
 
+    /** The live list, for {@link CommBlocksHUD}. */
+    static List<CommissionEntry> commissions() {
+        return commissions;
+    }
+
     public static boolean isShowOverMenus() {
         return showOverMenus;
     }
@@ -1240,6 +1245,17 @@ public class CommissionHUD {
         return sawAllowedArea;
     }
 
+    /** Whether the sidebar's location line is [area]. */
+    static boolean isInArea(Minecraft mc, String area) {
+        for (String clean : getSidebarLines(mc)) {
+            String areaLine = normalizeAreaLine(clean);
+            if (areaLine != null && areaLine.equalsIgnoreCase(area)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static List<String> getSidebarLines(Minecraft mc) {
         List<String> result = new ArrayList<>();
         if (mc.level == null) {
@@ -1418,7 +1434,7 @@ public class CommissionHUD {
         return 0xFFFF5555;
     }
 
-    private record CommissionEntry(String name, double progress) {
+    record CommissionEntry(String name, double progress) {
     }
 
     /** Names of the list as it stood just before a claim, plus when — see {@link #ignoredStates}. */

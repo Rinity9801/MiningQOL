@@ -1,6 +1,7 @@
 package forfun.miningqol.client.shatter;
 
 import forfun.miningqol.client.BlockOverlay;
+import forfun.miningqol.client.CommBlocksHUD;
 import forfun.miningqol.client.CommTracker;
 import forfun.miningqol.client.CommissionGui;
 import forfun.miningqol.client.CommissionHUD;
@@ -232,6 +233,13 @@ public final class ShatterModules {
             .add(ColorSetting.ofRgb("Label Color", "", forfun.miningqol.client.CommCountHUD::getLabelColor, forfun.miningqol.client.CommCountHUD::setLabelColor))
             .add(ColorSetting.ofRgb("Value Color", "", forfun.miningqol.client.CommCountHUD::getValueColor, forfun.miningqol.client.CommCountHUD::setValueColor)));
 
+        Modules.register(new Module("Comm Blocks Left", "Blocks left on your commission, by the crosshair", huds,
+            CommBlocksHUD::isEnabled, CommBlocksHUD::setEnabled)
+            .add(new BoolSetting("Hide with F1", "Hide when the vanilla HUD is hidden", false)
+                .bind(CommBlocksHUD::isHideWithF1, CommBlocksHUD::setHideWithF1))
+            .add(new BoolSetting("Show Left", "\"46 left\" instead of \"12/58\"", false)
+                .bind(CommBlocksHUD::isShowLeft, CommBlocksHUD::setShowLeft)));
+
         Modules.register(new Module("Comm Menu GUI", "Odin-style commissions menu replacement", huds,
             CommissionGui::isEnabled, CommissionGui::setEnabled)
             .add(new SliderSetting("Scale", "Menu scale", 1.0, 0.5, 2.0, 0.05, "×")
@@ -299,6 +307,11 @@ public final class ShatterModules {
             .add(ColorSetting.ofRgb("Label Color", "", MayhemHUD::getLabelColor, MayhemHUD::setLabelColor))
             .add(ColorSetting.ofRgb("Buff Color", "", MayhemHUD::getValueColor, MayhemHUD::setValueColor))
             .add(ColorSetting.ofRgb("None Color", "", MayhemHUD::getNoneColor, MayhemHUD::setNoneColor)));
+
+        Modules.register(new Module("Mayhem CD Title", "Title when a shaft rolls the Ability Cooldown mayhem buff", general,
+            MayhemHUD::isCdTitleEnabled, MayhemHUD::setCdTitleEnabled)
+            .add(new SliderSetting("Duration", "Seconds the title stays on screen", 3, 1, 10, 1, "s")
+                .bind(() -> (double) MayhemHUD.getCdTitleSeconds(), v -> MayhemHUD.setCdTitleSeconds((int) Math.round(v)))));
 
         Modules.register(new Module("Shaft Summary", "Fines, coins and rank after every gem shaft", general,
             ShaftSummary::isEnabled, ShaftSummary::setEnabled)
