@@ -147,8 +147,24 @@ public final class BlockOverlay {
      */
     private static void submit(SubmitNodeCollector collector, PoseStack matrices, RenderType type,
                                SubmitNodeCollector.CustomGeometryRenderer renderer) {
+        if (phase) {
+            lastPhaseSubmitNanos = System.nanoTime();
+            phaseSubmitted = true;
+        }
         collector.submitCustom(phase ? SubmitRenderPhases.ALWAYS_ON_TOP : SubmitRenderPhases.AFTER_TERRAIN,
             new CustomFeatureRenderer.Submit(matrices.last().copy(), type, renderer));
+    }
+
+    private static volatile boolean phaseSubmitted;
+    private static volatile long lastPhaseSubmitNanos;
+
+    /**
+     * For LevelRendererMixin: run the always-on-top pass while Phase geometry is being drawn.
+     * Vanilla asks twice per frame (once to allocate its depth target, once to run the pass) and
+     * both answers have to agree, so this is a stable "drawn in the last 100 ms", never reset.
+     */
+    public static boolean wantsAlwaysOnTopPass() {
+        return phaseSubmitted && System.nanoTime() - lastPhaseSubmitNanos < 100_000_000L;
     }
 
     /** Pushed slightly out from each box so it doesn't z-fight the block's own faces. */

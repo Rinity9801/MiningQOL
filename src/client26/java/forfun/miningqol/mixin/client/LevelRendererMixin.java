@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 // World renderers moved to forfun.miningqol.client.WorldRenderHook (26.2 removed renderLevel).
 @Mixin(LevelRenderer.class)
@@ -27,5 +28,12 @@ public class LevelRendererMixin {
             entityOutlineTarget,
             Minecraft.getInstance().gameRenderer.mainRenderTarget().getColorTextureView());
         ci.cancel();
+    }
+
+    // 26.3 skips the always-on-top pass unless vanilla queued its own gizmos this frame; Block
+    // Overlay's Phase mode draws there, so run the pass when it did.
+    @Inject(method = "frameHasAlwaysOnTopGizmos", at = @At("HEAD"), cancellable = true)
+    private void miningqol$runAlwaysOnTopForOverlay(CallbackInfoReturnable<Boolean> cir) {
+        if (forfun.miningqol.client.BlockOverlay.wantsAlwaysOnTopPass()) cir.setReturnValue(true);
     }
 }
