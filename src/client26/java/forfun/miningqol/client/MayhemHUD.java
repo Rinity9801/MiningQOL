@@ -64,6 +64,11 @@ public final class MayhemHUD {
     private static boolean hideWithF1 = false;
     /** Draw "Mayhem: None" while no buff is active, rather than nothing. */
     private static boolean alwaysShow = false;
+    /** Flash a title when the shaft rolled the Ability Cooldown buff. Independent of the HUD line. */
+    private static boolean cdTitleEnabled = false;
+    private static int cdTitleSeconds = 3;
+    /** Re-show window: the amount line lands right after the announcement and should refresh the title. */
+    private static final long CD_TITLE_REFRESH_MS = 2_000L;
 
     private static final HudAnchor ANCHOR = new HudAnchor(10, 74, MayhemHUD::getWidth, MayhemHUD::getHeight);
     private static final float[] labelColor = {1.0f, 85.0f / 255.0f, 1.0f};
@@ -76,6 +81,8 @@ public final class MayhemHUD {
     private static ClientLevel buffLevel;
     private static boolean seenInShaft;
     private static long leftShaftAt;
+    private static long cdTitleShownAt;
+    private static String cdTitleText;
 
     private MayhemHUD() {}
 
@@ -98,6 +105,7 @@ public final class MayhemHUD {
             Perk perk = Perk.match(lower);
             // A fresh shaft: wipe whatever the last one rolled, even if this perk is unknown.
             startBuff(perk, perk == null ? null : perk.label);
+            maybeShowCdTitle();
             return;
         }
 
@@ -124,7 +132,32 @@ public final class MayhemHUD {
             } else {
                 buffText = text;
             }
+            maybeShowCdTitle();
         }
+    }
+
+    /**
+     * Puts "Ability Cooldown!" on screen once per shaft that rolled it. The announcement line
+     * fires it with just the perk name; the amount line a moment later re-sets the title so the
+     * number fills in. Beyond that window the title is left alone.
+     */
+    private static void maybeShowCdTitle() {
+        if (!cdTitleEnabled || buffPerk != Perk.ABILITY_COOLDOWN || buffText == null) return;
+        long now = System.currentTimeMillis();
+        if (cdTitleShownAt != 0) {
+            if (buffText.equals(cdTitleText)) return;
+            if (now - cdTitleShownAt > CD_TITLE_REFRESH_MS) return;
+        }
+        Minecraft client = Minecraft.getInstance();
+        if (client.player == null) return;
+
+        client.gui.setTimes(5, Math.max(1, cdTitleSeconds) * 20, 10);
+        client.gui.setTitle(Component.literal("Ability Cooldown!")
+            .setStyle(Style.EMPTY.withColor(toRgb(labelColor)).withBold(true)));
+        client.gui.setSubtitle(Component.literal("Mayhem: " + buffText)
+            .setStyle(Style.EMPTY.withColor(toRgb(valueColor))));
+        cdTitleShownAt = now;
+        cdTitleText = buffText;
     }
 
     private static void startBuff(Perk perk, String text) {
@@ -133,6 +166,8 @@ public final class MayhemHUD {
         buffLevel = null;   // captured on the next tick, once the shaft's level is in
         seenInShaft = false;
         leftShaftAt = 0;
+        cdTitleShownAt = 0;
+        cdTitleText = null;
     }
 
     public static void clear() {
@@ -141,6 +176,8 @@ public final class MayhemHUD {
         buffLevel = null;
         seenInShaft = false;
         leftShaftAt = 0;
+        cdTitleShownAt = 0;
+        cdTitleText = null;
     }
 
     /** Strips the icon glyphs Hypixel puts in these lines and squashes the spacing they leave. */
@@ -240,6 +277,22 @@ public final class MayhemHUD {
 
     public static void setAlwaysShow(boolean value) {
         alwaysShow = value;
+    }
+
+    public static boolean isCdTitleEnabled() {
+        return cdTitleEnabled;
+    }
+
+    public static void setCdTitleEnabled(boolean value) {
+        cdTitleEnabled = value;
+    }
+
+    public static int getCdTitleSeconds() {
+        return cdTitleSeconds;
+    }
+
+    public static void setCdTitleSeconds(int value) {
+        cdTitleSeconds = Math.max(1, Math.min(10, value));
     }
 
     public static void setPosition(int x, int y) {

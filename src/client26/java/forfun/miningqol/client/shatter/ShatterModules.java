@@ -306,6 +306,11 @@ public final class ShatterModules {
             .add(ColorSetting.ofRgb("Buff Color", "", MayhemHUD::getValueColor, MayhemHUD::setValueColor))
             .add(ColorSetting.ofRgb("None Color", "", MayhemHUD::getNoneColor, MayhemHUD::setNoneColor)));
 
+        Modules.register(new Module("Mayhem CD Title", "Title when a shaft rolls the Ability Cooldown mayhem buff", general,
+            MayhemHUD::isCdTitleEnabled, MayhemHUD::setCdTitleEnabled)
+            .add(new SliderSetting("Duration", "Seconds the title stays on screen", 3, 1, 10, 1, "s")
+                .bind(() -> (double) MayhemHUD.getCdTitleSeconds(), v -> MayhemHUD.setCdTitleSeconds((int) Math.round(v)))));
+
         Modules.register(new Module("Mineshaft Portal", "Outline the portal you just found, through walls", esp,
             forfun.miningqol.client.MineshaftPortal::isEnabled, forfun.miningqol.client.MineshaftPortal::setEnabled)
             .add(new BoolSetting("Tracer", "Line from your crosshair to the portal", true)

@@ -165,6 +165,8 @@ public class MiningConfig {
     public float[] mayhemLabelColor = {1.0f, 85.0f / 255.0f, 1.0f};
     public float[] mayhemValueColor = {1.0f, 1.0f, 85.0f / 255.0f};
     public float[] mayhemNoneColor = {170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
+    public boolean mayhemCdTitleEnabled = false;
+    public int mayhemCdTitleSeconds = 3;
 
     public boolean wispRadiusEnabled = true;
     public boolean wispRadiusEdgeOnly = false;
@@ -594,6 +596,8 @@ public class MiningConfig {
         MayhemHUD.setLabelColor(mayhemLabelColor[0], mayhemLabelColor[1], mayhemLabelColor[2]);
         MayhemHUD.setValueColor(mayhemValueColor[0], mayhemValueColor[1], mayhemValueColor[2]);
         MayhemHUD.setNoneColor(mayhemNoneColor[0], mayhemNoneColor[1], mayhemNoneColor[2]);
+        MayhemHUD.setCdTitleEnabled(mayhemCdTitleEnabled);
+        MayhemHUD.setCdTitleSeconds(mayhemCdTitleSeconds);
 
         forfun.miningqol.client.CommissionGui.setEnabled(commGuiEnabled);
         forfun.miningqol.client.CommissionGui.setShowProgress(commGuiShowProgress);
@@ -845,6 +849,8 @@ public class MiningConfig {
         mayhemLabelColor = MayhemHUD.getLabelColor();
         mayhemValueColor = MayhemHUD.getValueColor();
         mayhemNoneColor = MayhemHUD.getNoneColor();
+        mayhemCdTitleEnabled = MayhemHUD.isCdTitleEnabled();
+        mayhemCdTitleSeconds = MayhemHUD.getCdTitleSeconds();
 
         commGuiEnabled = forfun.miningqol.client.CommissionGui.isEnabled();
         commGuiShowProgress = forfun.miningqol.client.CommissionGui.isShowProgress();
