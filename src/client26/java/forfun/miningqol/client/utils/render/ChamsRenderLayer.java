@@ -51,7 +51,7 @@ public final class ChamsRenderLayer {
                 .useOverlay()
                 .sortOnUpload()
                 // 26.3: keep the hidden pass out of the OIT passes ("Improved Transparency"): it
-                // relies on its own GREATER depth test, which the OIT pipelines can't express.
+                // relies on its own LESS_THAN depth test, which the OIT pipelines can't express.
                 .withForcedSolidModelPhase()
                 .setOutline(RenderSetup.OutlineProperty.AFFECTS_OUTLINE)
                 .createRenderSetup()));
@@ -64,7 +64,9 @@ public final class ChamsRenderLayer {
         RenderPipeline.Builder builder = RenderPipeline.builder()
             .withLocation(Identifier.fromNamespaceAndPath("miningqol", "pipeline/chams_hidden"))
             .withPrimitiveTopology(source.getPrimitiveTopology())
-            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN, false))
+            // Reversed depth since 26.2 (clears to 0, nearer is greater): a fragment behind the
+            // scene has a SMALLER depth than what's stored, so the hidden-only pass is LESS_THAN.
+            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN, false))
             .withPolygonMode(source.getPolygonMode())
             .withCull(source.isCull())
             .withPushConstantSize(source.pushConstantSize());
