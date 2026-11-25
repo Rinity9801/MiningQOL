@@ -24,6 +24,15 @@ public final class InputCompat {
     /** Unbound. */
     public static final int NONE = -1;
 
+    /**
+     * Turns SDL text input on or off for {@code owner}. SDL3 only delivers typed characters
+     * ({@code charTyped}) while it's on; vanilla turns it on for a focused EditBox, so the mod's own
+     * text fields have to do the same. Switching screens turns it off.
+     */
+    public static void setTextInput(Object owner, boolean on) {
+        Minecraft.getInstance().textInputManager().onTextInputFocusChange(owner, on);
+    }
+
     /** Classic button number (0 left, 1 right, 2 middle, 3+ side) of a 26.3 mouse event. */
     public static int button(MouseButtonEvent event) {
         return classicButton(event.button());

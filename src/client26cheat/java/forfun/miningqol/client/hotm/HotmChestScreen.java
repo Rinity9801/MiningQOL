@@ -48,6 +48,12 @@ public class HotmChestScreen extends Screen {
 
     // "Save preset" name-entry overlay (replaces the 1.21 Vexel HotmSaveScreen)
     private boolean saveMode = false;
+
+    /** The preset-name box takes typed characters, which SDL only sends while text input is on. */
+    private void setSaveMode(boolean on) {
+        saveMode = on;
+        forfun.miningqol.client.utils.InputCompat.setTextInput(this, on);
+    }
     private final StringBuilder saveName = new StringBuilder();
 
     private static class Button {
@@ -233,7 +239,7 @@ public class HotmChestScreen extends Screen {
             switch (b.id) {
                 case "presets" -> HotmPresetScreen.open();
                 case "save" -> {
-                    saveMode = true;
+                    setSaveMode(true);
                     saveName.setLength(0);
                 }
                 case "apply" -> {
@@ -287,7 +293,7 @@ public class HotmChestScreen extends Screen {
         if (saveMode) {
             int key = input.key();
             if (key == KEY_ESCAPE) {
-                saveMode = false;
+                setSaveMode(false);
                 return true;
             }
             if (key == KEY_ENTER || key == KEY_KP_ENTER) {
@@ -295,7 +301,7 @@ public class HotmChestScreen extends Screen {
                 if (!name.isEmpty()) {
                     HotmManager.savePreset(name);
                 }
-                saveMode = false;
+                setSaveMode(false);
                 return true;
             }
             if (key == KEY_BACKSPACE) {

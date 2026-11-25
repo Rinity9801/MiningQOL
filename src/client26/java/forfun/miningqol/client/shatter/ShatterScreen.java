@@ -139,6 +139,14 @@ public class ShatterScreen extends Screen {
     }
 
     @Override
+    protected void init() {
+        super.init();
+        // Search, setting text and the colour picker each track their own focus; keep SDL text
+        // input on for as long as the menu is open so all of them get typed characters.
+        forfun.miningqol.client.utils.InputCompat.setTextInput(this, true);
+    }
+
+    @Override
     public void onClose() {
         ColorPicker.close();
         if (skin != null) skin.closed();
