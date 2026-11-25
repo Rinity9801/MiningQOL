@@ -8,6 +8,7 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import forfun.miningqol.mixin.client.RenderPipelinesInvoker;
 import forfun.miningqol.mixin.client.RenderTypeInvoker;
 import net.minecraft.client.renderer.oit.OitPipelineSet;
+import net.minecraft.client.renderer.rendertype.LayeringTransform;
 import net.minecraft.client.renderer.rendertype.RenderSetup;
 import net.minecraft.client.renderer.rendertype.RenderType;
 import net.minecraft.resources.Identifier;
@@ -97,7 +98,10 @@ public final class BlockOverlayRenderTypes {
     private static RenderType create(String name, RenderPipeline pipeline, OitPipelineSet oit) {
         return RenderTypeInvoker.miningqol$create(
             name,
-            RenderSetup.builder(pipeline).setOitPipelines(oit).createRenderSetup());
+            // Like vanilla's lines: pull the geometry a hair towards the camera so outlines and fills
+            // sitting exactly on a block's faces draw over them instead of inside them.
+            RenderSetup.builder(pipeline).setOitPipelines(oit)
+                .setLayeringTransform(LayeringTransform.VIEW_OFFSET_Z_LAYERING).createRenderSetup());
     }
 
     private static Identifier id(String path) {
