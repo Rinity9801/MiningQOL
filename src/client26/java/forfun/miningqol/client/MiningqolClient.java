@@ -78,7 +78,6 @@ public class MiningqolClient implements ClientModInitializer {
         PickaxeCooldownHUD.register();
         RollingMinerCooldown.register();
         CommCountHUD.register();
-        CommBlocksHUD.register();
         ItemCooldownTimer.registerAll();
         MayhemHUD.register();
         forfun.miningqol.client.summary.ShaftSummary.init();
@@ -110,7 +109,6 @@ public class MiningqolClient implements ClientModInitializer {
                 // Ticked, not driven from the render pass: the HUD stops rendering while any screen
                 // is open, which is exactly when the Royal Pigeon menu needs reading.
                 CommissionHUD.tick();
-                CommBlocksHUD.tick();
             }
         });
 

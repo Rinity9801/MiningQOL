@@ -1,7 +1,6 @@
 package forfun.miningqol.mixin.client;
 
 import forfun.miningqol.client.CheatHooks;
-import forfun.miningqol.client.CommBlocksHUD;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -16,7 +15,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Block changes from the server, read at HEAD while the level still holds the old block. Each
+ * Block changes from the server, read at HEAD while the level still holds the old block (Powder
+ * Chest Click uses them to spot spawned chests). Each
  * handler runs once on the network thread, only to re-queue itself, hence the thread check.
  */
 @Mixin(ClientPacketListener.class)
@@ -41,7 +41,6 @@ public class BlockUpdateMixin {
 
     @Unique
     private static void miningqol$blockChange(BlockPos pos, BlockState oldState, BlockState newState) {
-        CommBlocksHUD.onBlockChange(pos, oldState, newState);
         if (CheatHooks.onBlockChange != null) {
             CheatHooks.onBlockChange.onBlockChange(pos, oldState, newState);
         }

@@ -1,7 +1,6 @@
 package forfun.miningqol.client.shatter;
 
 import forfun.miningqol.client.BlockOverlay;
-import forfun.miningqol.client.CommBlocksHUD;
 import forfun.miningqol.client.CommTracker;
 import forfun.miningqol.client.CommissionGui;
 import forfun.miningqol.client.CommissionHUD;
@@ -232,13 +231,6 @@ public final class ShatterModules {
                 .bind(forfun.miningqol.client.CommCountHUD::isNumberOnly, forfun.miningqol.client.CommCountHUD::setNumberOnly))
             .add(ColorSetting.ofRgb("Label Color", "", forfun.miningqol.client.CommCountHUD::getLabelColor, forfun.miningqol.client.CommCountHUD::setLabelColor))
             .add(ColorSetting.ofRgb("Value Color", "", forfun.miningqol.client.CommCountHUD::getValueColor, forfun.miningqol.client.CommCountHUD::setValueColor)));
-
-        Modules.register(new Module("Comm Blocks Left", "Blocks left on your commission, by the crosshair", huds,
-            CommBlocksHUD::isEnabled, CommBlocksHUD::setEnabled)
-            .add(new BoolSetting("Hide with F1", "Hide when the vanilla HUD is hidden", false)
-                .bind(CommBlocksHUD::isHideWithF1, CommBlocksHUD::setHideWithF1))
-            .add(new BoolSetting("Show Left", "\"46 left\" instead of \"12/58\"", false)
-                .bind(CommBlocksHUD::isShowLeft, CommBlocksHUD::setShowLeft)));
 
         Modules.register(new Module("Comm Menu GUI", "Odin-style commissions menu replacement", huds,
             CommissionGui::isEnabled, CommissionGui::setEnabled)

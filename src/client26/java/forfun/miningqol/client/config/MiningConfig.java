@@ -16,7 +16,6 @@ import forfun.miningqol.client.FiletWarning;
 import forfun.miningqol.client.LobbyFinder;
 import forfun.miningqol.client.ForgeDisplay;
 import forfun.miningqol.client.PickaxeCooldownHUD;
-import forfun.miningqol.client.CommBlocksHUD;
 import forfun.miningqol.client.CommCountHUD;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
@@ -224,15 +223,6 @@ public class MiningConfig {
     public boolean commCountNumberOnly = false;
     public float[] commCountLabelColor = {1.0f, 170.0f / 255.0f, 0.0f};
     public float[] commCountValueColor = {1.0f, 1.0f, 1.0f};
-    public boolean commBlocksEnabled = false;
-    public boolean commBlocksHideWithF1 = false;
-    public boolean commBlocksShowLeft = false;
-    /** Starts beside the crosshair, whatever the screen size. */
-    public int commBlocksAnchorModeX = forfun.miningqol.client.HudAnchor.CENTRE;
-    public int commBlocksAnchorOffX = 8;
-    public int commBlocksAnchorModeY = forfun.miningqol.client.HudAnchor.CENTRE;
-    public int commBlocksAnchorOffY = -4;
-    public java.util.Map<String, double[]> commBlocksRates = new java.util.HashMap<>();
     public float commGuiScale = 1.0f;
     public float commGuiButtonSize = 24.0f;
     public float[] commGuiAccentColor = {122.0f / 255.0f, 162.0f / 255.0f, 247.0f / 255.0f};
@@ -495,7 +485,6 @@ public class MiningConfig {
             commandKeybinds = migrated;
             inputCodeVersion = 1;
         }
-        if (commBlocksRates == null) commBlocksRates = new java.util.HashMap<>();
         if (forgeTitleColor == null || forgeTitleColor.length < 3) forgeTitleColor = new float[]{1.0f, 170.0f / 255.0f, 0.0f};
         if (forgeItemColor == null || forgeItemColor.length < 3) forgeItemColor = new float[]{1.0f, 1.0f, 1.0f};
         if (forgeTimeColor == null || forgeTimeColor.length < 3) forgeTimeColor = new float[]{170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f};
@@ -694,11 +683,6 @@ public class MiningConfig {
         if (commCountValueColor != null && commCountValueColor.length >= 3) {
             CommCountHUD.setValueColor(commCountValueColor[0], commCountValueColor[1], commCountValueColor[2]);
         }
-        CommBlocksHUD.setEnabled(commBlocksEnabled);
-        CommBlocksHUD.anchor().load(commBlocksAnchorModeX, commBlocksAnchorOffX, commBlocksAnchorModeY, commBlocksAnchorOffY);
-        CommBlocksHUD.setHideWithF1(commBlocksHideWithF1);
-        CommBlocksHUD.setShowLeft(commBlocksShowLeft);
-        CommBlocksHUD.setRates(commBlocksRates);
         forfun.miningqol.client.CommissionGui.setScale(commGuiScale);
         forfun.miningqol.client.CommissionGui.setButtonSize(commGuiButtonSize);
         forfun.miningqol.client.CommissionGui.setAccentColor(commGuiAccentColor[0], commGuiAccentColor[1], commGuiAccentColor[2]);
@@ -973,14 +957,6 @@ public class MiningConfig {
         commCountNumberOnly = CommCountHUD.isNumberOnly();
         commCountLabelColor = CommCountHUD.getLabelColor();
         commCountValueColor = CommCountHUD.getValueColor();
-        commBlocksEnabled = CommBlocksHUD.isEnabled();
-        commBlocksAnchorModeX = CommBlocksHUD.anchor().modeX();
-        commBlocksAnchorOffX = CommBlocksHUD.anchor().offX();
-        commBlocksAnchorModeY = CommBlocksHUD.anchor().modeY();
-        commBlocksAnchorOffY = CommBlocksHUD.anchor().offY();
-        commBlocksHideWithF1 = CommBlocksHUD.isHideWithF1();
-        commBlocksShowLeft = CommBlocksHUD.isShowLeft();
-        commBlocksRates = CommBlocksHUD.getRates();
         commGuiScale = forfun.miningqol.client.CommissionGui.getScale();
         commGuiButtonSize = forfun.miningqol.client.CommissionGui.getButtonSize();
         commGuiAccentColor = forfun.miningqol.client.CommissionGui.getAccentColor();

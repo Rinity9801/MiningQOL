@@ -25,7 +25,6 @@
     "FogRendererMixin",
     "LevelRendererSkyMixin",
     "SystemChatMixin",
-    "BlockBreakMixin",
     "BlockUpdateMixin"
   ],
   "injectors": {
