@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.state.level.BlockOutlineRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -18,6 +17,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import java.util.List;
+import net.minecraft.world.phys.AABB;
 import org.joml.Vector3f;
 
 /** Configurable replacement for the vanilla targeted-block outline. */
@@ -75,12 +76,12 @@ public final class BlockOverlay {
         VoxelShape shape = state.isAir() ? Shapes.block() : state.getShape(client.level, pos);
         if (shape.isEmpty()) return;
 
-        double minX = pos.getX() + shape.min(Direction.Axis.X);
-        double minY = pos.getY() + shape.min(Direction.Axis.Y);
-        double minZ = pos.getZ() + shape.min(Direction.Axis.Z);
-        double maxX = pos.getX() + shape.max(Direction.Axis.X);
-        double maxY = pos.getY() + shape.max(Direction.Axis.Y);
-        double maxZ = pos.getZ() + shape.max(Direction.Axis.Z);
+        // Follow the block's real shape, like vanilla's outline: a bent or branching pane (or
+        // stairs, walls, bars) is several boxes, and one box around all of them covers empty space.
+        double ox = pos.getX(), oy = pos.getY(), oz = pos.getZ();
+        List<AABB> boxes = shape.toAabbs();
+        AABB bounds = shape.bounds();
+        double cx = (bounds.minX + bounds.maxX) / 2.0, cy = (bounds.minY + bounds.maxY) / 2.0, cz = (bounds.minZ + bounds.maxZ) / 2.0;
 
         Vec3 camera = client.gameRenderer.mainCamera().position();
         PoseStack matrices = context.poseStack();
@@ -93,61 +94,63 @@ public final class BlockOverlay {
             float r = fillColor[0], g = fillColor[1], b = fillColor[2], a = fillAlpha;
             collector.submitCustomGeometry(matrices,
                 phase ? BlockOverlayRenderTypes.FILLED_PHASE : BlockOverlayRenderTypes.FILLED,
-                (pose, fill) -> addFilledBox(fill, pose, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, a));
+                (pose, fill) -> {
+                    for (AABB box : boxes) addFilledBox(fill, pose, boxes, box, ox, oy, oz, r, g, b, a);
+                });
         }
 
         if (mode == Mode.OUTLINE || mode == Mode.FILLED_OUTLINE) {
             float r = outlineColor[0], g = outlineColor[1], b = outlineColor[2], a = outlineAlpha, width = lineWidth;
             collector.submitCustomGeometry(matrices,
                 phase ? BlockOverlayRenderTypes.LINES_PHASE : BlockOverlayRenderTypes.LINES,
-                (pose, lines) -> addLineBox(lines, pose, minX, minY, minZ, maxX, maxY, maxZ, r, g, b, a, width));
+                (pose, lines) -> shape.forAllEdges((x1, y1, z1, x2, y2, z2) -> line(lines, pose,
+                    (float) (ox + nudge(x1, cx)), (float) (oy + nudge(y1, cy)), (float) (oz + nudge(z1, cz)),
+                    (float) (ox + nudge(x2, cx)), (float) (oy + nudge(y2, cy)), (float) (oz + nudge(z2, cz)),
+                    r, g, b, a, width)));
         }
 
         matrices.popPose();
     }
 
-    private static void addFilledBox(VertexConsumer buffer, PoseStack.Pose pose,
-                                     double x1, double y1, double z1,
-                                     double x2, double y2, double z2,
-                                     float red, float green, float blue, float alpha) {
-        float minX = (float) x1 - 0.002f;
-        float minY = (float) y1 - 0.002f;
-        float minZ = (float) z1 - 0.002f;
-        float maxX = (float) x2 + 0.002f;
-        float maxY = (float) y2 + 0.002f;
-        float maxZ = (float) z2 + 0.002f;
+    /** Pushed slightly away from the shape's centre so it doesn't z-fight the block's own faces. */
+    private static final double PUSH = 0.002;
 
-        quad(buffer, pose, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ, red, green, blue, alpha);
-        quad(buffer, pose, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, red, green, blue, alpha);
-        quad(buffer, pose, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ, red, green, blue, alpha);
-        quad(buffer, pose, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, red, green, blue, alpha);
-        quad(buffer, pose, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ, red, green, blue, alpha);
-        quad(buffer, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ, red, green, blue, alpha);
+    private static double nudge(double v, double centre) {
+        return v > centre ? v + PUSH : v < centre ? v - PUSH : v;
     }
 
-    private static void addLineBox(VertexConsumer buffer, PoseStack.Pose pose,
-                                   double x1, double y1, double z1,
-                                   double x2, double y2, double z2,
-                                   float red, float green, float blue, float alpha, float width) {
-        float minX = (float) x1 - 0.002f;
-        float minY = (float) y1 - 0.002f;
-        float minZ = (float) z1 - 0.002f;
-        float maxX = (float) x2 + 0.002f;
-        float maxY = (float) y2 + 0.002f;
-        float maxZ = (float) z2 + 0.002f;
+    /** One box of the shape, leaving out faces that are buried against another box of it. */
+    private static void addFilledBox(VertexConsumer buffer, PoseStack.Pose pose, List<AABB> shape, AABB box,
+                                     double ox, double oy, double oz,
+                                     float red, float green, float blue, float alpha) {
+        double midX = (box.minX + box.maxX) / 2.0, midY = (box.minY + box.maxY) / 2.0, midZ = (box.minZ + box.maxZ) / 2.0;
+        float minX = (float) (ox + box.minX - PUSH);
+        float minY = (float) (oy + box.minY - PUSH);
+        float minZ = (float) (oz + box.minZ - PUSH);
+        float maxX = (float) (ox + box.maxX + PUSH);
+        float maxY = (float) (oy + box.maxY + PUSH);
+        float maxZ = (float) (oz + box.maxZ + PUSH);
 
-        line(buffer, pose, minX, minY, minZ, maxX, minY, minZ, red, green, blue, alpha, width);
-        line(buffer, pose, maxX, minY, minZ, maxX, minY, maxZ, red, green, blue, alpha, width);
-        line(buffer, pose, maxX, minY, maxZ, minX, minY, maxZ, red, green, blue, alpha, width);
-        line(buffer, pose, minX, minY, maxZ, minX, minY, minZ, red, green, blue, alpha, width);
-        line(buffer, pose, minX, maxY, minZ, maxX, maxY, minZ, red, green, blue, alpha, width);
-        line(buffer, pose, maxX, maxY, minZ, maxX, maxY, maxZ, red, green, blue, alpha, width);
-        line(buffer, pose, maxX, maxY, maxZ, minX, maxY, maxZ, red, green, blue, alpha, width);
-        line(buffer, pose, minX, maxY, maxZ, minX, maxY, minZ, red, green, blue, alpha, width);
-        line(buffer, pose, minX, minY, minZ, minX, maxY, minZ, red, green, blue, alpha, width);
-        line(buffer, pose, maxX, minY, minZ, maxX, maxY, minZ, red, green, blue, alpha, width);
-        line(buffer, pose, maxX, minY, maxZ, maxX, maxY, maxZ, red, green, blue, alpha, width);
-        line(buffer, pose, minX, minY, maxZ, minX, maxY, maxZ, red, green, blue, alpha, width);
+        if (!buried(shape, box, midX, box.minY - 1.0E-4, midZ))
+            quad(buffer, pose, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ, red, green, blue, alpha);
+        if (!buried(shape, box, midX, box.maxY + 1.0E-4, midZ))
+            quad(buffer, pose, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, red, green, blue, alpha);
+        if (!buried(shape, box, midX, midY, box.minZ - 1.0E-4))
+            quad(buffer, pose, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ, red, green, blue, alpha);
+        if (!buried(shape, box, midX, midY, box.maxZ + 1.0E-4))
+            quad(buffer, pose, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, red, green, blue, alpha);
+        if (!buried(shape, box, box.minX - 1.0E-4, midY, midZ))
+            quad(buffer, pose, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ, red, green, blue, alpha);
+        if (!buried(shape, box, box.maxX + 1.0E-4, midY, midZ))
+            quad(buffer, pose, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ, red, green, blue, alpha);
+    }
+
+    /** Whether a point just outside one of {@code self}'s faces is inside another box of the shape. */
+    private static boolean buried(List<AABB> shape, AABB self, double x, double y, double z) {
+        for (AABB other : shape) {
+            if (other != self && other.contains(x, y, z)) return true;
+        }
+        return false;
     }
 
     private static void quad(VertexConsumer buffer, PoseStack.Pose pose,
