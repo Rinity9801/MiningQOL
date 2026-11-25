@@ -76,7 +76,7 @@ public class EfficientMinerOverlay {
         WorldBuffers buffers = WorldBuffers.get();
         // Camera-relative: the 26.2 feature pass applies the view rotation itself.
         Matrix4f pose = new Matrix4f();
-        VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackground());
+        VertexConsumer quads = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS);
 
         for (BlockData block : blocks) {
             float[] color = getColorForPriority(block.priority);

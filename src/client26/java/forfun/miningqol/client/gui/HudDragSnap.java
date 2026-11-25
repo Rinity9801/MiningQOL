@@ -18,7 +18,7 @@ final class HudDragSnap {
 
     static boolean shiftHeld() {
         var window = Minecraft.getInstance().getWindow();
-        return InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT)
-            || InputConstants.isKeyDown(window, InputConstants.KEY_RSHIFT);
+        return InputConstants.isKeyDown(InputConstants.KEY_LSHIFT)
+            || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
     }
 }

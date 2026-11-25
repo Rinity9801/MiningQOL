@@ -1,5 +1,7 @@
 package forfun.miningqol.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import forfun.miningqol.client.CommBlocksHUD;
 import forfun.miningqol.client.CommStatsHUD;
 import forfun.miningqol.client.CommTracker;
@@ -16,7 +18,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 /** Moves every currently enabled, positionable HUD from one screen. */
 public class HudPositionScreen extends Screen {
@@ -191,11 +192,11 @@ public class HudPositionScreen extends Screen {
     public boolean mouseClicked(MouseButtonEvent click, boolean doubled) {
         int mouseX = (int) click.x();
         int mouseY = (int) click.y();
-        if (click.button() == 0 && isDoneButton(mouseX, mouseY)) {
+        if (forfun.miningqol.client.utils.InputCompat.button(click) == 0 && isDoneButton(mouseX, mouseY)) {
             onClose();
             return true;
         }
-        if (click.button() == 0) {
+        if (forfun.miningqol.client.utils.InputCompat.button(click) == 0) {
             Target target = targetAt(mouseX, mouseY);
             if (target != null) {
                 dragging = target;
@@ -249,7 +250,7 @@ public class HudPositionScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent input) {
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (input.key() == InputConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }

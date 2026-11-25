@@ -151,7 +151,7 @@ public class HotmPresetScreen extends Screen {
             HotmManager.loadPreset(name);
 
             Minecraft client = Minecraft.getInstance();
-            if (click.button() == 1) {
+            if (forfun.miningqol.client.utils.InputCompat.button(click) == 1) {
                 // Right click = load and apply
                 client.schedule(() -> {
                     client.gui.setScreen(null);

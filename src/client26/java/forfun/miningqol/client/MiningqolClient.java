@@ -16,7 +16,6 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.platform.InputConstants;
-import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +42,7 @@ public class MiningqolClient implements ClientModInitializer {
         // Unbound by default so the mod never steals a key on a fresh install; bind them
         // in Keybinds. Existing installs keep whatever is already in options.txt.
         abilitySwitchKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.miningqol.ability_switch", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, MINING_CATEGORY));
+            "key.miningqol.ability_switch", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), MINING_CATEGORY));
 
         // Cheat-only wiring (keybinds, clicker ticks, comm claim, config hooks) lives in
         // CheatBootstrap, which only exists in the -cheat variant's source tree.
@@ -65,14 +64,12 @@ public class MiningqolClient implements ClientModInitializer {
         } catch (Exception e) {
             LOGGER.error("[MiningQOL] Failed to init external ESP feed", e);
         }
-        net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry.register(
-            ctx -> new forfun.miningqol.client.shatter.NVGPipRenderer());
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((mc, screen, w, h) -> {
             if (!(screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)) {
                 return;
             }
             net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents.allowMouseClick(screen).register(
-                (s, click) -> !CommissionGui.handleMouseClick(s, click.x(), click.y(), click.button()));
+                (s, click) -> !CommissionGui.handleMouseClick(s, click.x(), click.y(), forfun.miningqol.client.utils.InputCompat.button(click)));
         });
         config.applyToGame();
         CommissionHUD.register();

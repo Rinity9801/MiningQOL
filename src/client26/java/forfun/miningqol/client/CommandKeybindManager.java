@@ -2,7 +2,7 @@ package forfun.miningqol.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
+import forfun.miningqol.client.utils.InputCompat;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -40,13 +40,8 @@ public class CommandKeybindManager {
             int keyCode = entry.getKey();
             String command = entry.getValue();
 
-            boolean isPressed;
-            if (keyCode > GLFW.GLFW_KEY_LAST) {
-                int mouseButton = keyCode - GLFW.GLFW_KEY_LAST - 1;
-                isPressed = GLFW.glfwGetMouseButton(client.getWindow().handle(), mouseButton) == GLFW.GLFW_PRESS;
-            } else {
-                isPressed = InputConstants.isKeyDown(client.getWindow(), keyCode);
-            }
+            // 26.3: SDL scancodes, or InputCompat.MOUSE_BASE + button for mouse buttons.
+            boolean isPressed = InputCompat.isDown(keyCode);
 
             boolean wasPressed = keyStates.getOrDefault(keyCode, false);
 
@@ -69,10 +64,9 @@ public class CommandKeybindManager {
     }
 
     public static String getKeyName(int keyCode) {
-        if (keyCode > GLFW.GLFW_KEY_LAST) {
-            int mouseButton = keyCode - GLFW.GLFW_KEY_LAST - 1;
-            return "Mouse " + (mouseButton + 1);
+        if (InputCompat.isMouseCode(keyCode)) {
+            return "Mouse " + (InputCompat.mouseButtonOf(keyCode) + 1);
         }
-        return InputConstants.Type.KEYSYM.getOrCreate(keyCode).getName();
+        return InputCompat.keyName(keyCode);
     }
 }

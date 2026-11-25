@@ -5,9 +5,8 @@ import forfun.miningqol.client.utils.render.ChamsRenderLayer;
 import forfun.miningqol.client.utils.render.ChamsRenderState;
 import net.minecraft.client.model.Model;
 import net.minecraft.client.renderer.SubmitNodeCollection;
-import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.rendertype.RenderType;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.client.renderer.texture.UvMapping;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,13 +21,12 @@ public class SubmitNodeCollectionMixin {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Inject(
-        method = "submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;IIILnet/minecraft/client/renderer/texture/TextureAtlasSprite;ILnet/minecraft/client/renderer/feature/ModelFeatureRenderer$CrumblingOverlay;)V",
+        method = "submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/rendertype/RenderType;IIILnet/minecraft/client/renderer/texture/UvMapping;I)V",
         at = @At("TAIL")
     )
     private void miningqol$submitHiddenChamsPass(Model model, Object state, PoseStack matrices,
                                                  RenderType layer, int light, int overlay,
-                                                 int outlineColor, TextureAtlasSprite sprite, int order,
-                                                 ModelFeatureRenderer.CrumblingOverlay crumbling,
+                                                 int outlineColor, UvMapping uvMapping, int order,
                                                  CallbackInfo ci) {
         if (miningqol$resubmitting) return;
         if (state instanceof ChamsRenderState chams && chams.miningqol$isChams()) {
@@ -43,7 +41,7 @@ public class SubmitNodeCollectionMixin {
         try {
             ((SubmitNodeCollection) (Object) this)
                 .submitModel(model, state, matrices, hidden, light, overlay,
-                    outlineColor, sprite, order, crumbling);
+                    outlineColor, uvMapping, order);
         } finally {
             miningqol$resubmitting = false;
         }

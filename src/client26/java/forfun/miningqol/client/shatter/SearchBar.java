@@ -1,6 +1,7 @@
 package forfun.miningqol.client.shatter;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
+
 
 import java.util.Locale;
 
@@ -97,15 +98,15 @@ public class SearchBar {
 		caret = Math.clamp(caret, 0, text.length());
 		if (TextField.isShortcut(e)) {
 			switch (e.key()) {
-				case GLFW.GLFW_KEY_A -> selected = true;
-				case GLFW.GLFW_KEY_C -> keyboard.setClipboard(text);
-				case GLFW.GLFW_KEY_X -> {
+				case InputConstants.KEY_A -> selected = true;
+				case InputConstants.KEY_C -> keyboard.setClipboard(text);
+				case InputConstants.KEY_X -> {
 					keyboard.setClipboard(text);
 					text = "";
 					caret = 0;
 					selected = false;
 				}
-				case GLFW.GLFW_KEY_V -> {
+				case InputConstants.KEY_V -> {
 					String paste = keyboard.getClipboard().replace("\n", "").replace("\r", "");
 					if (selected) {
 						text = "";
@@ -115,11 +116,11 @@ public class SearchBar {
 					text = text.substring(0, caret) + paste + text.substring(caret);
 					caret += paste.length();
 				}
-				case GLFW.GLFW_KEY_LEFT -> { // Cmd+Left on macOS: line start
+				case InputConstants.KEY_LEFT -> { // Cmd+Left on macOS: line start
 					selected = false;
 					caret = 0;
 				}
-				case GLFW.GLFW_KEY_RIGHT -> {
+				case InputConstants.KEY_RIGHT -> {
 					selected = false;
 					caret = text.length();
 				}
@@ -132,7 +133,7 @@ public class SearchBar {
 			caret = 0;
 			focused = false;
 			selected = false;
-		} else if (e.key() == GLFW.GLFW_KEY_BACKSPACE) {
+		} else if (e.key() == InputConstants.KEY_BACKSPACE) {
 			if (selected) {
 				text = "";
 				caret = 0;
@@ -141,7 +142,7 @@ public class SearchBar {
 				text = text.substring(0, caret - 1) + text.substring(caret);
 				caret--;
 			}
-		} else if (e.key() == GLFW.GLFW_KEY_DELETE) {
+		} else if (e.key() == InputConstants.KEY_DELETE) {
 			if (selected) {
 				text = "";
 				caret = 0;
@@ -149,23 +150,23 @@ public class SearchBar {
 			} else if (caret < text.length()) {
 				text = text.substring(0, caret) + text.substring(caret + 1);
 			}
-		} else if (e.key() == GLFW.GLFW_KEY_LEFT) {
+		} else if (e.key() == InputConstants.KEY_LEFT) {
 			if (selected) {
 				selected = false;
 				caret = 0;
 			} else if (caret > 0) caret--;
-		} else if (e.key() == GLFW.GLFW_KEY_RIGHT) {
+		} else if (e.key() == InputConstants.KEY_RIGHT) {
 			if (selected) {
 				selected = false;
 				caret = text.length();
 			} else if (caret < text.length()) caret++;
-		} else if (e.key() == GLFW.GLFW_KEY_HOME) {
+		} else if (e.key() == InputConstants.KEY_HOME) {
 			selected = false;
 			caret = 0;
-		} else if (e.key() == GLFW.GLFW_KEY_END) {
+		} else if (e.key() == InputConstants.KEY_END) {
 			selected = false;
 			caret = text.length();
-		} else if (e.key() == GLFW.GLFW_KEY_ENTER || e.key() == GLFW.GLFW_KEY_KP_ENTER) {
+		} else if (e.key() == InputConstants.KEY_RETURN || e.key() == InputConstants.KEY_NUMPADENTER) {
 			focused = false;
 			selected = false;
 		}

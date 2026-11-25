@@ -251,6 +251,12 @@ public class MiningConfig {
 
     public java.util.List<String> lobbyFinderBlocks = new java.util.ArrayList<>();
     public java.util.Map<String, String> commandKeybinds = new java.util.HashMap<>();
+    /**
+     * Encoding of the key codes in {@link #commandKeybinds}: 0 (or absent) = GLFW key codes, as
+     * every build before 26.3 wrote them; 1 = 26.3's SDL scancodes / InputCompat mouse codes.
+     * Must default to 0 so a config from an older build is recognised and migrated.
+     */
+    public int inputCodeVersion = 0;
 
     public boolean forgeDisplayEnabled = false;
     public boolean forgeDisplayHideWithF1 = false;
@@ -475,6 +481,20 @@ public class MiningConfig {
         if (orderedWaypointLobbyCheckBlock == null) orderedWaypointLobbyCheckBlock = "minecraft:coal_ore";
         if (lobbyFinderBlocks == null) lobbyFinderBlocks = new java.util.ArrayList<>();
         if (commandKeybinds == null) commandKeybinds = new java.util.HashMap<>();
+        if (inputCodeVersion < 1) {
+            // 26.3 replaced GLFW with SDL: translate saved GLFW codes once.
+            java.util.Map<String, String> migrated = new java.util.HashMap<>();
+            for (java.util.Map.Entry<String, String> entry : commandKeybinds.entrySet()) {
+                try {
+                    int code = forfun.miningqol.client.utils.InputCompat.fromLegacyGlfw(Integer.parseInt(entry.getKey()));
+                    if (code != forfun.miningqol.client.utils.InputCompat.NONE) migrated.put(String.valueOf(code), entry.getValue());
+                    else LOGGER.warn("[MiningConfig] Dropped command keybind with no 26.3 key: {} -> {}", entry.getKey(), entry.getValue());
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            commandKeybinds = migrated;
+            inputCodeVersion = 1;
+        }
         if (commBlocksRates == null) commBlocksRates = new java.util.HashMap<>();
         if (forgeTitleColor == null || forgeTitleColor.length < 3) forgeTitleColor = new float[]{1.0f, 170.0f / 255.0f, 0.0f};
         if (forgeItemColor == null || forgeItemColor.length < 3) forgeItemColor = new float[]{1.0f, 1.0f, 1.0f};

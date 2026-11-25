@@ -11,7 +11,6 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Cheat-only wiring for 26.1.2, invoked reflectively from MiningqolClient.
@@ -33,13 +32,13 @@ public final class CheatBootstrap {
         // Unbound by default, like the base tree's keybind — nothing should claim a key
         // until the player picks one in Keybinds.
         toggleAutoClickerKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.miningqol.toggle_coalclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+            "key.miningqol.toggle_coalclick", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), category));
         toggleShaftClickerKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.miningqol.toggle_shaftclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+            "key.miningqol.toggle_shaftclick", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), category));
         toggleInShaftClickKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.miningqol.toggle_inshaftclick", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+            "key.miningqol.toggle_inshaftclick", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), category));
         togglePowderChestKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-            "key.miningqol.toggle_powderchest", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, category));
+            "key.miningqol.toggle_powderchest", InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), category));
 
         AutoClickerHUD.register();
         forfun.miningqol.client.hotm.HotmManager.init();
@@ -78,18 +77,18 @@ public final class CheatBootstrap {
                 // Shaft join cooldown: all clicks in Glacite GUIs are swallowed while it runs.
                 if (ShaftJoinCdManager.isBlocking(s)) return false;
                 // Auto Forge picker: clicks on its buttons (and stray clicks under it) are consumed.
-                return !AutoForgeManager.handleMouseClick(s, click.x(), click.y(), click.button());
+                return !AutoForgeManager.handleMouseClick(s, click.x(), click.y(), forfun.miningqol.client.utils.InputCompat.button(click));
             });
             ScreenKeyboardEvents.allowKeyPress(screen).register((s, keyEvent) -> {
                 if (CommClaimManager.isRunning() && CommClaimManager.isBlockInput()) {
-                    if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+                    if (keyEvent.key() == InputConstants.KEY_ESCAPE) {
                         CommClaimManager.stop();
                         return true; // let Esc close the screen / abort the claim
                     }
                     return false; // swallow every other key
                 }
                 if (AutoForgeManager.shouldBlockKeys(s)) {
-                    if (keyEvent.key() == GLFW.GLFW_KEY_ESCAPE) {
+                    if (keyEvent.key() == InputConstants.KEY_ESCAPE) {
                         AutoForgeManager.onEscape();
                         return true; // Esc cancels the craft / closes the picker
                     }
@@ -97,7 +96,7 @@ public final class CheatBootstrap {
                 }
                 if (ShaftJoinCdManager.isBlocking(s)) {
                     // No hotbar-swap keys into the blocked GUI either; Esc still closes it.
-                    return keyEvent.key() == GLFW.GLFW_KEY_ESCAPE;
+                    return keyEvent.key() == InputConstants.KEY_ESCAPE;
                 }
                 return true;
             });

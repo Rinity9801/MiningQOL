@@ -2,7 +2,6 @@ package forfun.miningqol.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.ContainerInput;
@@ -123,7 +122,7 @@ public class EmptyStashManager {
         }
 
         // The user bailing out with Escape stops the loop immediately.
-        if (InputConstants.isKeyDown(client.getWindow(), GLFW.GLFW_KEY_ESCAPE)) {
+        if (InputConstants.isKeyDown(InputConstants.KEY_ESCAPE)) {
             stop("\u00A7cEmpty Stash stopped (Escape).");
             return;
         }

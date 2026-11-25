@@ -1,5 +1,7 @@
 package forfun.miningqol.client.shatter;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 
 import java.util.HashMap;
 import java.util.List;
@@ -105,27 +107,27 @@ public final class SettingWidgets {
 		String t = editing.get();
 		editCaret = Math.clamp(editCaret, 0, t.length());
 		switch (key) {
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT -> {
+			case InputConstants.KEY_LEFT -> {
 				if (editingSelected) {
 					editingSelected = false;
 					editCaret = 0;
 				} else if (editCaret > 0) editCaret--;
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT -> {
+			case InputConstants.KEY_RIGHT -> {
 				if (editingSelected) {
 					editingSelected = false;
 					editCaret = t.length();
 				} else if (editCaret < t.length()) editCaret++;
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_HOME -> {
+			case InputConstants.KEY_HOME -> {
 				editingSelected = false;
 				editCaret = 0;
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_END -> {
+			case InputConstants.KEY_END -> {
 				editingSelected = false;
 				editCaret = t.length();
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_DELETE -> {
+			case InputConstants.KEY_DELETE -> {
 				if (editingSelected) {
 					editing.set("");
 					editingSelected = false;
@@ -145,15 +147,15 @@ public final class SettingWidgets {
 		if (editing == null) return false;
 		var keyboard = net.minecraft.client.Minecraft.getInstance().keyboardHandler;
 		switch (key) {
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_A -> editingSelected = true;
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_C -> keyboard.setClipboard(editing.get());
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_X -> {
+			case InputConstants.KEY_A -> editingSelected = true;
+			case InputConstants.KEY_C -> keyboard.setClipboard(editing.get());
+			case InputConstants.KEY_X -> {
 				keyboard.setClipboard(editing.get());
 				editing.set("");
 				editingSelected = false;
 				editCaret = 0;
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_V -> {
+			case InputConstants.KEY_V -> {
 				String paste = keyboard.getClipboard().replace("\n", "").replace("\r", "");
 				if (editingSelected) {
 					editing.set("");
@@ -165,11 +167,11 @@ public final class SettingWidgets {
 				editing.set(t.substring(0, editCaret) + paste + t.substring(editCaret));
 				editCaret += paste.length();
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT -> { // Cmd+Left on macOS: line start
+			case InputConstants.KEY_LEFT -> { // Cmd+Left on macOS: line start
 				editingSelected = false;
 				editCaret = 0;
 			}
-			case org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT -> {
+			case InputConstants.KEY_RIGHT -> {
 				editingSelected = false;
 				editCaret = editing.get().length();
 			}
@@ -407,7 +409,7 @@ public final class SettingWidgets {
 		for (int i = hits.size() - 1; i >= 0; i--) {
 			Hit h = hits.get(i);
 			if (h.kind() == Hit.Kind.KEY && h.setting() == k && h.contains(mx, my)) {
-				k.set(org.lwjgl.glfw.GLFW.GLFW_KEY_LAST + button + 1);
+				k.set(forfun.miningqol.client.utils.InputCompat.mouseCode(button));
 				ShatterConfig.markDirty();
 				break;
 			}

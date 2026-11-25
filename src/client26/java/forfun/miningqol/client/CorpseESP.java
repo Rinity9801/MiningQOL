@@ -232,7 +232,7 @@ public class CorpseESP {
         // Camera-relative: the 26.2 feature pass applies the view rotation itself.
         Matrix4f pose = new Matrix4f();
 
-        VertexConsumer outlines = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
+        VertexConsumer outlines = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH);
 
         for (CorpseWaypoint waypoint : activeWaypoints) {
             Entity entity = client.level.getEntity(waypoint.entityId);

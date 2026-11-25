@@ -38,6 +38,5 @@
 		"java": ">=${java_version}",
 		"${fabric_dependency}": "*",
 		"fabric-language-kotlin": ">=${fabric_kotlin_version}"
-	},
-	"accessWidener": "miningqol.accesswidener"
+	}
 }

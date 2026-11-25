@@ -1,6 +1,6 @@
 # MiningQOL
 
-A modern Minecraft Fabric mod for 26.1.2/26.2 that provides quality-of-life improvements for mining in Hypixel Skyblock.
+A modern Minecraft Fabric mod for 26.3 that provides quality-of-life improvements for mining in Hypixel Skyblock.
 
 Built with the Vexel GUI library for a sleek, modern interface with smooth animations and an intuitive card-based design.
 
@@ -83,12 +83,14 @@ All settings are saved automatically to `config/miningqol.json` and persist betw
 
 ## Dependencies
 
-- **Minecraft Version:** 1.21.8
-- **Loader:** Fabric Loader 0.16.14+
-- **Fabric API:** 0.130.0+1.21.8
-- **Fabric Language Kotlin:** 1.13.0+kotlin.2.1.0
-- **Vexel GUI Library:** 121 (included)
-- **Java Version:** Java 21
+- **Minecraft Version:** 26.3 (works on both the OpenGL and Vulkan graphics backends)
+- **Loader:** Fabric Loader 0.20.1+
+- **Fabric API:** 0.167.0+26.3
+- **Fabric Language Kotlin:** 1.14.2+kotlin.2.4.21
+- **Vexel GUI Library:** included
+- **Java Version:** Java 25
+
+Older Minecraft versions live on their own branches: `26.2` and `26.1.2`.
 
 ## Disclaimer
 

@@ -64,7 +64,7 @@ public final class WorldBuffers {
     /** Records VertexConsumer calls in order so they replay into the real buffer unchanged. */
     private static final class Recorder implements VertexConsumer {
         private static final int VERTEX = 0, COLOR = 1, COLOR_ARGB = 2, UV = 3, UV1 = 4, UV2 = 5,
-            NORMAL = 6, LINE_WIDTH = 7;
+            NORMAL = 6, LINE_WIDTH = 7, UV3 = 8;
 
         private int[] ops = new int[256];
         private int[] args = new int[1024]; // floats stored as raw bits so ints stay exact
@@ -105,6 +105,10 @@ public final class WorldBuffers {
                         a += 3;
                     }
                     case LINE_WIDTH -> out.setLineWidth(f(a++));
+                    case UV3 -> {
+                        out.setUv3(f(a), f(a + 1));
+                        a += 2;
+                    }
                     default -> throw new IllegalStateException("Unknown vertex op " + ops[i]);
                 }
             }
@@ -173,6 +177,14 @@ public final class WorldBuffers {
         @Override
         public VertexConsumer setUv2(int u, int v) {
             op(UV2);
+            arg(u);
+            arg(v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer setUv3(float u, float v) {
+            op(UV3);
             arg(u);
             arg(v);
             return this;

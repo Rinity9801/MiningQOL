@@ -267,7 +267,7 @@ public class ShaftESP {
         // One buffer acquisition, one endBatch at the very end — the same shape
         // OrderedWaypointRenderer uses, whose tracer works. Ending the batch between the
         // boxes and the tracer is what stopped the tracer from drawing.
-        VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
+        VertexConsumer quads = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH);
 
         {
             for (Map.Entry<Integer, Track> entry : trackedEntities.entrySet()) {

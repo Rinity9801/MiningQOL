@@ -1,6 +1,6 @@
 package forfun.miningqol.mixin.client;
 
-import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.framegraph.FrameGraphBuilder;
 import forfun.miningqol.client.CustomFog;
 import net.minecraft.client.renderer.LevelRenderer;

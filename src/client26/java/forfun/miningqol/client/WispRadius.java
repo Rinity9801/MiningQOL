@@ -253,7 +253,7 @@ public final class WispRadius {
         WorldBuffers buffers = WorldBuffers.get();
         // Camera-relative: the 26.2 feature pass applies the view rotation itself.
         Matrix4f pose = new Matrix4f();
-        VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackground());
+        VertexConsumer quads = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS);
         int r = (int) (color[0] * 255);
         int g = (int) (color[1] * 255);
         int b = (int) (color[2] * 255);

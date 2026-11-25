@@ -124,7 +124,7 @@ public final class MineshaftPortal {
         // Camera-relative: the 26.2 feature pass applies the view rotation itself.
         Matrix4f pose = new Matrix4f();
         WorldBuffers buffers = WorldBuffers.get();
-        VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
+        VertexConsumer quads = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH);
 
         AABB box = portal.getBoundingBox();
         SeeThroughBoxRenderer.outline(quads, pose,

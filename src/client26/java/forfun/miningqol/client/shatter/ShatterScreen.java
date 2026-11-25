@@ -1,5 +1,7 @@
 package forfun.miningqol.client.shatter;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
@@ -50,7 +52,7 @@ public class ShatterScreen extends Screen {
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float a) {
         super.extractRenderState(g, mouseX, mouseY, a);
         Skin s = skin();
-        NVGPipRenderer.drawFullScreen(g, () -> {
+        NVG.drawFullScreen(g, () -> {
             Minecraft mc = Minecraft.getInstance();
             float scale = uiScale();
             float w = mc.getWindow().getScreenWidth() / scale, h = mc.getWindow().getScreenHeight() / scale;
@@ -64,9 +66,9 @@ public class ShatterScreen extends Screen {
 
     @Override
     public boolean mouseClicked(MouseButtonEvent e, boolean doubleClick) {
-        if (ColorPicker.isOpen()) return ColorPicker.mouseClicked(mouseX(), mouseY(), e.button());
+        if (ColorPicker.isOpen()) return ColorPicker.mouseClicked(mouseX(), mouseY(), forfun.miningqol.client.utils.InputCompat.button(e));
         if (SettingWidgets.editing() != null) SettingWidgets.stopEditing();
-        if (skin().mouseClicked(mouseX(), mouseY(), e.button())) return true;
+        if (skin().mouseClicked(mouseX(), mouseY(), forfun.miningqol.client.utils.InputCompat.button(e))) return true;
         return super.mouseClicked(e, doubleClick);
     }
 
@@ -86,7 +88,7 @@ public class ShatterScreen extends Screen {
             ColorPicker.mouseReleased();
             return true;
         }
-        skin().mouseReleased(mouseX(), mouseY(), e.button());
+        skin().mouseReleased(mouseX(), mouseY(), forfun.miningqol.client.utils.InputCompat.button(e));
         return true;
     }
 
@@ -113,11 +115,11 @@ public class ShatterScreen extends Screen {
         if (SettingWidgets.editing() != null) {
             if (TextField.isShortcut(e) && SettingWidgets.editShortcut(e.key())) {
                 ShatterConfig.markDirty();
-            } else if (e.isEscape() || e.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER
-                    || e.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_KP_ENTER) {
+            } else if (e.isEscape() || e.key() == InputConstants.KEY_RETURN
+                    || e.key() == InputConstants.KEY_NUMPADENTER) {
                 SettingWidgets.stopEditing();
                 ShatterConfig.markDirty();
-            } else if (e.key() == org.lwjgl.glfw.GLFW.GLFW_KEY_BACKSPACE) {
+            } else if (e.key() == InputConstants.KEY_BACKSPACE) {
                 SettingWidgets.backspace();
                 ShatterConfig.markDirty();
             } else {

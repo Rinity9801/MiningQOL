@@ -66,7 +66,7 @@ Chat color codes: use `§` escapes in string literals, never a raw `§`.
   `SubmitNodeCollector` on `endBatch()`
 - camera position: `cameraState.pos` (Vec3); orientation: `cameraState.orientation`
 - render types live in `net.minecraft.client.renderer.rendertype.RenderTypes`
-- see-through (through-wall) colored quads: `RenderTypes.textBackgroundSeeThrough()`
+- see-through (through-wall) colored quads: `forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH`
   with `addVertex(matrix,x,y,z).setColor(r,g,b,a).setLight(15728880)`
 - depth-tested lines: `RenderTypes.lines()` with `.setColor().setNormal().setLineWidth(2f)`
 - world text: `WorldBuffers.collector().submitText(poseStack, x, y,

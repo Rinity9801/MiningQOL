@@ -36,11 +36,11 @@ public class HotmChestScreen extends Screen {
     private static final int BTN_W = 96;
     private static final int BTN_H = 14;
 
-    // GLFW key codes
-    private static final int KEY_ESCAPE = 256;
-    private static final int KEY_ENTER = 257;
-    private static final int KEY_KP_ENTER = 335;
-    private static final int KEY_BACKSPACE = 259;
+    // 26.3: SDL scancodes (InputConstants), no longer GLFW key codes
+    private static final int KEY_ESCAPE = com.mojang.blaze3d.platform.InputConstants.KEY_ESCAPE;
+    private static final int KEY_ENTER = com.mojang.blaze3d.platform.InputConstants.KEY_RETURN;
+    private static final int KEY_KP_ENTER = com.mojang.blaze3d.platform.InputConstants.KEY_NUMPADENTER;
+    private static final int KEY_BACKSPACE = com.mojang.blaze3d.platform.InputConstants.KEY_BACKSPACE;
 
     private int gridX;
     private int gridY;
@@ -226,7 +226,7 @@ public class HotmChestScreen extends Screen {
 
         double mx = click.x();
         double my = click.y();
-        int button = click.button();
+        int button = forfun.miningqol.client.utils.InputCompat.button(click);
 
         for (Button b : buttons) {
             if (!b.contains(mx, my)) continue;

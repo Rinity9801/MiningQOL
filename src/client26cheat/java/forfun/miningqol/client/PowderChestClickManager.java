@@ -13,7 +13,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -272,8 +271,8 @@ public final class PowderChestClickManager {
         if (mc.gameMode.isDestroying()) mc.gameMode.stopDestroyBlock();
         InteractionResult result = mc.gameMode.useItemOn(mc.player, InteractionHand.MAIN_HAND, blockHit);
         if (result instanceof InteractionResult.Success success
-                && success.swingSource() == InteractionResult.SwingSource.CLIENT) {
-            mc.player.swing(InteractionHand.MAIN_HAND);
+                && success.swingSource() == InteractionResult.SwingSource.PREDICTED) {
+            mc.player.swing(InteractionHand.MAIN_HAND, mc.player.getMainHandItem().getInteractAnimation(), false);
         }
     }
 
@@ -294,11 +293,7 @@ public final class PowderChestClickManager {
 
     private static boolean isPhysicallyHeld(Minecraft mc, KeyMapping mapping) {
         InputConstants.Key key = KeyMappingHelper.getBoundKeyOf(mapping);
-        return switch (key.getType()) {
-            case MOUSE -> GLFW.glfwGetMouseButton(mc.getWindow().handle(), key.getValue()) == GLFW.GLFW_PRESS;
-            case KEYSYM -> InputConstants.isKeyDown(mc.getWindow(), key.getValue());
-            default -> false;
-        };
+        return forfun.miningqol.client.utils.InputCompat.isDown(key);
     }
 
     /** Turned off mid-sequence: put break back the way we found it. */

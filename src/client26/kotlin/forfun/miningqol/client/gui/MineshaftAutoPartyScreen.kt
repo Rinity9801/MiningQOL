@@ -8,7 +8,7 @@ import forfun.miningqol.client.party.ShaftType
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.client.input.KeyEvent
-import org.lwjgl.glfw.GLFW
+import com.mojang.blaze3d.platform.InputConstants
 import xyz.meowing.knit.api.input.KnitKeyboard
 import xyz.meowing.vexel.components.base.VexelElement
 import xyz.meowing.vexel.components.base.enums.Pos
@@ -580,29 +580,28 @@ class MineshaftAutoPartyScreen(private val parent: Screen?) : VexelScreen("Mines
     override fun keyPressed(input: KeyEvent): Boolean {
         val focused = focusedTextInput()
         if (focused != null) {
-            if (input.key() == GLFW.GLFW_KEY_ENTER || input.key() == GLFW.GLFW_KEY_KP_ENTER) {
+            if (input.key() == InputConstants.KEY_RETURN || input.key() == InputConstants.KEY_NUMPADENTER) {
                 if (focused === acceptInput) addPendingAccept() else addPending()
                 return true
             }
-            // Polled key state misses Cmd on macOS, so trust the event's own modifier
-            // bits as well — without this, paste silently does nothing there.
+            // 26.3 (SDL): the event's own shortcut helpers cover Ctrl / Cmd and keyboard layouts.
+            when {
+                input.isSelectAll -> { focused.selectAll(); return true }
+                input.isCopy -> { focused.copySelection(); return true }
+                input.isPaste -> { focused.paste(); return true }
+                input.isCut -> { focused.cutSelection(); return true }
+            }
             val shortcutDown = KnitKeyboard.isCtrlKeyPressed || KnitKeyboard.isSuperKeyPressed ||
-                (input.modifiers() and (GLFW.GLFW_MOD_CONTROL or GLFW.GLFW_MOD_SUPER)) != 0
+                (input.modifiers() and (InputConstants.MOD_CONTROL or InputConstants.MOD_SUPER)) != 0
             if (shortcutDown) {
-                when (input.key()) {
-                    GLFW.GLFW_KEY_A -> focused.selectAll()
-                    GLFW.GLFW_KEY_C -> focused.copySelection()
-                    GLFW.GLFW_KEY_V -> focused.paste()
-                    GLFW.GLFW_KEY_X -> focused.cutSelection()
-                    else -> if (!focused.keyTyped(input.key(), input.scancode(), ' ')) {
-                        return super.keyPressed(input)
-                    }
+                if (!focused.keyTyped(input.key(), input.keycode(), ' ')) {
+                    return super.keyPressed(input)
                 }
                 return true
             }
-            if (focused.keyTyped(input.key(), input.scancode(), ' ')) return true
+            if (focused.keyTyped(input.key(), input.keycode(), ' ')) return true
         }
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (input.key() == InputConstants.KEY_ESCAPE) {
             close()
             return true
         }

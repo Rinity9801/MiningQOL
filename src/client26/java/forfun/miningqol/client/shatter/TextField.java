@@ -1,7 +1,8 @@
 package forfun.miningqol.client.shatter;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import net.minecraft.client.Minecraft;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.function.Consumer;
 
@@ -23,7 +24,7 @@ public class TextField {
 
 	/** Cmd on macOS, Ctrl on Windows/Linux — checked on the raw modifier bits so both work everywhere. */
 	public static boolean isShortcut(net.minecraft.client.input.KeyEvent e) {
-		return (e.modifiers() & (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SUPER)) != 0;
+		return (e.modifiers() & (InputConstants.MOD_CONTROL | InputConstants.MOD_SUPER)) != 0;
 	}
 
 	public void setText(String text) {
@@ -91,16 +92,16 @@ public class TextField {
 		caret = Math.clamp(caret, 0, text.length());
 		if (shortcutDown) {
 			switch (key) {
-				case GLFW.GLFW_KEY_A -> allSelected = true;
-				case GLFW.GLFW_KEY_C -> mc.keyboardHandler.setClipboard(text);
-				case GLFW.GLFW_KEY_X -> {
+				case InputConstants.KEY_A -> allSelected = true;
+				case InputConstants.KEY_C -> mc.keyboardHandler.setClipboard(text);
+				case InputConstants.KEY_X -> {
 					mc.keyboardHandler.setClipboard(text);
 					text = "";
 					caret = 0;
 					allSelected = false;
 					onChange.accept(text);
 				}
-				case GLFW.GLFW_KEY_V -> {
+				case InputConstants.KEY_V -> {
 					String paste = mc.keyboardHandler.getClipboard().replace("\n", "").replace("\r", "");
 					if (allSelected) {
 						text = "";
@@ -111,11 +112,11 @@ public class TextField {
 					caret += paste.length();
 					onChange.accept(text);
 				}
-				case GLFW.GLFW_KEY_LEFT -> { // Cmd+Left on macOS: line start
+				case InputConstants.KEY_LEFT -> { // Cmd+Left on macOS: line start
 					allSelected = false;
 					caret = 0;
 				}
-				case GLFW.GLFW_KEY_RIGHT -> {
+				case InputConstants.KEY_RIGHT -> {
 					allSelected = false;
 					caret = text.length();
 				}
@@ -124,7 +125,7 @@ public class TextField {
 			return true;
 		}
 		switch (key) {
-			case GLFW.GLFW_KEY_BACKSPACE -> {
+			case InputConstants.KEY_BACKSPACE -> {
 				if (allSelected) {
 					text = "";
 					caret = 0;
@@ -135,7 +136,7 @@ public class TextField {
 				allSelected = false;
 				onChange.accept(text);
 			}
-			case GLFW.GLFW_KEY_DELETE -> {
+			case InputConstants.KEY_DELETE -> {
 				if (allSelected) {
 					text = "";
 					caret = 0;
@@ -145,27 +146,27 @@ public class TextField {
 				}
 				onChange.accept(text);
 			}
-			case GLFW.GLFW_KEY_LEFT -> {
+			case InputConstants.KEY_LEFT -> {
 				if (allSelected) {
 					allSelected = false;
 					caret = 0;
 				} else if (caret > 0) caret--;
 			}
-			case GLFW.GLFW_KEY_RIGHT -> {
+			case InputConstants.KEY_RIGHT -> {
 				if (allSelected) {
 					allSelected = false;
 					caret = text.length();
 				} else if (caret < text.length()) caret++;
 			}
-			case GLFW.GLFW_KEY_HOME -> {
+			case InputConstants.KEY_HOME -> {
 				allSelected = false;
 				caret = 0;
 			}
-			case GLFW.GLFW_KEY_END -> {
+			case InputConstants.KEY_END -> {
 				allSelected = false;
 				caret = text.length();
 			}
-			case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER, GLFW.GLFW_KEY_ESCAPE -> blur();
+			case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER, InputConstants.KEY_ESCAPE -> blur();
 			default -> {}
 		}
 		return true; // swallow everything else while focused

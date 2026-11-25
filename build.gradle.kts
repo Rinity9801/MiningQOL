@@ -27,8 +27,8 @@ base {
 loom {
     if (is26) {
         noIntermediateMappings()
-        // official-namespace widener; 1.21.11 builds use yarn and would reject it
-        accessWidenerPath.set(rootProject.file("src/main/resources/miningqol.accesswidener"))
+        // No access widener since 26.3: its only entries were for the GL-only NanoVG bridge. (Its
+        // official namespace also broke the 1.21.11 remapJar, which expects 'named'.)
     }
 
     splitEnvironmentSourceSets()

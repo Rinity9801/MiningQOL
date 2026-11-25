@@ -19,7 +19,8 @@ public class LevelRendererMixin {
     @Final
     private RenderTarget entityOutlineTarget;
 
-    @Inject(method = "doEntityOutline", at = @At("HEAD"), cancellable = true)
+    // 26.3 renamed doEntityOutline -> blitEntityOutline (same call site in GameRenderer.render).
+    @Inject(method = "blitEntityOutline", at = @At("HEAD"), cancellable = true)
     private void miningqol$compositeCustomEspGlow(CallbackInfo ci) {
         if (!EntityGlowESP.consumeCustomGlowFrame() || entityOutlineTarget == null) return;
         OutlineHaloBlit.blit(

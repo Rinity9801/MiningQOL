@@ -48,8 +48,9 @@ public class RenderTypesMixin {
         ChamsRenderLayer.noteTexture(cir.getReturnValue(), texture);
     }
 
-    @Inject(method = "armorTranslucent", at = @At("RETURN"))
-    private static void miningqol$noteArmorTranslucent(Identifier texture,
+    // 26.3 removed armorTranslucent; enchanted armor now uses armorCutoutNoCullGlint.
+    @Inject(method = "armorCutoutNoCullGlint", at = @At("RETURN"))
+    private static void miningqol$noteArmorGlint(Identifier texture,
                                                        CallbackInfoReturnable<RenderType> cir) {
         ChamsRenderLayer.noteTexture(cir.getReturnValue(), texture);
     }

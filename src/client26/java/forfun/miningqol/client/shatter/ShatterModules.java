@@ -163,13 +163,13 @@ public final class ShatterModules {
                     () -> {
                         com.mojang.blaze3d.platform.InputConstants.Key bound =
                             net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper.getBoundKeyOf(mapping);
-                        return bound.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM
+                        return bound.getType() == com.mojang.blaze3d.platform.InputConstants.Type.KEYBOARD
                             ? bound.getValue() : KeySetting.NONE;
                     },
                     code -> {
                         mapping.setKey(code == KeySetting.NONE
                             ? com.mojang.blaze3d.platform.InputConstants.UNKNOWN
-                            : com.mojang.blaze3d.platform.InputConstants.Type.KEYSYM.getOrCreate(code));
+                            : com.mojang.blaze3d.platform.InputConstants.Type.KEYBOARD.getOrCreate(code));
                         net.minecraft.client.KeyMapping.resetMapping();
                         Minecraft.getInstance().options.save();
                     }));

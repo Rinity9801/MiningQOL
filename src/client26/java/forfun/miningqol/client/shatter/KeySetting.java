@@ -2,11 +2,11 @@ package forfun.miningqol.client.shatter;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
-/** A GLFW key code, or {@link #NONE} when unbound. */
+/** A key code (an SDL scancode on 26.3, see {@link forfun.miningqol.client.utils.InputCompat}), or {@link #NONE} when unbound. */
 public class KeySetting extends Setting<Integer> {
     public static final int NONE = -1;
 
-    /** Whether clicking the armed key box binds that mouse button (encoded past GLFW_KEY_LAST). */
+    /** Whether clicking the armed key box binds that mouse button (encoded as InputCompat.MOUSE_BASE + button). */
     public boolean allowMouse;
 
     public KeySetting(String name, String description, int defaultKey) {
@@ -28,16 +28,6 @@ public class KeySetting extends Setting<Integer> {
 
     public String display() {
         if (!isBound()) return "none";
-        if (get() > org.lwjgl.glfw.GLFW.GLFW_KEY_LAST) {
-            int button = get() - org.lwjgl.glfw.GLFW.GLFW_KEY_LAST - 1;
-            return switch (button) {
-                case 0 -> "Mouse L";
-                case 1 -> "Mouse R";
-                case 2 -> "Mouse M";
-                default -> "Mouse " + (button + 1);
-            };
-        }
-        String s = InputConstants.Type.KEYSYM.getOrCreate(get()).getDisplayName().getString();
-        return s.length() == 1 ? s.toUpperCase() : s;
+        return forfun.miningqol.client.utils.InputCompat.displayName(get());
     }
 }

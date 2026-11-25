@@ -28,7 +28,7 @@ public abstract class EntityRendererMixin<T extends Entity, S extends EntityRend
 
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true)
     private void miningqol$keepEspTargetInFrustum(T entity, Frustum frustum,
-                                                  double x, double y, double z,
+                                                  double x, double y, double z, float partialTick,
                                                   CallbackInfoReturnable<Boolean> cir) {
         if (EntityGlowESP.isTarget(entity)) cir.setReturnValue(true);
     }

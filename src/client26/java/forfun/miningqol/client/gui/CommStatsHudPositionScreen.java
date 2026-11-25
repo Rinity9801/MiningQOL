@@ -1,5 +1,7 @@
 package forfun.miningqol.client.gui;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import forfun.miningqol.client.CommStatsHUD;
 import forfun.miningqol.client.MiningqolClient;
 import net.minecraft.client.Minecraft;
@@ -8,7 +10,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Drag-to-move / scroll-to-resize editor for the commission stats HUD.
@@ -98,7 +99,7 @@ public class CommStatsHudPositionScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyEvent input) {
-        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+        if (input.key() == InputConstants.KEY_ESCAPE) {
             onClose();
             return true;
         }

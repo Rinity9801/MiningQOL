@@ -20,7 +20,7 @@ import java.util.List;
  * 26.1.2 port of the ordered waypoint renderer. The RenderLayer/GL-state approach from
  * 1.21.x is gone; on 26.2 this draws through WorldBuffers while the level collects
  * submits (see WorldRenderHook):
- *  - boxes:  RenderTypes.textBackgroundSeeThrough() — a no-depth colored-quad layer
+ *  - boxes:  forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH — a no-depth colored-quad layer
  *            (what vanilla nametag backgrounds use), so boxes show through walls
  *  - labels: SubmitNodeCollector.submitText with DisplayMode.SEE_THROUGH
  *  - lines:  RenderTypes.lines() (depth-tested; no stock see-through line layer, which
@@ -50,7 +50,7 @@ public class OrderedWaypointRenderer {
         );
 
         // ===== Boxes =====
-        VertexConsumer quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
+        VertexConsumer quads = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH);
 
         if (current != null) {
             box(quads, pose, camPos, current.getPosition(),
@@ -136,7 +136,7 @@ public class OrderedWaypointRenderer {
             // testing hid it all), but only edges on a face turned towards the camera — the far
             // side of the vein stays undrawn, so it reads as the shape you're looking at.
             boolean visibleOnly = OrderedWaypointManager.isBlockOutlineVisibleOnly();
-            quads = buffers.getBuffer(RenderTypes.textBackgroundSeeThrough());
+            quads = buffers.getBuffer(forfun.miningqol.client.utils.render.BlockOverlayRenderTypes.QUADS_SEE_THROUGH);
             if (OrderedWaypointManager.isBlockOutlineFill()) {
                 for (double[] f : cachedFaces) {
                     if (visibleOnly && !facesCamera((int) f[3], facePlane(f), camPos)) continue;
@@ -615,7 +615,7 @@ public class OrderedWaypointRenderer {
 
         PoseStack matrices = new PoseStack();
         matrices.translate(x, y, z);
-        matrices.mulPose(cameraState.orientation);
+        matrices.rotate(cameraState.orientation);
         float scale = (float) (0.025 * Math.max(1, distance / 10));
         matrices.scale(scale, -scale, scale);
 
