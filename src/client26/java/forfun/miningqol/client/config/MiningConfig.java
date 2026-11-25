@@ -168,27 +168,8 @@ public class MiningConfig {
     public boolean mayhemCdTitleEnabled = false;
     public int mayhemCdTitleSeconds = 3;
 
-    public boolean shaftSummaryEnabled = true;
-    public boolean shaftSummaryFrontLoaded = false;
-    public boolean shaftSummaryTrackAll = true;
-    public boolean shaftSummaryShowBuffs = false;
-    public boolean shaftSummaryTrackEfficiency = true;
-    public int shaftSummaryEfficiencyPause = 15;
-    public boolean shaftSummaryAutoSave = true;
-    public boolean shaftSummaryPrintToChat = true;
-    public boolean shaftSummaryPrintToParty = false;
-    public int shaftSummaryMaxSavedRuns = 100;
-    public java.util.List<String> shaftSummaryTypes = null;
-    public java.util.List<String> shaftSummarySavedTypes = null;
-    public java.util.List<String> shaftSummaryRanksBy = new java.util.ArrayList<>();
-    public int shaftSummaryGemMiningSpeed = 0;
-    public boolean shaftSummaryBlueCheese = false;
-    public boolean shaftSummaryValueGemsAsFlawless = true;
-    public boolean shaftSummarySellOffer = true;
 
     /** Today's Sky Mall buff and when it expires, so a relog inside the same SkyBlock day keeps it. */
-    public String skyMallBuff = "";
-    public long skyMallBuffUntil = 0L;
 
     public boolean wispRadiusEnabled = true;
     public boolean wispRadiusEdgeOnly = false;
@@ -415,18 +396,12 @@ public class MiningConfig {
     }
 
     private void ensureDefaults() {
-        if (skyMallBuff == null) skyMallBuff = "";
         if (wispRadiusColor == null || wispRadiusColor.length != 3) wispRadiusColor = new float[]{0.45f, 0.85f, 1.0f};
         if (mineshaftPortalColor == null || mineshaftPortalColor.length != 3) mineshaftPortalColor = new float[]{170f / 255f, 1.0f, 85f / 255f};
         if (customFogColor == null || customFogColor.length != 3) customFogColor = new float[]{170f / 255f, 190f / 255f, 220f / 255f};
         if (wispRadiusRadius < 1f || wispRadiusRadius > 64f) wispRadiusRadius = 30.0f;
         if (wispRadiusAlpha < 0.05f || wispRadiusAlpha > 1f) wispRadiusAlpha = 0.35f;
-        if (shaftSummaryEfficiencyPause < 1 || shaftSummaryEfficiencyPause > 120) shaftSummaryEfficiencyPause = 15;
-        if (shaftSummaryMaxSavedRuns < 0 || shaftSummaryMaxSavedRuns > 1000) shaftSummaryMaxSavedRuns = 100;
         // Null = never written by this build: Jeff's defaults (every type summarised, only Jasper saved).
-        if (shaftSummaryTypes == null) shaftSummaryTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.defaultSummaryKeys());
-        if (shaftSummarySavedTypes == null) shaftSummarySavedTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.defaultSavedKeys());
-        if (shaftSummaryRanksBy == null) shaftSummaryRanksBy = new java.util.ArrayList<>();
         if (commissionHudScale < 0.5f || commissionHudScale > 2.0f) {
             commissionHudScale = 1.0f;
         }
@@ -621,25 +596,7 @@ public class MiningConfig {
         RollingMinerCooldown.setReadyLabelColor(rollingReadyLabelColor[0], rollingReadyLabelColor[1], rollingReadyLabelColor[2]);
         RollingMinerCooldown.setReadyValueColor(rollingReadyValueColor[0], rollingReadyValueColor[1], rollingReadyValueColor[2]);
 
-        forfun.miningqol.client.summary.ShaftSummary.setEnabled(shaftSummaryEnabled);
-        forfun.miningqol.client.summary.ShaftSummary.setFrontLoaded(shaftSummaryFrontLoaded);
-        forfun.miningqol.client.summary.ShaftSummary.setTrackAllShaftSummaries(shaftSummaryTrackAll);
-        forfun.miningqol.client.summary.ShaftSummary.setShowBuffsInSummary(shaftSummaryShowBuffs);
-        forfun.miningqol.client.summary.ShaftSummary.setTrackEfficiencyInSummary(shaftSummaryTrackEfficiency);
-        forfun.miningqol.client.summary.ShaftSummary.setEfficiencyPauseSeconds(shaftSummaryEfficiencyPause);
-        forfun.miningqol.client.summary.ShaftSummary.setAutoSave(shaftSummaryAutoSave);
-        forfun.miningqol.client.summary.ShaftSummary.setPrintToChat(shaftSummaryPrintToChat);
-        forfun.miningqol.client.summary.ShaftSummary.setPrintToParty(shaftSummaryPrintToParty);
-        forfun.miningqol.client.summary.ShaftSummary.setMaxSavedRuns(shaftSummaryMaxSavedRuns);
-        forfun.miningqol.client.summary.ShaftSummary.setSummaryShaftTypes(shaftSummaryTypes);
-        forfun.miningqol.client.summary.ShaftSummary.setSavedShaftTypes(shaftSummarySavedTypes);
-        forfun.miningqol.client.summary.ShaftSummary.setRanksBy(shaftSummaryRanksBy);
-        forfun.miningqol.client.summary.ShaftSummary.setGemMiningSpeed(shaftSummaryGemMiningSpeed);
-        forfun.miningqol.client.summary.ShaftSummary.setBlueCheese(shaftSummaryBlueCheese);
-        forfun.miningqol.client.summary.ShaftSummary.setValueAsFlawless(shaftSummaryValueGemsAsFlawless);
-        forfun.miningqol.client.summary.ShaftSummary.setSellOffer(shaftSummarySellOffer);
 
-        forfun.miningqol.client.summary.SkyMallTracker.restore(skyMallBuff, skyMallBuffUntil);
 
         WispRadius.setEnabled(wispRadiusEnabled);
         WispRadius.setEdgeOnly(wispRadiusEdgeOnly);
@@ -890,26 +847,7 @@ public class MiningConfig {
         rollingReadyLabelColor = RollingMinerCooldown.getReadyLabelColor();
         rollingReadyValueColor = RollingMinerCooldown.getReadyValueColor();
 
-        shaftSummaryEnabled = forfun.miningqol.client.summary.ShaftSummary.isEnabled();
-        shaftSummaryFrontLoaded = forfun.miningqol.client.summary.ShaftSummary.isFrontLoaded();
-        shaftSummaryTrackAll = forfun.miningqol.client.summary.ShaftSummary.isTrackAllShaftSummaries();
-        shaftSummaryShowBuffs = forfun.miningqol.client.summary.ShaftSummary.isShowBuffsInSummary();
-        shaftSummaryTrackEfficiency = forfun.miningqol.client.summary.ShaftSummary.isTrackEfficiencyInSummary();
-        shaftSummaryEfficiencyPause = forfun.miningqol.client.summary.ShaftSummary.getEfficiencyPauseSeconds();
-        shaftSummaryAutoSave = forfun.miningqol.client.summary.ShaftSummary.isAutoSave();
-        shaftSummaryPrintToChat = forfun.miningqol.client.summary.ShaftSummary.isPrintToChat();
-        shaftSummaryPrintToParty = forfun.miningqol.client.summary.ShaftSummary.isPrintToParty();
-        shaftSummaryMaxSavedRuns = forfun.miningqol.client.summary.ShaftSummary.getMaxSavedRuns();
-        shaftSummaryTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getSummaryShaftTypes());
-        shaftSummarySavedTypes = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getSavedShaftTypes());
-        shaftSummaryRanksBy = new java.util.ArrayList<>(forfun.miningqol.client.summary.ShaftSummary.getRanksBy());
-        shaftSummaryGemMiningSpeed = forfun.miningqol.client.summary.ShaftSummary.getGemMiningSpeed();
-        shaftSummaryBlueCheese = forfun.miningqol.client.summary.ShaftSummary.isBlueCheese();
-        shaftSummaryValueGemsAsFlawless = forfun.miningqol.client.summary.ShaftSummary.isValueAsFlawless();
-        shaftSummarySellOffer = forfun.miningqol.client.summary.ShaftSummary.isSellOffer();
 
-        skyMallBuff = forfun.miningqol.client.summary.SkyMallTracker.storedBuffName();
-        skyMallBuffUntil = forfun.miningqol.client.summary.SkyMallTracker.storedUntil();
 
         wispRadiusEnabled = WispRadius.isEnabled();
         wispRadiusEdgeOnly = WispRadius.isEdgeOnly();

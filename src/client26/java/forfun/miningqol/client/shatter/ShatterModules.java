@@ -26,8 +26,6 @@ import forfun.miningqol.client.gui.HudPositionScreen;
 import forfun.miningqol.client.gui.MineshaftAutoPartyScreen;
 import forfun.miningqol.client.party.MineshaftAutoParty;
 import forfun.miningqol.client.party.PartyAutoAccept;
-import forfun.miningqol.client.summary.ShaftPbType;
-import forfun.miningqol.client.summary.ShaftSummary;
 import forfun.miningqol.client.waypoints.OrderedWaypointManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -305,44 +303,6 @@ public final class ShatterModules {
             .add(new SliderSetting("Duration", "Seconds the title stays on screen", 3, 1, 10, 1, "s")
                 .bind(() -> (double) MayhemHUD.getCdTitleSeconds(), v -> MayhemHUD.setCdTitleSeconds((int) Math.round(v)))));
 
-        Modules.register(new Module("Shaft Summary", "Fines, coins and rank after every gem shaft", general,
-            ShaftSummary::isEnabled, ShaftSummary::setEnabled)
-            .add(new BoolSetting("Print to Chat", "Show the summary block in chat", true)
-                .bind(ShaftSummary::isPrintToChat, ShaftSummary::setPrintToChat))
-            .add(new BoolSetting("Print to Party", "Send a one-line recap to /pc", false)
-                .bind(ShaftSummary::isPrintToParty, ShaftSummary::setPrintToParty))
-            .add(new BoolSetting("Show Buffs in Summary", "Add a Buffs line to the summary", false)
-                .bind(ShaftSummary::isShowBuffsInSummary, ShaftSummary::setShowBuffsInSummary))
-            .add(new BoolSetting("Front Loaded", "Tag runs as front loaded", false)
-                .bind(ShaftSummary::isFrontLoaded, ShaftSummary::setFrontLoaded))
-            .add(new BoolSetting("Track All Shaft Types", "Off: only Jasper shafts are tracked", true)
-                .bind(ShaftSummary::isTrackAllShaftSummaries, ShaftSummary::setTrackAllShaftSummaries))
-            .add(new BoolSetting("Auto Save", "Keep runs for the Rank line", true)
-                .bind(ShaftSummary::isAutoSave, ShaftSummary::setAutoSave))
-            .add(new SliderSetting("Max Saved Runs", "History size; weakest runs are dropped first", 100, 0, 1000, 10, "")
-                .bind(() -> (double) ShaftSummary.getMaxSavedRuns(), v -> ShaftSummary.setMaxSavedRuns((int) Math.round(v))))
-            .add(new BoolSetting("Track Efficiency in Summary", "Blocks mined vs a nonstop miner", true)
-                .bind(ShaftSummary::isTrackEfficiencyInSummary, ShaftSummary::setTrackEfficiencyInSummary))
-            .add(new SliderSetting("Efficiency Reset Delay", "Idle seconds before the max-miner pauses", 15, 1, 120, 1, "s")
-                .bind(() -> (double) ShaftSummary.getEfficiencyPauseSeconds(), v -> ShaftSummary.setEfficiencyPauseSeconds((int) Math.round(v))))
-            .add(new SliderSetting("Gem Mining Speed", "0 = read from the tab list", 0, 0, 20000, 50, "")
-                .bind(() -> (double) ShaftSummary.getGemMiningSpeed(), v -> ShaftSummary.setGemMiningSpeed((int) Math.round(v))))
-            .add(new BoolSetting("Blue Cheese", "Mining Speed Boost lasts 25s", false)
-                .bind(ShaftSummary::isBlueCheese, ShaftSummary::setBlueCheese))
-            .add(new ModeSetting("Coin Price", "Bazaar price for the Money line", "Sell Offer", "Sell Offer", "Instant Sell")
-                .bind(() -> ShaftSummary.isSellOffer() ? "Sell Offer" : "Instant Sell", v -> ShaftSummary.setSellOffer(v.equals("Sell Offer"))))
-            .add(new ModeSetting("Value As", "Gem quality the coin value is based on", "Flawless", "Fine", "Flawless")
-                .bind(() -> ShaftSummary.isValueAsFlawless() ? "Flawless" : "Fine", v -> ShaftSummary.setValueAsFlawless(v.equals("Flawless"))))
-            .add(new MultiSetting("Group Ranks By", "Only rank against runs sharing these", ShaftSummary.getRanksBy(),
-                    ShaftSummary.RANK_CRITERIA.toArray(new String[0]))
-                .bind(ShaftSummary::getRanksBy, ShaftSummary::setRanksBy))
-            .add(new MultiSetting("Summarize Which Shafts", "Shaft types that print a summary", ShaftSummary.getSummaryShaftTypes(), shaftTypeKeys())
-                .bind(ShaftSummary::getSummaryShaftTypes, ShaftSummary::setSummaryShaftTypes))
-            .add(new MultiSetting("Save Which Shafts", "Shaft types kept in the history", ShaftSummary.getSavedShaftTypes(), shaftTypeKeys())
-                .bind(ShaftSummary::getSavedShaftTypes, ShaftSummary::setSavedShaftTypes))
-            .add(new ActionSetting("Print Preview", "Print a sample summary in chat", false,
-                () -> ShaftSummary.printSample(Minecraft.getInstance()))));
-
         Modules.register(new Module("Mineshaft Portal", "Outline the portal you just found, through walls", esp,
             forfun.miningqol.client.MineshaftPortal::isEnabled, forfun.miningqol.client.MineshaftPortal::setEnabled)
             .add(new BoolSetting("Tracer", "Line from your crosshair to the portal", true)
@@ -591,10 +551,4 @@ public final class ShatterModules {
         }
     }
 
-    private static String[] shaftTypeKeys() {
-        ShaftPbType[] types = ShaftPbType.values();
-        String[] keys = new String[types.length];
-        for (int i = 0; i < types.length; i++) keys[i] = types[i].key();
-        return keys;
-    }
 }

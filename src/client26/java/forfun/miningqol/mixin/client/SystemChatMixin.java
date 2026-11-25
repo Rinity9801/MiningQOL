@@ -21,7 +21,6 @@ public class SystemChatMixin {
         // The handler runs once on the network thread to re-dispatch and once on the
         // client thread; only count the client-thread pass.
         if (packet.overlay() || !Minecraft.getInstance().isSameThread()) return;
-        forfun.miningqol.client.summary.ShaftSummary.onGameMessage(packet.content());
         String text = packet.content().getString();
         forfun.miningqol.client.CommTracker.onChatMessage(text);
         forfun.miningqol.client.CommissionHUD.onCommissionComplete(text);

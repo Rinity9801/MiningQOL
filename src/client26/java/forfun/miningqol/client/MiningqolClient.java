@@ -80,7 +80,6 @@ public class MiningqolClient implements ClientModInitializer {
         CommCountHUD.register();
         ItemCooldownTimer.registerAll();
         MayhemHUD.register();
-        forfun.miningqol.client.summary.ShaftSummary.init();
         ForgeDisplay.register();
         LobbyFinderHUD.register();
         OrderedWaypointManager.init();
@@ -98,7 +97,6 @@ public class MiningqolClient implements ClientModInitializer {
                 LobbyFinder.tick();
                 ColdTracker.tick();
                 MayhemHUD.tick();
-                forfun.miningqol.client.summary.ShaftSummary.tick(client);
                 WispRadius.tick();
                 MineshaftPortal.tick();
                 FiletWarning.tick();
@@ -123,8 +121,6 @@ public class MiningqolClient implements ClientModInitializer {
             RollingMinerCooldown.onGameMessage(messageText);
             PickaxeCooldownHUD.onGameMessage(messageText);
             MayhemHUD.onGameMessage(messageText);
-            // ShaftSummary is fed from SystemChatMixin instead: it needs the lines other
-            // mods' chat filters cancel before this event fires.
             forfun.miningqol.client.party.MineshaftAutoParty.onGameMessage(messageText);
             forfun.miningqol.client.party.PartyAutoAccept.onGameMessage(messageText);
 
@@ -316,28 +312,6 @@ public class MiningqolClient implements ClientModInitializer {
                 forfun.miningqol.client.party.MineshaftAutoParty.dumpDetection();
                 return 1;
             }));
-
-        dispatcher.register(ClientCommands.literal("shaftsummary")
-            .executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printStatus();
-                return 1;
-            })
-            .then(ClientCommands.literal("status").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printStatus();
-                return 1;
-            }))
-            .then(ClientCommands.literal("test").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printSample(net.minecraft.client.Minecraft.getInstance());
-                return 1;
-            }))
-            .then(ClientCommands.literal("debug").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.printDebug();
-                return 1;
-            }))
-            .then(ClientCommands.literal("party").executes(context -> {
-                forfun.miningqol.client.summary.ShaftSummary.sendLastToParty();
-                return 1;
-            })));
 
         dispatcher.register(ClientCommands.literal("getcold")
                 .executes(context -> {
